@@ -1,6 +1,7 @@
 using System.Linq;
 using UnityEditor;
 using DevAccelerationSystem.Core;
+using ILogger = DevAccelerationSystem.Core.ILogger;
 
 namespace DevAccelerationSystem.ProjectCompilationCheck
 {

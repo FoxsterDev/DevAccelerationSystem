@@ -27,15 +27,6 @@ namespace DevAccelerationSystem.Core
             _instance = null;
         }
 
-        public static void FocusAsset()
-        {
-            EditorUtility.FocusProjectWindow();
-            if (_instance != null)
-            {
-                Selection.activeObject = _instance;
-            }
-        }
-        
         public static void SaveChangesInUnityEditor(bool assetDatabaseRefresh = true)
         {
             Save(_instance, true);
@@ -74,8 +65,8 @@ namespace DevAccelerationSystem.Core
                 AssetDatabase.CreateAsset(_instance, filePath);
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
-              
-                FocusAsset();
+
+                Selection.activeObject = _instance;
             }
        }
 
