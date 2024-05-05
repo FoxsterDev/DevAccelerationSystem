@@ -20,14 +20,14 @@ More about scripting define symbols you can find [here](https://docs.unity3d.com
     * [Available menuitems](#available-menuitems)
     * [Compilation output viewer](#compilation-output-viewer)
     * [Compilation output known cases](#compilation-output-known-cases)
-
+* [Limitations](#limitations)
 * [How to contribute](#how-to-contribute)
 
 <!-- TOC -->
 
 ## Features
 1. Support configurations for player script compilation with build target and scripting define symbols.
-2. Simplified scriptable object editor to run compilation checks from Unity
+2. Simplified scriptable object editor to run script compilation checks from Unity
 3. Supports EditorMode and BatchMode. 
 4. Compilation output viewer window to see the previous compilation results.
 5. Configuring the compilation configs from your custom editor scripts or with using the **provided Editor.**
@@ -76,7 +76,7 @@ But Unity has only Android build target. In the case you should change player sc
 ## Getting Started
 ### Prerequisites Unity 2020.3+
 ProjectCompilation checks are only available for Unity 2020.3 and higher.
-It is tested with 2020.3.38, 2021.3.31, 2022.3.13 Unity versions.
+It is tested with 2020.3.38, 2021.3.33, 2022.3.13 Unity versions.
 
 ### Installation
 
@@ -122,6 +122,11 @@ It is tested with 2020.3.38, 2021.3.31, 2022.3.13 Unity versions.
 1. if you specified config for a build target but the module is not installed you see error about it 
 [ProjectCompilationCheck][Error] Compilation failed for WebGLNotDevelopment with errors:[1]: Unity module WebGL is not installed. Try to install the module and restart the unity.
 2. if a config is not enabled it will be skipped during run
+
+## Limitations
+1. It is just high level build of your scripts into dll's. It doesn't check the actual build of the project!
+   ![Example6](Docs/Img6.png)
+2. It uses Unity editor compilation API, so it might not be 100% accurate as the actual build. Especially when your scripting backend is IL2CPP.
 
 ## Demo project
 You can find the demo project in the [Demo](https://github.com/FoxsterDev/DevAccelerationSystem/tree/master/DevAccelerationSystem.DemoProject).
