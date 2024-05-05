@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using DevAccelerationSystem.Core;
@@ -19,14 +20,30 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
                 return;
             }
             
-            CompilationOutput output = null;
-            if (!string.IsNullOrEmpty(args["-configName"]) && args["-configName"] != "RunAll")
+            var configSo = ProjectCompilationConfigSO.Find(logger);
+            if (configSo == null)
             {
-                output = EditorModeRunner.RunByName(args["-configName"], logger);
+                EditorApplication.Exit(1);
+                return;
+            }
+            
+            CompilationOutput output = null;
+            var configName = args["-configName"];
+            if (!string.IsNullOrEmpty(configName) && configName != "RunAll")
+            {
+                var compilationConfig = configSo.CompilationConfigs.Find(e => e.Name == configName);
+                if (compilationConfig == null)
+                {
+                    logger.Error("Could not find a config with name: " + configName);
+                    EditorApplication.Exit(1);
+                    return;
+                }
+
+                output = EditorModeRunner.Run(compilationConfig, logger);
             }
             else 
             {
-                output = EditorModeRunner.RunAll(logger);
+                output = EditorModeRunner.RunAll(configSo.CompilationConfigs, logger);
             }
             
             if (!string.IsNullOrEmpty(args["-compilationOutput"]))
@@ -37,5 +54,6 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
             var exitCode = output.Results.Any(i => i.ErrorsCount > 0) ? 1 : 0;
             EditorApplication.Exit(exitCode);
         }
+
     }
 }

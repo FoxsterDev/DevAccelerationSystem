@@ -6,25 +6,40 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
 {
     internal static class MenuItems
     {
-        [MenuItem("Window/DevAccelerationSystem/ProjectCompilationCheck/Run all compilations", false, 1000)]
+        [MenuItem("Window/DevAccelerationSystem/ProjectCompilationCheck/Show Compilation Output Viewer", false, 3)]
+        public static void ShowCompilationOutputViewerWindow()
+        {
+            EditorWindow.GetWindow(typeof(CompilationOutputViewerEditor));
+        }
+        [MenuItem("Window/DevAccelerationSystem/ProjectCompilationCheck/Show Compilation Output Viewer", true)]
+        private static bool ValidateShowCompilationOutputViewerWindow()
+        {
+            return  ProjectCompilationConfigSO.Find() != null;
+        }
+        
+        [MenuItem("Window/DevAccelerationSystem/ProjectCompilationCheck/Run all compilations", false, 1)]
         public static void RunAllCompilations()
         {
             var output = ProjectCompiler.RunAll();
             Debug.Log("Compilation IsSuccess? "+ output.Results.Any(a => a.ErrorsCount < 1));
         }
-        
-        [MenuItem("Window/DevAccelerationSystem/ProjectCompilationCheck/Focus config", false, 1000)]
-        public static void FocusConfig()
+    
+        [MenuItem("Window/DevAccelerationSystem/ProjectCompilationCheck/Run all compilations", true)]
+        private static bool ValidateRunAllCompilations()
         {
-            Selection.activeObject =ProjectCompilationConfigSO.Instance;
-            Debug.Log("The config is actived at path "+ AssetDatabase.GUIDToAssetPath(AssetDatabase.FindAssets(nameof(ProjectCompilationConfigSO))[0]));
+            return  ProjectCompilationConfigSO.Find() != null;
         }
         
-        [MenuItem("Window/DevAccelerationSystem/ProjectCompilationCheck/Focus viewer", false, 1000)]
-        public static void FocusViewer()
+        [MenuItem("Window/DevAccelerationSystem/ProjectCompilationCheck/Focus config", true)]
+        private static bool ValidateFocusConfig()
         {
-            Selection.activeObject = CompilationOutputViewerSO.Instance;
-            Debug.Log("The config is actived at path "+AssetDatabase.GUIDToAssetPath(AssetDatabase.FindAssets(nameof(CompilationOutputViewerSO))[0]));
+            return  ProjectCompilationConfigSO.Find() != null;
+        }
+
+        [MenuItem("Window/DevAccelerationSystem/ProjectCompilationCheck/Focus config", false, 2)]
+        public static void FocusConfig()
+        {
+            Selection.activeObject = ProjectCompilationConfigSO.Find();
         }
     }
 }

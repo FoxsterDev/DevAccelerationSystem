@@ -5,7 +5,7 @@ using DevAccelerationSystem.Core;
 namespace DevAccelerationSystem.ProjectCompilationCheck
 {
     /// <summary>
-    /// Public access for the ProjectCompiler system. This API is used to interact with the ProjectCompiler system.
+    /// This API is used to interact with the DevAccelerationSystem ProjectCompilationCheck system.
     /// </summary>
     public static class ProjectCompiler
     {
@@ -17,15 +17,15 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
         /// <returns>Returns a bool indicating success or failure.</returns>
         public static bool CreateConfiguration(string name, CompilationConfig settings)
         {
-            var index = ProjectCompilationConfigSO.Instance.CompilationConfigs.FindIndex(c => c.Name == name);
+            var so = ProjectCompilationConfigSO.Find();
+            var index = so.CompilationConfigs.FindIndex(c => c.Name == name);
             if (index > -1)
             {
                 return false;
             }
             
-            ProjectCompilationConfigSO.Instance.CompilationConfigs.Add(settings);
-            ProjectCompilationConfigSO.SaveChangesInUnityEditor(true);
-
+            so.CompilationConfigs.Add(settings);
+            so.SaveChanges(true);
             return false;
         }
 
@@ -36,11 +36,12 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
         /// <returns>Returns a bool indicating if the deletion was successful.</returns>
         public static bool DeleteConfiguration(string name)
         {
-            var index = ProjectCompilationConfigSO.Instance.CompilationConfigs.FindIndex(c => c.Name == name);
+            var so = ProjectCompilationConfigSO.Find();
+            var index = so.CompilationConfigs.FindIndex(c => c.Name == name);
             if (index > -1)
             {
-                ProjectCompilationConfigSO.Instance.CompilationConfigs.RemoveAt(index);
-                ProjectCompilationConfigSO.SaveChangesInUnityEditor(true);
+                so.CompilationConfigs.RemoveAt(index);
+                so.SaveChanges(true);
                 return true;
             }
             
@@ -55,11 +56,12 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
         /// <returns>Returns a bool indicating if the update was successful.</returns>
         public static bool UpdateConfiguration(string name, CompilationConfig settings)
         {
-            var index = ProjectCompilationConfigSO.Instance.CompilationConfigs.FindIndex(c => c.Name == name);
+            var so = ProjectCompilationConfigSO.Find();
+            var index = so.CompilationConfigs.FindIndex(c => c.Name == name);
             if (index > -1)
             {
-                ProjectCompilationConfigSO.Instance.CompilationConfigs[index] = settings;
-                ProjectCompilationConfigSO.SaveChangesInUnityEditor(true);
+                so.CompilationConfigs[index] = settings;
+                so.SaveChanges(true);
                 return true;
             }
             return false;
@@ -72,7 +74,7 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
         /// <returns>Returns a ProjectCompilationConfig representing the configuration settings.</returns>
         public static CompilationConfig GetConfiguration(string name)  
         {
-            return ProjectCompilationConfigSO.Instance.CompilationConfigs.Find(c => c.Name == name);
+            return ProjectCompilationConfigSO.Find()?.CompilationConfigs.Find(c => c.Name == name);
         }
         
         /// <summary>
@@ -81,17 +83,19 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
         /// <returns>Returns a List of string containing the names of all configurations.</returns>
         public static List<string> ListConfigurations()  
         {
-            return ProjectCompilationConfigSO.Instance.CompilationConfigs.Select(c => c.Name).ToList();
+            return ProjectCompilationConfigSO.Find()?.CompilationConfigs.Select(c => c.Name).ToList();
         }
 
         /// <summary>
         /// Executes the compilation using the specified configuration.
         /// </summary>
-        /// <param name="name">The name of the configuration to execute.</param>
+        /// <param name="config"></param>
+        /// <param name="logger"></param>
         /// <returns>Returns a CompilationResult object that includes details like success, errors</returns>
-        public static CompilationOutput RunByName(string name, ILogger logger = default)
+        public static CompilationOutput Run(CompilationConfig config, ILogger logger = default)
         {
-            return EditorModeRunner.RunByName(name, logger);
+            logger ??= new DefaultUnityLogger(nameof(ProjectCompilationCheck), 40000);
+            return EditorModeRunner.Run(config, logger);
         }
 
         /// <summary>
@@ -100,7 +104,13 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
         /// <returns>Returns a List of CompilationResult with results for each configuration.</returns>
         public static CompilationOutput RunAll(ILogger logger = default)
         {
-            return EditorModeRunner.RunAll(logger);
+            logger ??= new DefaultUnityLogger(nameof(ProjectCompilationCheck), 40000);
+            var so = ProjectCompilationConfigSO.Find(logger);
+            if (so == null)
+            {
+                return null;
+            }
+            return EditorModeRunner.RunAll(so.CompilationConfigs, logger);
         }
     }
 }

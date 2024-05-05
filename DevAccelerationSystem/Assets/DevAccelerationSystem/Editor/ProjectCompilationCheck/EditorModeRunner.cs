@@ -14,36 +14,14 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
 {
     internal static class EditorModeRunner
     {
-        public static CompilationOutput RunByName(string configName, ILogger logger = null)
+        public static CompilationOutput Run(CompilationConfig config, ILogger logger)
         {
-            logger ??= new DefaultUnityLogger(nameof(ProjectCompilationCheck), 40000);
-
             var st = new Stopwatch();
             st.Start();
             
-            var nameStr = $"{nameof(EditorModeRunner)}:{nameof(RunByName)}:{configName}";
+            var nameStr = $"{nameof(EditorModeRunner)}:{nameof(Run)}:{config.Name}";
             logger.Info(nameStr);
 
-            ProjectCompilationConfigSO.ResetInstance();
-            var so = ProjectCompilationConfigSO.Instance;
-            var compilationConfigs = so.CompilationConfigs;
-           
-            var config = compilationConfigs.Find(e => e.Name == configName);
-            if (config == null)
-            {
-                logger.Error("Could not find a config with name: "+ configName);
-                
-                var result = new CompilationResult
-                    {   CompilationConfig = default, 
-                        ErrorsCount = 1, 
-                        ErrorsList = "Could not find a config with name: "+ configName, 
-                        ProjectCompilationSettingName = configName};
-
-                st.Stop();
-                return new CompilationOutput {Results = new List<CompilationResult>{result}, 
-                    Stats = new CompilationStats{ Name = nameStr, CompilationTotalMs = st.ElapsedMilliseconds}, Logs = logger.ToString()};
-            }
-         
             var compilationResults = RunProjectCompilation(logger, config);
             PostProjectCompilationCheckCall(logger, nameStr, compilationResults);
             
@@ -55,20 +33,14 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
             };
         }
 
-        public static CompilationOutput RunAll(ILogger logger = null)
+        public static CompilationOutput RunAll(List<CompilationConfig> compilationConfigs, ILogger logger)
         {
-            logger ??= new DefaultUnityLogger(nameof(ProjectCompilationCheck), 40000);
-
             var st = new Stopwatch();
             st.Start();
             
             var nameStr = $"{nameof(EditorModeRunner)}:{nameof(RunAll)}";
             logger.Info(nameStr);
-
-            ProjectCompilationConfigSO.ResetInstance();
-            var so = ProjectCompilationConfigSO.Instance;
-            var compilationConfigs = so.CompilationConfigs;
-
+            
             var compilationResults = RunProjectCompilation(logger, compilationConfigs.ToArray());
             
             PostProjectCompilationCheckCall(logger, nameStr, compilationResults);
@@ -189,5 +161,37 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
 
             return directoryPath;
         }
+        
+        
+        /*public static CompilationOutput RunByName(string configName, ILogger logger = null)
+        {
+            logger ??= new DefaultUnityLogger(nameof(ProjectCompilationCheck), 40000);
+
+            var nameStr = $"{nameof(EditorModeRunner)}:{nameof(RunByName)}:{configName}";
+           
+            
+            ProjectCompilationConfigSO.ResetInstance();
+            var so = ScriptableObjectLoader.LoadAllAssetsOfType<ProjectCompilationConfigSO>()[0];
+            //  ProjectCompilationConfigSO.Instance;
+            var compilationConfigs = so.CompilationConfigs;
+           
+            var config = compilationConfigs.Find(e => e.Name == configName);
+            if (config == null)
+            {
+                logger.Error("Could not find a config with name: "+ configName);
+                
+                var result = new CompilationResult
+                {   CompilationConfig = default, 
+                    ErrorsCount = 1, 
+                    ErrorsList = "Could not find a config with name: "+ configName, 
+                    ProjectCompilationSettingName = configName};
+
+                //st.Stop();
+                return new CompilationOutput {Results = new List<CompilationResult>{result}, 
+                    Stats = new CompilationStats{ Name = nameStr, CompilationTotalMs = 0}, Logs = logger.ToString()};
+            }
+            return Run(config, logger);
+        }*/
+
     }
 }

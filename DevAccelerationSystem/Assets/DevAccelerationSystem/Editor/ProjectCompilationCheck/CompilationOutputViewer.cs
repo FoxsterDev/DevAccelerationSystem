@@ -3,19 +3,19 @@ using UnityEditor;
 
 namespace DevAccelerationSystem.ProjectCompilationCheck
 {
-    [CustomEditor(typeof(CompilationOutputViewerSO))]
-    internal sealed class CompilationOutputViewerSOEditor : UnityEditor.Editor
+    
+    internal sealed class CompilationOutputViewerEditor : EditorWindow
     {
         private CompilationOutput compilationOutput;
         private string locationOfCompilationOutput;
         
         private void OnEnable()
         {
-            locationOfCompilationOutput = ProjectCompilationConfigSO.Instance.DefaultCompilationOutputFileName;
+            locationOfCompilationOutput = ProjectCompilationConfigSO.Find()?.DefaultCompilationOutputFileName;
             compilationOutput = FileUtility.LoadFromJson<CompilationOutput>(locationOfCompilationOutput);
         }
 
-        public override void OnInspectorGUI()
+        public  void OnGUI()
         {
             EditorGUILayout.LabelField("Location of compilationOutput :"+locationOfCompilationOutput, EditorStyles.miniLabel);
             EditorGUILayout.Space();

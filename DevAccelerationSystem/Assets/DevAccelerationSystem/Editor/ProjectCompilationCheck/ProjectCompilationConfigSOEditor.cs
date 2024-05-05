@@ -9,8 +9,8 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
     internal sealed class ProjectCompilationConfigSOEditor : UnityEditor.Editor
     {
         private ProjectCompilationConfigSO ConfigSO => (ProjectCompilationConfigSO) target;
-
         private string _labelStats = "";
+        
         private void OnEnable()
         {
             _labelStats = $"CodeOptimization: {CompilationPipeline.codeOptimization}, " +
@@ -43,10 +43,12 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
             EditorGUILayout.LabelField("Available compilation options:", EditorStyles.boldLabel);
             if (GUILayout.Button("Run All"))
             {
-                var compilationOutput = EditorModeRunner.RunAll();
+                var logger = new DefaultUnityLogger(nameof(ProjectCompilationCheck), 40000);
+                var compilationOutput = EditorModeRunner.RunAll(ConfigSO.CompilationConfigs, logger);
                 FileUtility.SaveAsJson(compilationOutput, ConfigSO.DefaultCompilationOutputFileName);
                 return;
             }
+            
             EditorGUILayout.Space();
             EditorGUILayout.Space();
             foreach (var config in ConfigSO.CompilationConfigs)
@@ -57,7 +59,8 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
                 {
                     if (GUILayout.Button("Run " + config.Name))
                     {
-                        var compilationOutput = EditorModeRunner.RunByName(config.Name);
+                        var logger = new DefaultUnityLogger(nameof(ProjectCompilationCheck), 40000);
+                        var compilationOutput = EditorModeRunner.Run(config, logger);
                         FileUtility.SaveAsJson(compilationOutput, ConfigSO.DefaultCompilationOutputFileName);
                         return;
                     }
