@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ebb3efcc14c4936a708282800974112, type: 3}
+  m_Name: ProjectCompilationConfig
+  m_EditorClassIdentifier: 
+  CompilationConfigs:
+  - Name: AndroidDevelopment
+    Enabled: 1
+    Option: 1
+    Target: 13
+    ExtraScriptingDefines:
+    - JSONNET_XMLDISABLE
+  - Name: AndroidNotDevelopment
+    Enabled: 1
+    Option: 0
+    Target: 13
+    ExtraScriptingDefines:
+    - JSONNET_XMLDISABLE
+  - Name: iOSDevelopment
+    Enabled: 1
+    Option: 1
+    Target: 9
+    ExtraScriptingDefines:
+    - JSONNET_XMLDISABLE
+  - Name: iOSNotDevelopment
+    Enabled: 1
+    Option: 0
+    Target: 9
+    ExtraScriptingDefines:
+    - JSONNET_XMLDISABLE
+  - Name: WebGLDevelopment
+    Enabled: 1
+    Option: 1
+    Target: 20
+    ExtraScriptingDefines:
+    - JSONNET_XMLDISABLE
+  - Name: WebGLNotDevelopment
+    Enabled: 1
+    Option: 0
+    Target: 20
+    ExtraScriptingDefines:
+    - JSONNET_XMLDISABLE
+  - Name: StandaloneOSXDevelopment
+    Enabled: 1
+    Option: 1
+    Target: 2
+    ExtraScriptingDefines:
+    - JSONNET_XMLDISABLE
+  - Name: StandaloneOSXNotDevelopment
+    Enabled: 1
+    Option: 0
+    Target: 2
+    ExtraScriptingDefines:
+    - JSONNET_XMLDISABLE
+  - Name: StandaloneWindows64Development
+    Enabled: 1
+    Option: 1
+    Target: 19
+    ExtraScriptingDefines:
+    - JSONNET_XMLDISABLE
+  - Name: StandaloneWindows64NotDevelopment
+    Enabled: 1
+    Option: 0
+    Target: 19
+    ExtraScriptingDefines:
+    - JSONNET_XMLDISABLE
+  DefaultCompilationOutputFileName: Library/ProjectCompilationCheckOutput/CompilationOutput.json
