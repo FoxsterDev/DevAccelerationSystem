@@ -1,18 +1,11 @@
 # DevAccelerationSystem for Unity projects
-The DevAccelerationSystem tool helps to enable features to speed up development iteration from code perspective.
+The DevAccelerationSystem helps to enable features to speed up development iteration from code perspective.
 It includes ProjectCompilation checks for all your target platforms with different scripting define symbols combinations in your project.
 
-## Benefits
-### You can verify scripts compilation state of
-- your project without actually switching the platform in Unity Editor.
-- your project without setting scripting define symbols with PlayerSettings.SetScriptingDefineSymbolsForGroup.
-- all build target configurations **at once**
-- It supports EditorMode and BatchMode. You can easily integrate it into your CI/CD. Example bash script is provided in the package.
-- You can configure the compilation configs from your custom scripts or with using the **provided Editor.** 
-### Significantly reduce build time, build license usage because you reduce failed builds due to scripting define symbols issues.
 
 ## Table of contents
 <!-- TOC -->
+* [Features](#features)
 * [Problem](#problem)
 * [Getting Started](#getting-started)
   * [Prerequisites](#Prerequisites)
@@ -25,11 +18,58 @@ It includes ProjectCompilation checks for all your target platforms with differe
     * [Available menuitems](#available-menuitems)
     * [Compilation output viewer](#compilation-output-viewer)
     * [Compilation output known cases](#compilation-output-known-cases)
-  * [Features](#features)
-  * [How to contribute](#how-to-contribute)
+
+* [How to contribute](#how-to-contribute)
 
 <!-- TOC -->
 
+## Features
+1. Support configurations for player script compilation with build target and scripting define symbols.
+2. Simplified scriptable object editor to run compilation checks from Unity
+3. Supports EditorMode and BatchMode. 
+4. Compilation output viewer window to see the previous compilation results.
+5. Configuring the compilation configs from your custom editor scripts or with using the **provided Editor.**
+
+## Problem
+When you have a project with multiple scripting define symbols and multiple build targets, it is hard to verify the compilation state of the project for all the configurations.
+
+Let's see simplified example
+
+```csharp
+using UnityEngine;
+
+public class ErrorWhenDevelopmentBuild  
+{
+     void Start()
+    {
+#if DEVELOPMENT_BUILD
+        Debug.Log(Application.version);
+#endif
+    }
+}
+```
+in this example if you run full code cleanup in Rider it will remove the using UnityEngine; (by default)
+```csharp
+
+public class ErrorWhenDevelopmentBuild  
+{
+     void Start()
+    {
+#if DEVELOPMENT_BUILD
+        Debug.Log(Application.version);
+#endif
+    }
+}
+```
+You will get the compilation error when try to build the project as development build.
+
+Another use case might be when you have several android builds per different stores. You might introduce AMAZON_STORE, GOOGLE_STORE, HUAWEI_STORE scripting define symbols.
+But Unity has only Android build target. In the case you should change player scripting define symbols before each build per target store.
+
+## Benefits
+- You can verify scripts compilation state of your project without actually switching the platform in Unity Editor and setting PlayerSettings.SetScriptingDefineSymbolsForGroup - **it saves development time**
+- All build target configurations **at once** - **it saves CI/CD build agents resource, time and less aggressive build license usage** 
+- Significantly reduce build time to get successful build, build license usage because **you reduce failed builds due to scripting define symbols issues.**
 
 ## Getting Started
 ### Prerequisites Unity 2020.3+
@@ -81,11 +121,6 @@ It is tested with 2020.3.38, 2021.3.31, 2022.3.13 Unity versions.
 [ProjectCompilationCheck][Error] Compilation failed for WebGLNotDevelopment with errors:[1]: Unity module WebGL is not installed. Try to install the module and restart the unity.
 2. if a config is not enabled it will be skipped during run
 
-## Features
-1. Support configurations for player script compilation with build target and scripting define symbols.
-2. Simplified scriptable object editor to run compilation checks from Unity
-2. Supports EditorMode and BatchMode. You can easily integrate it into your CI/CD. Example bash script is provided in the package.
-3. Compilation output viewer window to see the previous compilation results. 
 
 ## How to contribute
 Don't hesitate to [create an Issue ](https://github.com/FoxsterDev/DevAccelerationSystem/issues/new)
