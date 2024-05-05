@@ -2,6 +2,8 @@
 The DevAccelerationSystem helps to enable features to speed up development iteration from code perspective.
 It includes ProjectCompilation checks for all your target platforms with different scripting define symbols combinations in your project.
 
+About conditional compilation you can find [here](https://docs.unity3d.com/Manual/PlatformDependentCompilation.html).
+More about scripting define symbols you can find [here](https://docs.unity3d.com/Manual/CustomScriptingSymbols.html).
 
 ## Table of contents
 <!-- TOC -->
@@ -121,6 +123,9 @@ It is tested with 2020.3.38, 2021.3.31, 2022.3.13 Unity versions.
 [ProjectCompilationCheck][Error] Compilation failed for WebGLNotDevelopment with errors:[1]: Unity module WebGL is not installed. Try to install the module and restart the unity.
 2. if a config is not enabled it will be skipped during run
 
+## Demo project
+You can find the demo project in the [Demo](https://github.com/FoxsterDev/DevAccelerationSystem/tree/master/DevAccelerationSystem.DemoProject).
+It has example of the ProjectCompilationConfig asset and how to run the compilation checks with scripts examples to throw errors.
 
 ## How to contribute
 Don't hesitate to [create an Issue ](https://github.com/FoxsterDev/DevAccelerationSystem/issues/new)
