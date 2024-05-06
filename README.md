@@ -123,7 +123,7 @@ It is tested with 2020.3.38, 2021.3.33, 2022.3.13 Unity versions.
 **In Unity Editor**
 1. By default you will see results in console window
 2. Also you can see the compilation output in the Compilation Output Viewer window.
-      ![Example5](Docs/Img5.png)   
+      ![Example15](Docs/Img15.png)   
 
 **In Batchmode**
 1. You can find a folder ProjectCompilationCheck inside the Library folder with unity logs and compilation output json
