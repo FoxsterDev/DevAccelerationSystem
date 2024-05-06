@@ -7,7 +7,7 @@
   "license": "MIT",
   "documentationUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/tree/master",
   "changelogUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/releases",
-  "licensesUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/blob/master/LICENSE",
+  "licensesUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/blob/master/LICENSE.md",
   "description": "It has one module for public ProjectCompilationCheck. You can specify custom compilation configs with definesymbols and compile it without running actually unity build.",
   "dependencies": {
   }

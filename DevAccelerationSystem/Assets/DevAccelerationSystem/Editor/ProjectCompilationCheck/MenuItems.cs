@@ -41,5 +41,17 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
         {
             Selection.activeObject = ProjectCompilationConfigSO.Find();
         }
+        
+        [MenuItem("Window/DevAccelerationSystem/ProjectCompilationCheck/First create a project compilation config", true)]
+        private static bool ValidateInstallConfig()
+        {
+            return  ProjectCompilationConfigSO.Find() == null;
+        }
+
+        [MenuItem("Window/DevAccelerationSystem/ProjectCompilationCheck/First create a project compilation config", false, 2)]
+        public static void InstallConfig()
+        {
+           
+        }
     }
 }

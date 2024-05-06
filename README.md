@@ -1,4 +1,9 @@
-# DevAccelerationSystem for Unity projects
+<h1 align="center">
+<img alt="logo" src="Docs/Img7.png" height="200px" />
+<br/>
+DevAccelerationSystem for Unity projects
+</h1>
+
 The DevAccelerationSystem helps to enable features to speed up development iteration from code perspective.
 It includes ProjectCompilation checks for all your target platforms with different scripting define symbols combinations in your project.
 
@@ -71,7 +76,7 @@ But Unity has only Android build target. In the case you should change player sc
 ## Benefits
 - You can verify scripts compilation state of your project without actually switching the platform in Unity Editor and setting PlayerSettings.SetScriptingDefineSymbolsForGroup - **it saves development time**
 - All build target configurations **at once** - **it saves CI/CD build agents resource, time and less aggressive build license usage** 
-- Significantly reduce build time to get successful build, build license usage because **you reduce failed builds due to scripting define symbols issues.**
+- Significantly reduce build time to get successful build, because **you reduce failed builds due to scripting define symbols issues.**
 
 ## Getting Started
 ### Prerequisites Unity 2020.3+
@@ -114,14 +119,21 @@ It is tested with 2020.3.38, 2021.3.33, 2022.3.13 Unity versions.
 3. **Focus config** - will open the ProjectCompilationConfig asset in the Inspector window.
 4. **Show Compilation Output Viewer Window**  - will open the editor window to see the any previous compilation result.
 
-#### Compilation output viewer
-1. You can see the compilation output in the Compilation Output Viewer window.
-   ![Example5](Docs/Img5.png)
+#### Compilation output
+**In Unity Editor**
+1. By default you will see results in console window
+2. Also you can see the compilation output in the Compilation Output Viewer window.
+      ![Example5](Docs/Img5.png)   
+
+**In Batchmode**
+1. You can find a folder ProjectCompilationCheck inside the Library folder with unity logs and compilation output json
+2. More details you find in terminal output
 
 #### Compilation output known cases
 1. if you specified config for a build target but the module is not installed you see error about it 
 [ProjectCompilationCheck][Error] Compilation failed for WebGLNotDevelopment with errors:[1]: Unity module WebGL is not installed. Try to install the module and restart the unity.
 2. if a config is not enabled it will be skipped during run
+3. If I missed somewhere describing some error please create an issue
 
 ## Limitations
 1. It is just high level build of your scripts into dll's. It doesn't check the actual build of the project!
