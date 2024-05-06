@@ -91,14 +91,14 @@ It is tested with 2020.3.38, 2021.3.33, 2022.3.13 Unity versions on Mac/ and bas
 1. Open the Package Manager window.
 2. Click on the + icon in the top-left corner of the window.
 3. Select "Add package from git URL".
-4. Paste the following URL: https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/DevAccelerationSystem#1.0.0
+4. Paste the following URL: https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/DevAccelerationSystem#1.0.1
 
 #### Install manually (using Git URL)
 1. Navigate to your project's Packages folder and open the manifest.json file.
 2. Add this line below the "dependencies":
 
 - ```json title="Packages/manifest.json"
-    "com.foxsterdev.devaccelerationsystem": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/DevAccelerationSystem#1.0.0",
+    "com.foxsterdev.devaccelerationsystem": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/DevAccelerationSystem#1.0.1",
   ```
 ### In Unity
 #### Creating project compilation config
