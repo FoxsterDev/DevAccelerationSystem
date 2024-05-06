@@ -102,7 +102,7 @@ It is tested with 2020.3.38, 2021.3.33, 2022.3.13 Unity versions.
 #### Creating project compilation config
 1. Find and select any available Editor folder inside Assets folder.
 2. Right-click on the Editor folder and select Create > Assets > DevAccelerationSystem > Create ProjectCompilationConfig.
-   ![Example1](Docs/Img1.png)
+   ![Example12](Docs/Img12.png)
 3. By default it will create a new ProjectCompilationConfig asset in the Editor folder.
    ![Example2](Docs/Img2.png)
 
