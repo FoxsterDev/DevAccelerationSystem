@@ -40,7 +40,7 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
                     EditorGUILayout.LabelField($"<b>{result.ProjectCompilationSettingName}:</b>", _styleLabel);
                     if (result.ErrorsCount > 0)
                     {
-                        EditorGUILayout.HelpBox($"Compilation failed for {result.CompilationStats.CompilationTotalMs}ms with errors:\n"+result.ErrorsList
+                        EditorGUILayout.HelpBox($"Compilation failed for {result.CompilationStats.CompilationTotalMs}ms with {result.ErrorsCount} errors:\n"+result.ErrorsList
                                                 , MessageType.Warning);
                     }
                     else
