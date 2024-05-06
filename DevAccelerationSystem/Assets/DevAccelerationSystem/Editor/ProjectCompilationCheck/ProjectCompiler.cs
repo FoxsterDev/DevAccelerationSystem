@@ -94,7 +94,7 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
         /// <returns>Returns a CompilationResult object that includes details like success, errors</returns>
         public static CompilationOutput Run(CompilationConfig config, ILogger logger = default)
         {
-            logger ??= new DefaultUnityLogger(nameof(ProjectCompilationCheck), 40000);
+            logger ??= new DefaultUnityLogger(nameof(ProjectCompilationCheck), 30000);
             return EditorModeRunner.Run(config, logger);
         }
 
@@ -104,7 +104,7 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
         /// <returns>Returns a List of CompilationResult with results for each configuration.</returns>
         public static CompilationOutput RunAll(ILogger logger = default)
         {
-            logger ??= new DefaultUnityLogger(nameof(ProjectCompilationCheck), 40000);
+            logger ??= new DefaultUnityLogger(nameof(ProjectCompilationCheck), 30000);
             var so = ProjectCompilationConfigSO.Find(logger);
             if (so == null)
             {

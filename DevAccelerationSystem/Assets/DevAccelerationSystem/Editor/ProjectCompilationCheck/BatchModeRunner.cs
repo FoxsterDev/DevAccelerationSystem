@@ -10,7 +10,7 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
     {
         internal static void Run()
         {
-            var logger = (ILogger) new DefaultUnityLogger(nameof(ProjectCompilationCheck), 40000);
+            var logger = (ILogger) new DefaultUnityLogger(nameof(ProjectCompilationCheck), 30000);
             
             var args = new CommandLineArgsParser();
             if (!args.IsValid)

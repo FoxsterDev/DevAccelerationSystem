@@ -1,3 +1,4 @@
+using System;
 using DevAccelerationSystem.Core;
 using UnityEditor;
 using UnityEngine;
@@ -11,6 +12,12 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
         private string locationOfCompilationOutput;
         private GUIStyle _styleLabel;
         private Vector2 scrollPosition1, scrollPosition2;
+
+        private void OnFocus()
+        {
+            compilationOutput = FileUtility.LoadFromJson<CompilationOutput>(locationOfCompilationOutput);
+        }
+
         private void OnEnable()
         {
            
@@ -33,8 +40,10 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
                 {
                     if (_styleLabel == null)
                     {
-                        _styleLabel = new GUIStyle(GUI.skin.label);
-                        _styleLabel.richText = true;
+                        _styleLabel = new GUIStyle(GUI.skin.label)
+                        {
+                            richText = true
+                        };
                     }
 
                     EditorGUILayout.LabelField($"<b>{result.ProjectCompilationSettingName}:</b>", _styleLabel);

@@ -1,7 +1,7 @@
 {
   "name": "com.foxsterdev.devaccelerationsystem",
   "displayName": "Development Acceleration System",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "unity": "2020.3",
   "keywords": ["unity","compilationcheck", "acceleration"],
   "license": "MIT",

@@ -9,7 +9,7 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
         [MenuItem("Window/DevAccelerationSystem/ProjectCompilationCheck/Show Compilation Output Viewer", false, 3)]
         public static void ShowCompilationOutputViewerWindow()
         {
-            EditorWindow.GetWindow(typeof(CompilationOutputViewerEditor));
+            EditorWindow.GetWindow(typeof(CompilationOutputViewerEditor), false, "Compilation Output Viewer", true);
         }
         [MenuItem("Window/DevAccelerationSystem/ProjectCompilationCheck/Show Compilation Output Viewer", true)]
         private static bool ValidateShowCompilationOutputViewerWindow()

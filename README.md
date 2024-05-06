@@ -25,6 +25,8 @@ More about scripting define symbols you can find [here](https://docs.unity3d.com
     * [Available menuitems](#available-menuitems)
     * [Compilation output viewer](#compilation-output-viewer)
     * [Compilation output known cases](#compilation-output-known-cases)
+* [Usage in Batchmode](#usage-in-batchmode)
+  * [Compilation output](#compilation-output)
 * [Limitations](#limitations)
 * [How to contribute](#how-to-contribute)
 
@@ -79,9 +81,9 @@ But Unity has only Android build target. In the case you should change player sc
 - Significantly reduce build time to get successful build, because **you reduce failed builds due to scripting define symbols issues.**
 
 ## Getting Started
-### Prerequisites Unity 2020.3+
-ProjectCompilation checks are only available for Unity 2020.3 and higher.
-It is tested with 2020.3.38, 2021.3.33, 2022.3.13 Unity versions.
+### Prerequisites
+Unity 2020.3+ version is required to use this package.
+It is tested with 2020.3.38, 2021.3.33, 2022.3.13 Unity versions on Mac/ and basically Windows.
 
 ### Installation
 
@@ -120,7 +122,6 @@ It is tested with 2020.3.38, 2021.3.33, 2022.3.13 Unity versions.
 4. **Show Compilation Output Viewer Window**  - will open the editor window to see the any previous compilation result.
 
 #### Compilation output
-**In Unity Editor**
 1. By default you will see results in console window
 2. Also you can see the compilation output in the Compilation Output Viewer window.
       ![Example15](Docs/Img15.png)   
@@ -134,6 +135,19 @@ It is tested with 2020.3.38, 2021.3.33, 2022.3.13 Unity versions.
 [ProjectCompilationCheck][Error] Compilation failed for WebGLNotDevelopment with errors:[1]: Unity module WebGL is not installed. Try to install the module and restart the unity.
 2. if a config is not enabled it will be skipped during run
 3. If I missed somewhere describing some error please create an issue
+
+## Usage in Batchmode
+1. When you configured config and tested in UnityEditor
+2. You can use for reference the [ShellScript](./DevAccelerationSystem/Assets/DevAccelerationSystem/ShellScripts/unity_compilation_runner_mac.sh) to run the compilation checks in batch mode. It is tested on Mac
+3. Parameters to provide <project_path> [compile_config_name] [unity_version]. project_path is required, compile_config_name and unity_version are optional
+Example
+```bash
+   ./unity_compilation_runner_mac.sh /Users/PUT_HERE_YOURUSER_IF_ANY/Projects/DevAccelerationSystem/DevAccelerationSystem.DemoProject RunAll 2022.3.13f1
+``` 
+### Compilation output
+1. You can find a folder ProjectCompilationCheck inside the Library folder with unity logs and compilation output json
+2. More details you find in terminal output
+
 
 ## Limitations
 1. It is just high level build of your scripts into dll's. It doesn't check the actual build of the project!

@@ -11,6 +11,7 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
     [CreateAssetMenuAttribute(fileName = "ProjectCompilationConfig", menuName = "Assets/DevAccelerationSystem/Create ProjectCompilationConfig", order = 100)]
     internal sealed class ProjectCompilationConfigSO :  ScriptableObject
     {
+        public bool AutoOpenCompilationViewerWhenCompilationFinished = true;
         public List<CompilationConfig> CompilationConfigs = new List<CompilationConfig>()
         {
             new CompilationConfig
