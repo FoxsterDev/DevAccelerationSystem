@@ -51,7 +51,7 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
         [MenuItem("Window/DevAccelerationSystem/ProjectCompilationCheck/First create a project compilation config", false, 2)]
         public static void InstallConfig()
         {
-           
+           Application.OpenURL("https://github.com/FoxsterDev/DevAccelerationSystem?tab=readme-ov-file#creating-project-compilation-config");
         }
     }
 }
