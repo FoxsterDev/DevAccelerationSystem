@@ -54,6 +54,5 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
             var exitCode = output.Results.Any(i => i.ErrorsCount > 0) ? 1 : 0;
             EditorApplication.Exit(exitCode);
         }
-
     }
 }

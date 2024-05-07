@@ -12,6 +12,7 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
     internal sealed class ProjectCompilationConfigSO :  ScriptableObject
     {
         public bool AutoOpenCompilationViewerWhenCompilationFinished = true;
+
         public List<CompilationConfig> CompilationConfigs = new List<CompilationConfig>()
         {
             new CompilationConfig

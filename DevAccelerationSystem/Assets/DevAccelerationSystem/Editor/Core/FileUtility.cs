@@ -61,7 +61,7 @@ namespace DevAccelerationSystem.Core
         /// </summary>
         /// <param name="filePath">Path to the file. Can be relative or full</param>
         /// <param name="isRelativeFilePath">Relative is For instance Library/YourFolder/FileName</param>
-        /// <returns>return fullpath to the file</returns>
+        /// <returns>return full path to the file</returns>
         public static string EnsureClearDirectory(string filePath, bool isRelativeFilePath = true)
         {
             try

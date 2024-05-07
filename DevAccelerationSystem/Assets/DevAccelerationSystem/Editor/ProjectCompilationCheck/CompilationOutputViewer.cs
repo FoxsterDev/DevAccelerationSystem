@@ -8,35 +8,36 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
     
     internal sealed class CompilationOutputViewerEditor : EditorWindow
     {
-        private CompilationOutput compilationOutput;
-        private string locationOfCompilationOutput;
+        private CompilationOutput _compilationOutput;
+        private string _locationOfCompilationOutput;
         private GUIStyle _styleLabel;
-        private Vector2 scrollPosition1, scrollPosition2;
+        private Vector2 _scrollPosition1, _scrollPosition2;
 
         private void OnFocus()
         {
-            compilationOutput = FileUtility.LoadFromJson<CompilationOutput>(locationOfCompilationOutput);
+            _compilationOutput = FileUtility.LoadFromJson<CompilationOutput>(_locationOfCompilationOutput);
         }
 
         private void OnEnable()
         {
            
-            locationOfCompilationOutput = ProjectCompilationConfigSO.Find()?.DefaultCompilationOutputFileName;
-            compilationOutput = FileUtility.LoadFromJson<CompilationOutput>(locationOfCompilationOutput);
+            _locationOfCompilationOutput = ProjectCompilationConfigSO.Find()?.DefaultCompilationOutputFileName;
+            _compilationOutput = FileUtility.LoadFromJson<CompilationOutput>(_locationOfCompilationOutput);
         }
 
         public  void OnGUI()
         {
-            EditorGUILayout.LabelField("Location of compilationOutput :"+locationOfCompilationOutput, EditorStyles.miniLabel);
+            EditorGUILayout.LabelField($"Location of compilationOutput :{_locationOfCompilationOutput}", EditorStyles.miniLabel);
             EditorGUILayout.Space();
             EditorGUILayout.Space();
-            if (compilationOutput != null)
+
+            if (_compilationOutput != null)
             {
-                EditorGUILayout.LabelField("Total time compilation :"+compilationOutput.Stats.CompilationTotalMs+"ms", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField($"Total time compilation :{_compilationOutput.Stats.CompilationTotalMs}ms", EditorStyles.boldLabel);
                 EditorGUILayout.Space();
 
-                scrollPosition1 = EditorGUILayout.BeginScrollView(scrollPosition1);
-                foreach (var result in compilationOutput.Results)
+                _scrollPosition1 = EditorGUILayout.BeginScrollView(_scrollPosition1);
+                foreach (var result in _compilationOutput.Results)
                 {
                     if (_styleLabel == null)
                     {
@@ -63,9 +64,10 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
                 EditorGUILayout.Space();
                 EditorGUILayout.Space();
                 EditorGUILayout.Space();
+
                 EditorGUILayout.LabelField("Logs:", EditorStyles.boldLabel);
-                scrollPosition2 = EditorGUILayout.BeginScrollView(scrollPosition2);
-                EditorGUILayout.HelpBox(compilationOutput.Logs,  MessageType.Info);
+                _scrollPosition2 = EditorGUILayout.BeginScrollView(_scrollPosition2);
+                EditorGUILayout.HelpBox(_compilationOutput.Logs,  MessageType.Info);
                 EditorGUILayout.EndScrollView();
             }
             else

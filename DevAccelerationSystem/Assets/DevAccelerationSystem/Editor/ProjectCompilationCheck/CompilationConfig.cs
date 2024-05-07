@@ -8,13 +8,13 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
     [Serializable]
     public class CompilationConfig //for extending and serialization ScriptCompilationSettings
     {
-        [Tooltip("Please probide uniq name for the config to be able call it by name.")]
+        [Tooltip("Please provide uniq name for the config to be able call it by name.")]
         public string Name;
         
         [Tooltip("If it is not enabled it will be skipped.")]
         public bool Enabled;
         
-        [Tooltip("None - without DEVELOPMENT_BUILD and UNITY_ASSERTIONS, DevelopmentBuild will apply define symbol DEVELOPMENT_BUILD, Assertions UNITY_ASSERTIONS")]
+        [Tooltip("None - without DEVELOPMENT_BUILD and UNITY_ASSERTIONS, DevelopmentBuild will apply define symbol DEVELOPMENT_BUILD, Assertions - UNITY_ASSERTIONS")]
         public ScriptCompilationOptions Option;
         
         [Tooltip("Choose the target platform for the config. BuiltTargetGroup will be defined automatically.")]
