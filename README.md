@@ -28,6 +28,7 @@ More about scripting define symbols you can find [here](https://docs.unity3d.com
 * [Usage in Batchmode](#usage-in-batchmode)
   * [Compilation output](#compilation-output)
 * [Limitations](#limitations)
+* [Recommendations](#recommendations)
 * [How to contribute](#how-to-contribute)
 
 <!-- TOC -->
@@ -151,11 +152,15 @@ Example
 1. You can find a folder ProjectCompilationCheck inside the Library folder with unity logs and compilation output json
 2. More details you find in terminal output
 
-
 ## Limitations
 1. It is just high level build of your scripts into dll's. It doesn't check the actual build of the project!
    ![Example6](Docs/Img6.png)
 2. It uses Unity editor compilation API, so it might not be 100% accurate as the actual build. Especially when your scripting backend is IL2CPP.
+
+## Recommendations 
+1. If you use NewtonJson and don't need XML you can leave the example define symbol JSONNET_XMLDISABLE in compilation settings. It will reduce the build size by cut off unused functionality. Otherwise just remove it from compilation settings.
+2. I recommend reviewing your biggest third-party docs (for example, BestHttp) and discovering any provided in-build define symbols to remove unused functionality compiled now. That is good advice to achieve a smaller build size, which correlates with more organic installs.
+3. You can check compilation states and find scripting define related issues related for iOS target on Windows. Just install iOS module on Windows for Unity Editor and run the compilation checks. It will show you the errors related to iOS target.
 
 ## Demo project
 You can find the demo project in the [Demo](https://github.com/FoxsterDev/DevAccelerationSystem/tree/master/DevAccelerationSystem.DemoProject).
