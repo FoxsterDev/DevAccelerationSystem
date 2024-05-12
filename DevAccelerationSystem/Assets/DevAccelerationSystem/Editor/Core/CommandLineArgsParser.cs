@@ -8,7 +8,7 @@ namespace DevAccelerationSystem.Core
     public class CommandLineArgsParser
     {
         private readonly Dictionary<string, string> _args = new Dictionary<string, string>();
-        private string _executableFileName = default;
+        private string _executableFileName;
 
         public CommandLineArgsParser()
         {
@@ -16,7 +16,7 @@ namespace DevAccelerationSystem.Core
             Parse(args);
         }
 
-        protected CommandLineArgsParser(string line)
+        public CommandLineArgsParser(string line)
         {
             var args = line.Split(new char[0], StringSplitOptions.RemoveEmptyEntries);
             Parse(args);
@@ -42,7 +42,7 @@ namespace DevAccelerationSystem.Core
         {
             if (args == null || args.Length <= 0) return;
 
-            _executableFileName = args[0].IndexOfAny(Path.GetInvalidPathChars()) == -1
+            _executableFileName = args[0].Length > 2 && args[0].IndexOfAny(Path.GetInvalidPathChars()) == -1 && args[0].Contains(Path.DirectorySeparatorChar)
                 ? args[0]
                 : string.Empty;
             IsValid = !string.IsNullOrEmpty(_executableFileName);
@@ -103,6 +103,5 @@ namespace DevAccelerationSystem.Core
             var str = string.Join(";", _args.Select(i => $"{i.Key}: {i.Value}"));
             return str;
         }
-
     }
 }
