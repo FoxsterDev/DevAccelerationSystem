@@ -1,10 +1,10 @@
 <h1 align="center">
 <img alt="logo" src="Docs/Img7.png" height="200px" />
 <br/>
-DevAccelerationSystem for Unity projects
+Development Acceleration System for Unity projects
 </h1>
 
-The DevAccelerationSystem helps to enable features to speed up development iteration from code perspective.
+The Development Acceleration System helps to enable features to speed up development iteration from code perspective.
 It includes ProjectCompilation checks for all your target platforms with different scripting define symbols combinations in your project.
 
 About conditional compilation you can find [here](https://docs.unity3d.com/Manual/PlatformDependentCompilation.html).
