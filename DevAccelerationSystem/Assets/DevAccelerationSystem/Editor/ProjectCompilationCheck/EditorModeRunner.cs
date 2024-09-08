@@ -7,75 +7,74 @@ using UnityEditor;
 using UnityEditor.Build.Player;
 using UnityEditor.Compilation;
 using DevAccelerationSystem.Core;
-using ILogger = DevAccelerationSystem.Core.ILogger;
 
 [assembly: InternalsVisibleTo("FoxsterDevDebugger.Editor")]
 namespace DevAccelerationSystem.ProjectCompilationCheck
 {
     internal static class EditorModeRunner
     {
-        public static CompilationOutput Run(CompilationConfig config, ILogger logger)
+        public static CompilationOutput Run(CompilationConfig config, IEditorLogger editorLogger)
         {
             var st = new Stopwatch();
             st.Start();
             
             var nameStr = $"{nameof(EditorModeRunner)}:{nameof(Run)}:{config.Name}";
-            logger.Info(nameStr);
+            editorLogger.Info(nameStr);
 
-            var compilationResults = RunProjectCompilation(logger, config);
-            PostProjectCompilationCheckCall(logger, nameStr, compilationResults);
+            var compilationResults = RunProjectCompilation(editorLogger, config);
+            PostProjectCompilationCheckCall(editorLogger, nameStr, compilationResults);
             
             st.Stop();
             return new CompilationOutput {
                 Results = compilationResults, 
                 Stats = new CompilationStats{ Name = nameStr, CompilationTotalMs = st.ElapsedMilliseconds},
-                Logs = logger.ToString()
+                Logs = editorLogger.ToString()
             };
         }
 
-        public static CompilationOutput RunAll(List<CompilationConfig> compilationConfigs, ILogger logger)
+        public static CompilationOutput RunAll(List<CompilationConfig> compilationConfigs, IEditorLogger editorLogger)
         {
             var st = new Stopwatch();
             st.Start();
             
             var nameStr = $"{nameof(EditorModeRunner)}:{nameof(RunAll)}";
-            logger.Info(nameStr);
+            editorLogger.Info(nameStr);
             
-            var compilationResults = RunProjectCompilation(logger, compilationConfigs.ToArray());
+            var compilationResults = RunProjectCompilation(editorLogger, compilationConfigs.ToArray());
             
-            PostProjectCompilationCheckCall(logger, nameStr, compilationResults);
+            PostProjectCompilationCheckCall(editorLogger, nameStr, compilationResults);
 
             st.Stop();
         
             return new CompilationOutput {
                 Results = compilationResults, 
                 Stats = new CompilationStats{ Name = nameStr, CompilationTotalMs = st.ElapsedMilliseconds}, 
-                Logs = logger.ToString()};
+                Logs = editorLogger.ToString()};
         }
 
-        private static void PostProjectCompilationCheckCall(ILogger logger, string nameStr, List<CompilationResult> compilationResults)
+        private static void PostProjectCompilationCheckCall(IEditorLogger editorLogger, string nameStr, List<CompilationResult> compilationResults)
         {
             EditorUtility.ClearProgressBar();
 
-            logger.Info($"Project compilation {nameStr} is finished.");
+            editorLogger.Info($"Project compilation {nameStr} is finished.");
 
             foreach (var result in compilationResults)
             {
                 if (result.ErrorsCount > 0)
                 {
-                    logger.Error(
+                    editorLogger.Error(
                         $"Compilation failed for {result.ProjectCompilationSettingName} with errors:\n{result.ErrorsList}");
                 }
                 else
                 {
-                    logger.Info($"Compilation succeded for {result.ProjectCompilationSettingName}");
+                    editorLogger.Info($"Compilation succeded for {result.ProjectCompilationSettingName}");
                 }
             }
         }
 
-        private static List<CompilationResult> RunProjectCompilation(ILogger logger, params CompilationConfig[] compilationConfigs)
+        private static List<CompilationResult> RunProjectCompilation(IEditorLogger editorLogger, params CompilationConfig[] compilationConfigs)
         {
-            logger.Info($"{nameof(RunProjectCompilation)} with these compilation configs: {string.Join(";", compilationConfigs.Select(s=>s.Name))}");
+            editorLogger.Info($"{nameof(RunProjectCompilation)} with these compilation configs: {string.Join(";", compilationConfigs.Select(s=>s.Name))}");
             
             var compilationResults = new List<CompilationResult>();
 
@@ -83,7 +82,7 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
                 EditorApplication.isPlayingOrWillChangePlaymode ||
                 EditorApplication.isUpdating)
             {
-                logger.Error(
+                editorLogger.Error(
                     $"Unity editor is busy isCompiling: {EditorApplication.isCompiling}, " +
                     $"isPlayingOrWillChangePlaymode: {EditorApplication.isPlayingOrWillChangePlaymode}, " +
                     $"isUpdating: {EditorApplication.isUpdating}");
@@ -92,21 +91,21 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
            
             foreach (var compilationConfig in compilationConfigs)
             {
-                logger.Info($"Running compilation: {compilationConfig} ...");
+                editorLogger.Info($"Running compilation: {compilationConfig} ...");
                 
                 var output = new CompilationResult
                     {ProjectCompilationSettingName = compilationConfig.Name, CompilationConfig = compilationConfig};
                 
                 if (!compilationConfig.Enabled)
                 {
-                    logger.Warning($"The config {compilationConfig.Name} is disabled. Skip it.");
+                    editorLogger.Warning($"The config {compilationConfig.Name} is disabled. Skip it.");
                     compilationResults.Add(output);
                     continue;
                 }
                 
                 if(!compilationConfig.Target.IsBuildTargetSupported())
                 {
-                    logger.Warning($"The build target {compilationConfig.Target} is not supported. Skip it.");
+                    editorLogger.Warning($"The build target {compilationConfig.Target} is not supported. Skip it.");
 
                     output.ErrorsCount++;
                     output.ErrorsList += $"[{output.ErrorsCount}]: Unity module {compilationConfig.Target} is not installed. Try to install the module and restart the unity.\n";

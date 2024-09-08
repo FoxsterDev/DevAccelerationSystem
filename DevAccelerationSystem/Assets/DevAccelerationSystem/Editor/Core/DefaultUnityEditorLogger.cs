@@ -2,13 +2,13 @@ using UnityEngine;
 
 namespace DevAccelerationSystem.Core
 {
-    public class DefaultUnityLogger : ILogger
+    public class DefaultUnityEditorLogger : IEditorLogger
     {
         private readonly string _prefix;
         private uint _maxLogsLength;
         private string _logs;
 
-        public DefaultUnityLogger(string prefix, uint maxLogsLength)
+        public DefaultUnityEditorLogger(string prefix, uint maxLogsLength)
         {
             _prefix = prefix;
             _maxLogsLength = maxLogsLength;

@@ -43,7 +43,7 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
             EditorGUILayout.LabelField("Available compilation options:", EditorStyles.boldLabel);
             if (GUILayout.Button("Run All"))
             {
-                var logger = new DefaultUnityLogger(nameof(ProjectCompilationCheck), 10000);
+                var logger = new DefaultUnityEditorLogger(nameof(ProjectCompilationCheck), 10000);
                 var compilationOutput = EditorModeRunner.RunAll(ConfigSO.CompilationConfigs, logger);
                 FileUtility.SaveAsJson(compilationOutput, ConfigSO.DefaultCompilationOutputFileName);
                 if (ConfigSO.AutoOpenCompilationViewerWhenCompilationFinished)
@@ -63,7 +63,7 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
                 {
                     if (GUILayout.Button("Run " + config.Name))
                     {
-                        var logger = new DefaultUnityLogger(nameof(ProjectCompilationCheck), 10000);
+                        var logger = new DefaultUnityEditorLogger(nameof(ProjectCompilationCheck), 10000);
                         var compilationOutput = EditorModeRunner.Run(config, logger);
                         FileUtility.SaveAsJson(compilationOutput, ConfigSO.DefaultCompilationOutputFileName);
                         if (ConfigSO.AutoOpenCompilationViewerWhenCompilationFinished)

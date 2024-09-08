@@ -1,6 +1,6 @@
 namespace DevAccelerationSystem.Core
 {
-    public interface ILogger
+    public interface IEditorLogger
     {
         void Error(object message);
         void Warning(object message);

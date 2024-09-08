@@ -4,7 +4,6 @@ using DevAccelerationSystem.Core;
 using UnityEditor;
 using UnityEditor.Build.Player;
 using UnityEngine;
-using ILogger = DevAccelerationSystem.Core.ILogger;
 
 namespace DevAccelerationSystem.ProjectCompilationCheck
 {
@@ -109,18 +108,18 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
         
         public string DefaultCompilationOutputFileName = Path.Combine(Path.Combine("Library","ProjectCompilationCheckOutput"), "CompilationOutput.json");
         
-        public static ProjectCompilationConfigSO Find(ILogger logger = null)
+        public static ProjectCompilationConfigSO Find(IEditorLogger editorLogger = null)
         {
             var so = ScriptableObjectExtension.LoadAllAssetsOfType<ProjectCompilationConfigSO>();
             switch (so.Count)
             {
                 case 0:
-                    logger?.Error("Could not find a project compilation config so!");
+                    editorLogger?.Error("Could not find a project compilation config so!");
                     return null;
                 case 1:
                     return so[0];
                 default:
-                    logger?.Warning($"For editor usage you can specify few configs, but in batch mode only one is allowed. " +
+                    editorLogger?.Warning($"For editor usage you can specify few configs, but in batch mode only one is allowed. " +
                                     $"Using the first one with name {so[0].name}.");
                     return so[0];
             }

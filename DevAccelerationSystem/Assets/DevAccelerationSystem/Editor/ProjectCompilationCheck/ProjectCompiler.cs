@@ -90,27 +90,27 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
         /// Executes the compilation using the specified configuration.
         /// </summary>
         /// <param name="config"></param>
-        /// <param name="logger"></param>
+        /// <param name="editorLogger"></param>
         /// <returns>Returns a CompilationResult object that includes details like success, errors</returns>
-        public static CompilationOutput Run(CompilationConfig config, ILogger logger = default)
+        public static CompilationOutput Run(CompilationConfig config, IEditorLogger editorLogger = default)
         {
-            logger ??= new DefaultUnityLogger(nameof(ProjectCompilationCheck), 30000);
-            return EditorModeRunner.Run(config, logger);
+            editorLogger ??= new DefaultUnityEditorLogger(nameof(ProjectCompilationCheck), 30000);
+            return EditorModeRunner.Run(config, editorLogger);
         }
 
         /// <summary>
         /// Executes all stored configurations
         /// </summary>
         /// <returns>Returns a List of CompilationResult with results for each configuration.</returns>
-        public static CompilationOutput RunAll(ILogger logger = default)
+        public static CompilationOutput RunAll(IEditorLogger editorLogger = default)
         {
-            logger ??= new DefaultUnityLogger(nameof(ProjectCompilationCheck), 30000);
-            var so = ProjectCompilationConfigSO.Find(logger);
+            editorLogger ??= new DefaultUnityEditorLogger(nameof(ProjectCompilationCheck), 30000);
+            var so = ProjectCompilationConfigSO.Find(editorLogger);
             if (so == null)
             {
                 return null;
             }
-            return EditorModeRunner.RunAll(so.CompilationConfigs, logger);
+            return EditorModeRunner.RunAll(so.CompilationConfigs, editorLogger);
         }
     }
 }

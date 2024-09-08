@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using DevAccelerationSystem.Core;
-using ILogger = DevAccelerationSystem.Core.ILogger;
 
 namespace DevAccelerationSystem.ProjectCompilationCheck
 {
@@ -10,7 +9,7 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
     {
         internal static void Run()
         {
-            var logger = (ILogger) new DefaultUnityLogger(nameof(ProjectCompilationCheck), 30000);
+            var logger = (IEditorLogger) new DefaultUnityEditorLogger(nameof(ProjectCompilationCheck), 30000);
             
             var args = new CommandLineArgsParser();
             if (!args.IsValid)
