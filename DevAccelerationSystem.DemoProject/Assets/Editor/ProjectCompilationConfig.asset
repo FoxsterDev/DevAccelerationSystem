@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ebb3efcc14c4936a708282800974112, type: 3}
   m_Name: ProjectCompilationConfig
   m_EditorClassIdentifier: 
+  AutoOpenCompilationViewerWhenCompilationFinished: 1
   CompilationConfigs:
   - Name: AndroidDevelopment
     Enabled: 1
@@ -19,12 +20,16 @@ MonoBehaviour:
     Target: 13
     ExtraScriptingDefines:
     - JSONNET_XMLDISABLE
+    - LOGGER_AUTO_INITIALIZATION
+    - LOGGER_DIAGNOSTICS_ENABLED
   - Name: AndroidNotDevelopment
     Enabled: 1
     Option: 0
     Target: 13
     ExtraScriptingDefines:
     - JSONNET_XMLDISABLE
+    - LOGGER_AUTO_INITIALIZATION
+    - LOGGER_DIAGNOSTICS_ENABLED
   - Name: iOSDevelopment
     Enabled: 1
     Option: 1
