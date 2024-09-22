@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16548ce1dd294a0d89e2bf3eec766d23, type: 3}
+  m_Name: IMGUIRuntimeLogTargetConfiguration
+  m_EditorClassIdentifier: 
+  SpecificConfiguration:
+    IsThreadSafe: 0
+    MinLogLevel: 0
+    Muted: 0
+    MinLogLevelOverrideCategories:
+    - Category: GameLoading
+      MinLevel: 0
+    CountLogsToPick: 100
+    KeyboardKeyDownToActivateConsole: 32
+    CountOfScreenTouchesToActivateConsole: 3
+    MaxStringLengthForOneMessage: 500

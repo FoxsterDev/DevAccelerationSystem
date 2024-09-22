@@ -1,0 +1,22 @@
+{
+    "name": "TheBestLogger.Core",
+    "rootNamespace": "",
+    "references": [
+        "ZString"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.cysharp.zstring",
+            "expression": "[1.0.0,2.5.0]",
+            "define": "LOGGER_ZSTRING_ENABLED"
+        }
+    ],
+    "noEngineReferences": false
+}

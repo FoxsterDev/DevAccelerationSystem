@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dacf2dc8a57b4934a391c40e8984ccbe, type: 3}
+  m_Name: LogManagerConfiguration
+  m_EditorClassIdentifier: 
+  DebugUnityLoggerFilterLogType: 3
+  IsActiveUnityDebugLogSource: 1
+  IsActiveUnobservedTaskExceptionLogSource: 0
+  IsActiveUnityApplicationLogSource: 0
+  IsActiveSystemDiagnosticsDebugLogSource: 0
+  LogTargetConfigs:
+  - {fileID: 11400000, guid: ec76649afadb74fc089a8f8cef5cf80e, type: 2}
+  - {fileID: 11400000, guid: d5d0e20ea9873467a945252e6c32bc70, type: 2}
+  - {fileID: 11400000, guid: c65a46066ada840a8bda62c00f8cdb3e, type: 2}
+  DefaultUnityLogsCategoryName: Uncategorized
+  MinTimestampPeriodMs: 60
+  MinUpdatesPeriodMs: 250
