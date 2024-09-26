@@ -17,8 +17,30 @@ public class GameLoggerSample : MonoBehaviour
     {
         print(Application.persistentDataPath);
         GameLogger.GameLoading.LogInfo("StartTest", new LogAttributes(LogImportance.Critical));
+
+        await Task.Delay(100);
+        GameLogger.GameLoading.LogDebug("debugtest1");
+        await Task.Delay(100);
+        GameLogger.GameLoading.LogDebug("debugtest2");
+        await Task.Delay(100);
+
+        var dict = LogManager.GetCurrentLogTargetConfigurations();
+        dict[nameof(UnityEditorConsoleLogTargetConfiguration)].MinLogLevel = LogLevel.Warning;
+        LogManager.UpdateLogTargetsConfigurations(dict);
+
+        GameLogger.GameLoading.LogDebug("debugtest3");
+        GameLogger.GameLoading.LogWarning("warningtest3");
+        await Task.Delay(100);
+        GameLogger.GameLoading.LogDebug("debugtest4");
+        GameLogger.GameLoading.LogWarning("warningtest4");
+
         Debug.LogError("Some unity debuglogerror2");
         await Task.Delay(1000);
+       
+        var dict2 = LogManager.GetCurrentLogTargetConfigurations();
+        dict2[nameof(UnityEditorConsoleLogTargetConfiguration)].MinLogLevel = LogLevel.Debug;
+        LogManager.UpdateLogTargetsConfigurations(dict);
+        
         try
         {
             throw new ArgumentException("handled exception on main thread3");

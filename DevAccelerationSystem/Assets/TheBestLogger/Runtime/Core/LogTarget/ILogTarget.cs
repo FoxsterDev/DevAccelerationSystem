@@ -14,5 +14,7 @@ namespace TheBestLogger
             IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception
                 exception)> logBatch);
         void ApplyConfiguration(LogTargetConfiguration configuration);
+
+        void SetDebugMode(bool isDebugModeEnabled);
     }
 }

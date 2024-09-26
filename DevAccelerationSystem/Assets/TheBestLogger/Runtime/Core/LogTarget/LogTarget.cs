@@ -77,6 +77,7 @@ namespace TheBestLogger
 
         public virtual void ApplyConfiguration(LogTargetConfiguration configuration)
         {
+            Diagnostics.Write(" begin for "+GetType().Name);
             Configuration = configuration;
             _isThreadSafe = configuration.IsThreadSafe;
             _showTimestamp = configuration.ShowTimestamp;
@@ -85,8 +86,15 @@ namespace TheBestLogger
             _overrideCategories = configuration.OverrideCategories;
             _overrideCategoriesCount =
                 _overrideCategories != null ? _overrideCategories.Length : 0;
+
+            Diagnostics.Write(" finish "+GetType().Name);
         }
-    
+
+        public void SetDebugMode(bool isDebugModeEnabled)
+        {
+            DebugModeEnabled = isDebugModeEnabled;
+        }
+
         [Preserve]
         protected LogTarget()
         {

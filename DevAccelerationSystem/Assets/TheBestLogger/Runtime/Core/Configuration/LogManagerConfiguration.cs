@@ -16,6 +16,8 @@ namespace TheBestLogger
 
         public string DefaultUnityLogsCategoryName = "Uncategorized";
         public uint MinTimestampPeriodMs = 60;
+
+        [Tooltip("This is used for periodical runupdates for decorations")]
         public uint MinUpdatesPeriodMs = 1000;
     }
 }

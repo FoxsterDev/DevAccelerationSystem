@@ -13,12 +13,23 @@ MonoBehaviour:
   m_Name: UnityEditorConsoleLogTargetConfiguration
   m_EditorClassIdentifier: 
   SpecificConfiguration:
-    IsThreadSafe: 1
-    ShowTimestamp: 0
+    Muted: 0
+    MinLogLevel: 0
+    OverrideCategories:
+    - Category: GameLoading
+      MinLevel: 1
     BatchLogs:
       Enabled: 0
       UpdatePeriodMs: 1000
       MaxCountLogs: 10
-    MinLogLevel: 0
-    Muted: 0
-    OverrideCategories: []
+    DebugMode:
+      Enabled: 0
+      MinLogLevel: 0
+      IDs:
+      - 4BC968B8-5991-53A2-8C50-984A3CEB0390
+      OverrideCategories:
+      - Category: GameLoading
+        MinLevel: 0
+    IsThreadSafe: 1
+    ShowTimestamp: 0
+    testvalue: 10

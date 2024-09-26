@@ -7,7 +7,7 @@ namespace TheBestLogger
 {
     public class LogTargetBatchLogsDecoration : ILogTarget, IScheduledUpdate
     {
-        private readonly LogTargetBatchLogsConfiguration _config;
+        private LogTargetBatchLogsConfiguration _config;
         private readonly ILogTarget _original;
         private DateTime _currentTimeUtc;
         private ConcurrentBag<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> _bagNiceToHaveImportance;
@@ -127,6 +127,12 @@ namespace TheBestLogger
         void ILogTarget.ApplyConfiguration(LogTargetConfiguration configuration)
         {
             _original.ApplyConfiguration(configuration);
+            _config = configuration.BatchLogs;
+        }
+
+        public void SetDebugMode(bool isDebugModeEnabled)
+        {
+            _original.SetDebugMode(isDebugModeEnabled);
         }
 
         void IScheduledUpdate.Update(DateTime currentTimeUtc, uint timeDeltaMs)

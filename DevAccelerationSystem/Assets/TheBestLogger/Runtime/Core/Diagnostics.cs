@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace TheBestLogger
 {
-    public class Diagnostics
+    internal class Diagnostics
     {
         private static readonly Lazy<Diagnostics> _instance = new Lazy<Diagnostics>(() => new Diagnostics());
         private static Diagnostics Instance => _instance.Value;
@@ -102,18 +102,23 @@ namespace TheBestLogger
         }
 
         [Conditional(LoggerScriptingDefineSymbols.LOGGER_DIAGNOSTICS_ENABLED)]
-        public static void Write(string message, LogLevel level = LogLevel.Debug, Exception ex = null, [CallerMemberName] string memberName = "", 
-            [CallerFilePath] string filePath = "", 
-            [CallerLineNumber] int lineNumber = 0)
+        public static void Write(string message,
+                                 LogLevel level = LogLevel.Debug,
+                                 Exception ex = null,
+                                 [CallerMemberName] string memberName = "",
+                                 [CallerFilePath] string filePath = "",
+                                 [CallerLineNumber] int lineNumber = 0)
         {
             var exString = string.Empty;
             if (ex != null)
             {
                 exString = $"-->Exception message: {ex?.Message}\nStacktrace:{ex?.StackTrace}";
             }
-            
+
             // Fallback to "Unknown File" if filePath is not available
-            var fileName = string.IsNullOrEmpty(filePath) ? "Unknown File" : Path.GetFileName(filePath);
+            var fileName = string.IsNullOrEmpty(filePath)
+                               ? "Unknown File"
+                               : Path.GetFileName(filePath);
             var logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} {level}: {fileName}:{lineNumber}-[{memberName}]-->{message} {exString}";
             Instance.Log(logEntry);
         }
