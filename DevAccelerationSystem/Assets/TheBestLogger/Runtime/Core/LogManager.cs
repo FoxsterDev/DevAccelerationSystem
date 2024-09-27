@@ -245,6 +245,12 @@ namespace TheBestLogger
             {
                 await Task.Delay(minUpdate, cancellationToken).ConfigureAwait(true);
 
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    Diagnostics.Write("isCancellationRequested");
+                    return;
+                }
+
                 var currentTimeStamp = _utilitySupplier.GetTimeStamp();
                 var deltaMs = (uint) (currentTimeStamp.currentTimeUtc - previousTimeStamp).TotalMilliseconds;
                 previousTimeStamp = currentTimeStamp.currentTimeUtc;
