@@ -81,11 +81,15 @@ namespace TheBestLogger.Examples.LogTargets
         public override void Log(LogLevel level, string category, string message, LogAttributes logAttributes,
             Exception exception = null)
         {
-            var stackTrace = !string.IsNullOrEmpty(logAttributes.StackTrace)
-                ? logAttributes.StackTrace
-                : exception != null
-                    ? StackTraceFormatter.ExtractStackTraceFromException(exception)
-                    : string.Empty;
+            var stackTrace = string.Empty;
+            if (IsStackTraceEnabled(level))
+            {
+                stackTrace = !string.IsNullOrEmpty(logAttributes.StackTrace)
+                                 ? logAttributes.StackTrace
+                                 : exception != null
+                                     ? StackTraceFormatter.ExtractStackTraceFromException(exception)
+                                     : string.Empty;
+            }
 
             var logLevel = LogLevelToString(level);
             var json = LogDataToJson(logLevel, category, message, stackTrace,

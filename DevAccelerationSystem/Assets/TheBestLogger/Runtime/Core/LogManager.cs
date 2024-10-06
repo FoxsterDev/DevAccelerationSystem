@@ -305,7 +305,10 @@ namespace TheBestLogger
                 _targetUpdates = TrySubscribeForUpdates(_decoratedLogTargets);
 
                 Debug.unityLogger.filterLogType = config.DebugUnityLoggerFilterLogType;
-                //stacktrace apply configs
+                foreach (var entry in _configuration.ApplicationLogTypesStackTrace)
+                {
+                    Application.SetStackTraceLogType(entry.LogType, entry.StackTraceLevel);
+                }
 
                 _isInitialized = true;
                 var logger = CreateLogger(config.DefaultUnityLogsCategoryName);

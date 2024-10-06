@@ -12,5 +12,8 @@ namespace TheBestLogger
         public DebugModeConfiguration DebugMode = new DebugModeConfiguration();
         public bool IsThreadSafe;
         public bool ShowTimestamp;
+        [FormerlySerializedAs("logLevelLevelStackTrace")]
+        [FormerlySerializedAs("LogLevelLevelsStackTrace")]
+        public LogLevelStackTraceConfiguration LogLevelLevelStackTrace = new LogLevelStackTraceConfiguration();
     }
 }

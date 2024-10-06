@@ -21,6 +21,11 @@ namespace TheBestLogger
             _muted = mute;
         }
 
+        protected bool IsStackTraceEnabled(LogLevel level)
+        {
+            return Configuration?.LogLevelLevelStackTrace !=null && Configuration.LogLevelLevelStackTrace.IsEnabled(level);
+        }
+
         internal bool DebugModeEnabled = false;
         
         public virtual bool IsLogLevelAllowed(LogLevel logLevel, string category)

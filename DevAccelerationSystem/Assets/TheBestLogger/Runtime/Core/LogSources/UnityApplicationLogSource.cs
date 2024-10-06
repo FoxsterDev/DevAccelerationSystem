@@ -23,7 +23,7 @@ namespace TheBestLogger
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         private void OnLogMessageReceivedThreaded(string message, string stacktrace, LogType logType)
         {
-            _logConsumer.LogFormat(logType.ConvertFromUnityLogType(), nameof(UnityDebugLogSource), message,null, stacktrace);
+            _logConsumer.LogFormat(logType.ConvertToTheBestLoggerLogLevel(), nameof(UnityDebugLogSource), message,null, stacktrace);
         }
     
         public void Dispose()

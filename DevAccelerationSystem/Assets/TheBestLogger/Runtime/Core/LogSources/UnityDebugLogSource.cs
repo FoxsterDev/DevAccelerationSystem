@@ -55,7 +55,7 @@ namespace TheBestLogger
                                    string message,
                                    params object[] args)
         {
-            _logConsumer.LogFormat(logType.ConvertFromUnityLogType(), nameof(UnityDebugLogSource), message, null, null, context, args);
+            _logConsumer.LogFormat(logType.ConvertToTheBestLoggerLogLevel(), nameof(UnityDebugLogSource), message, null, null, context, args);
         }
 
         [HideInCallstack] //handled or unhandled exceptions

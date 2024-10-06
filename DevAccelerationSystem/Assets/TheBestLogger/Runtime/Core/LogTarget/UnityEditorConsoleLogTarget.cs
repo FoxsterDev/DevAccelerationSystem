@@ -8,7 +8,7 @@ namespace TheBestLogger
 {
     public class UnityEditorConsoleLogTarget : LogTarget
     {
-        private ILogHandler _defaultUnityLogHandler;
+        protected ILogHandler _defaultUnityLogHandler;
 
         [Preserve]
         public UnityEditorConsoleLogTarget()
