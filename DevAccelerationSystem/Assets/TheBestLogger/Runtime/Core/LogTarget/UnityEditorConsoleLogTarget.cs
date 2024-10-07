@@ -18,6 +18,8 @@ namespace TheBestLogger
             Diagnostics.Write("cached default UnityLogHandler");
         }
 
+        public override string LogTargetConfigurationName => nameof(UnityEditorConsoleLogTargetConfiguration);
+
         [HideInCallstack]
         public override void Log(LogLevel level,
                                  string category,

@@ -2,6 +2,7 @@
     "name": "TheBestLogger.Core",
     "rootNamespace": "",
     "references": [
+        "TheBestLogger.Core.Utilities",
         "ZString"
     ],
     "includePlatforms": [],

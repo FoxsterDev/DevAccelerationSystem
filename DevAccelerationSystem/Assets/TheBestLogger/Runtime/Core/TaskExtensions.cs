@@ -26,7 +26,26 @@ public static class TaskExtensions
             Debug.LogError($"Unhandled exception in fire-and-forget task: {ex.Message}\n{ex.StackTrace}");
         }
     }
-    
+
+    public static void FireAndForget(this Task task, ILogger logger)
+    {
+#pragma warning disable VSTHRD110
+        task.ContinueWith(t =>
+        {
+            if (t.IsCanceled)
+            {
+                logger.LogFormat(LogLevel.Debug,"Task was canceled. Task ID: {0}", null, t.Id);
+                return;
+            }
+            if (t.IsFaulted)
+            {
+                var ex = t.Exception?.Flatten().InnerException;
+                logger.LogException(ex);
+            }
+        }, TaskScheduler.FromCurrentSynchronizationContext());
+#pragma warning restore VSTHRD110
+    }
+
     /// <summary>
     /// Runs a task safely, catching and handling any exceptions.
     /// </summary>
@@ -196,22 +215,5 @@ public static class TaskExtensions
 #pragma warning restore VSTHRD110
     }
     
-    public static void ToLogException(this Task task, ILogger logger)
-    {
-#pragma warning disable VSTHRD110
-        task.ContinueWith(t =>
-        {
-            if (t.IsCanceled)
-            {
-                logger.LogFormat(LogLevel.Debug,"Task was canceled. Task ID: {0}", null, t.Id);
-                return;
-            }
-            if (t.IsFaulted)
-            {
-                var ex = t.Exception?.Flatten().InnerException;
-                logger.LogException(ex);
-            }
-        }, TaskScheduler.FromCurrentSynchronizationContext());
-#pragma warning restore VSTHRD110
-    }
+   
 }

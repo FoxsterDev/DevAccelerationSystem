@@ -1,0 +1,16 @@
+{
+    "name": "TheBestLogger.Core.Utilities",
+    "rootNamespace": "",
+    "references": [
+        "ZString"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

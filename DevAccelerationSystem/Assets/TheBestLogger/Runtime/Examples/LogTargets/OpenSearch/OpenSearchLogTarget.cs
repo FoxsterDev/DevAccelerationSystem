@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Cysharp.Text;
+using TheBestLogger.Core.Utilities;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.Scripting;
@@ -57,14 +58,8 @@ namespace TheBestLogger.Examples.LogTargets
             {
                 foreach (var log in logBatch)
                 {
-                    var stackTrace = !string.IsNullOrEmpty(log.logAttributes.StackTrace)
-                        ? log.logAttributes.StackTrace
-                        : log.exception != null
-                            ? StackTraceFormatter.ExtractStackTraceFromException(log.exception)
-                            : string.Empty;
-
                     var logLevel = LogLevelToString(log.level);
-                    var logDataJson = LogDataToJson(logLevel, log.category, log.message, stackTrace,
+                    var logDataJson = LogDataToJson(logLevel, log.category, log.message, log.logAttributes.StackTrace,
                                              log.logAttributes.TimeStampFormatted,
                                              log.logAttributes.Props.ToSimpleNotEscapedJson());
 
@@ -78,21 +73,13 @@ namespace TheBestLogger.Examples.LogTargets
             PostLog(_openSearchUrl, send);
         }
 
-        public override void Log(LogLevel level, string category, string message, LogAttributes logAttributes,
-            Exception exception = null)
-        {
-            var stackTrace = string.Empty;
-            if (IsStackTraceEnabled(level))
-            {
-                stackTrace = !string.IsNullOrEmpty(logAttributes.StackTrace)
-                                 ? logAttributes.StackTrace
-                                 : exception != null
-                                     ? StackTraceFormatter.ExtractStackTraceFromException(exception)
-                                     : string.Empty;
-            }
+        public override string LogTargetConfigurationName => nameof(OpenSearchLogTargetConfiguration);
 
+        public override void Log(LogLevel level, string category, string message, LogAttributes logAttributes,
+                                 Exception exception = null)
+        {
             var logLevel = LogLevelToString(level);
-            var json = LogDataToJson(logLevel, category, message, stackTrace,
+            var json = LogDataToJson(logLevel, category, message, logAttributes.StackTrace,
                                      logAttributes.TimeStampFormatted,
                                      logAttributes.Props.ToSimpleNotEscapedJson());
             var send = "";

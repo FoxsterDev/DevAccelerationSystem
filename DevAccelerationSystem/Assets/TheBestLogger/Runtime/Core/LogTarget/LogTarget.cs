@@ -14,6 +14,7 @@ namespace TheBestLogger
         private int _overrideCategoriesCount;
         private string _id;
         private readonly int _hash;
+        public abstract string LogTargetConfigurationName { get; }
         public LogTargetConfiguration Configuration { get; private set; }
 
         public virtual void Mute(bool mute)
@@ -21,7 +22,7 @@ namespace TheBestLogger
             _muted = mute;
         }
 
-        protected bool IsStackTraceEnabled(LogLevel level)
+        public virtual bool IsStackTraceEnabled(LogLevel level, string category)
         {
             return Configuration?.LogLevelLevelStackTrace !=null && Configuration.LogLevelLevelStackTrace.IsEnabled(level);
         }
@@ -82,7 +83,7 @@ namespace TheBestLogger
 
         public virtual void ApplyConfiguration(LogTargetConfiguration configuration)
         {
-            Diagnostics.Write(" begin for "+GetType().Name);
+            Diagnostics.Write(" begin for "+GetType().Name+" before minLogLevel: "+_minLogLevel+" , new minLogLevel: "+configuration.MinLogLevel);
             Configuration = configuration;
             _isThreadSafe = configuration.IsThreadSafe;
             _showTimestamp = configuration.ShowTimestamp;

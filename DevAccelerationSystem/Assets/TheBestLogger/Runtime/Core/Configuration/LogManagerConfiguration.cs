@@ -8,10 +8,7 @@ namespace TheBestLogger
     {
         [Tooltip("Set it to Debug.unityLogger.filterLogType")]
         public LogType DebugUnityLoggerFilterLogType = LogType.Log;
-        public bool IsActiveUnityDebugLogSource = false;
-        public bool IsActiveUnobservedTaskExceptionLogSource = false;
-        public bool IsActiveUnityApplicationLogSource = false;
-        public bool IsActiveSystemDiagnosticsDebugLogSource = false;
+
         public LogTargetConfigurationSO[] LogTargetConfigs = new LogTargetConfigurationSO[0];
 
         public string DefaultUnityLogsCategoryName = "Uncategorized";
@@ -21,6 +18,7 @@ namespace TheBestLogger
         [Tooltip("This is used for periodical runupdates for decorations")]
         public uint MinUpdatesPeriodMs = 1000;
 
+        [Tooltip("This is used in NOT Unity editor runtime")]
         public UnityLogTypeStackTraceConfiguration ApplicationLogTypesStackTrace = new UnityLogTypeStackTraceConfiguration();
     }
 }

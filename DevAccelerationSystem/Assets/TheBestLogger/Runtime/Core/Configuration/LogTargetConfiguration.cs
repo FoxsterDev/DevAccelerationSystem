@@ -12,8 +12,24 @@ namespace TheBestLogger
         public DebugModeConfiguration DebugMode = new DebugModeConfiguration();
         public bool IsThreadSafe;
         public bool ShowTimestamp;
-        [FormerlySerializedAs("logLevelLevelStackTrace")]
-        [FormerlySerializedAs("LogLevelLevelsStackTrace")]
         public LogLevelStackTraceConfiguration LogLevelLevelStackTrace = new LogLevelStackTraceConfiguration();
+
+        public virtual void Merge(LogTargetConfiguration newConfig)
+        {
+            Diagnostics.Write(" begin for "+GetType().Name);
+
+            if (newConfig == null) return;
+
+            Muted = newConfig.Muted;
+            MinLogLevel = newConfig.MinLogLevel;
+            if (newConfig.OverrideCategories != null && newConfig.OverrideCategories.Length > 0)
+                OverrideCategories = newConfig.OverrideCategories;
+            BatchLogs = newConfig.BatchLogs;
+            if (newConfig.DebugMode != null) DebugMode = newConfig.DebugMode;
+            IsThreadSafe = newConfig.IsThreadSafe;
+            ShowTimestamp = newConfig.ShowTimestamp;
+
+            Diagnostics.Write(" end for "+GetType().Name);
+        }
     }
 }

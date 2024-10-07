@@ -25,7 +25,7 @@ public class GameLoggerEntryPoint
         cancelToken = Application.exitCancellationToken;
 #endif
 
-        LogManager.Initialize(logTargets.AsReadOnly(), cancelToken, "GameLogger/Dev/");
+        LogManager.Initialize(logTargets.AsReadOnly(), "GameLogger/Dev/", cancelToken);
     }
 }
 

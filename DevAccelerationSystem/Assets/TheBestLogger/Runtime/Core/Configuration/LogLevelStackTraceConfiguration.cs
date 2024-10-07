@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 
 namespace TheBestLogger
@@ -21,11 +20,10 @@ namespace TheBestLogger
                 case LogLevel.Warning:  return LogLevelWarning.Enabled;
                 case LogLevel.Error:  return LogLevelError.Enabled;
                 case LogLevel.Exception:  return LogLevelException.Enabled;
-                  
-                 }
+            }
             return false;
         }
-        
+
         public IEnumerator<LogLevelStackTraceConfigurationEntry> GetEnumerator()
         {
             yield return LogLevelDebug;

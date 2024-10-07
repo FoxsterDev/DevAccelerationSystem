@@ -11,7 +11,6 @@ namespace TheBestLogger.Examples.LogTargets
         public string LogLevel;
         public string Category;
         public string Message;
-        //public string Index;
         public string Stacktrace;
         //default key used as @timestamp, but you can reconfigure it in index dashboards of ipensearch
         public string TimeUTC;

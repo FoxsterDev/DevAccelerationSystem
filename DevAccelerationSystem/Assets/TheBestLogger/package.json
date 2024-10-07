@@ -1,14 +1,15 @@
 {
   "name": "com.foxsterdev.thebestlogger",
   "displayName": "TheBestLogger",
-  "version": "0.0.9",
+  "version": "1.0.0",
   "unity": "2022.3",
-  "keywords": ["unity","logger"],
+  "keywords": [
+    "unity",
+    "logger"
+  ],
   "license": "MIT",
   "documentationUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/tree/master",
   "changelogUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/releases",
   "licensesUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/blob/master/LICENSE.md",
-  "description": "The best logger for Unity project with focus on high performance and flexibilty",
-  "dependencies": {
-  }
+  "description": "The best logger for Unity project with focus on high performance and flexibilty"
 }

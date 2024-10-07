@@ -15,7 +15,9 @@ namespace TheBestLogger
 
         uint IScheduledUpdate.PeriodMs => _config.UpdatePeriodMs;
 
-        public LogTargetBatchLogsDecoration(LogTargetBatchLogsConfiguration config, ILogTarget original, DateTime currentTimeUtc)
+        public LogTargetBatchLogsDecoration(LogTargetBatchLogsConfiguration config,
+                                            ILogTarget original,
+                                            DateTime currentTimeUtc)
         {
             _config = config;
             _original = original;
@@ -26,7 +28,6 @@ namespace TheBestLogger
                 new ConcurrentBag<(LogLevel level, string category, string message, LogAttributes logAttributes,
                     Exception exception)>();
             _currentTimeUtc = currentTimeUtc;
-            //UnityEngine.Debug.Log(original.GetType() +" was decorated by " + GetType());
         }
 
         public void Dispose()
@@ -35,6 +36,7 @@ namespace TheBestLogger
         }
 
         public LogTargetConfiguration Configuration => _original.Configuration;
+        public string LogTargetConfigurationName => _original.LogTargetConfigurationName;
 
         void ILogTarget.Mute(bool mute)
         {
@@ -46,13 +48,17 @@ namespace TheBestLogger
             return _original.IsLogLevelAllowed(logLevel, category);
         }
 
+        bool ILogTarget.IsStackTraceEnabled(LogLevel logLevel, string category)
+        {
+            return _original.IsStackTraceEnabled(logLevel, category);
+        }
 
         private List<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception
             exception)> GetLogsBatch(int batchSize)
         {
             var batch = new List<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception
-                exception)>((int)batchSize);
-           
+                exception)>((int) batchSize);
+
             var count1 = _bagRegularImportance.Count;
             if (count1 > 0)
             {
@@ -95,14 +101,18 @@ namespace TheBestLogger
             batch.Reverse();
             return batch;
         }
-         
-        void ILogTarget.Log(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)
+
+        void ILogTarget.Log(LogLevel level,
+                            string category,
+                            string message,
+                            LogAttributes logAttributes,
+                            Exception exception)
         {
             if (logAttributes.LogImportance == LogImportance.Critical)
             {
                 //send existing bucket immediately or send just logs
-                var batch = GetLogsBatch((int)_config.MaxCountLogs - 1);
-                batch.Add(new (level, category, message, logAttributes, exception));
+                var batch = GetLogsBatch((int) _config.MaxCountLogs - 1);
+                batch.Add(new(level, category, message, logAttributes, exception));
                 LogBatch(batch.AsReadOnly());
                 return;
             }
@@ -115,8 +125,8 @@ namespace TheBestLogger
             {
                 _bagRegularImportance.Add(new(level, category, message, logAttributes, exception));
             }
-           
-            ((IScheduledUpdate)this).Update(logAttributes.TimeUtc, (uint)(logAttributes.TimeUtc - _currentTimeUtc).TotalMilliseconds);
+
+            ((IScheduledUpdate) this).Update(logAttributes.TimeUtc, (uint) (logAttributes.TimeUtc - _currentTimeUtc).TotalMilliseconds);
         }
 
         public void LogBatch(IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> logBatch)
@@ -140,7 +150,7 @@ namespace TheBestLogger
             if (timeDeltaMs >= _config.UpdatePeriodMs || (currentTimeUtc - _currentTimeUtc).TotalMilliseconds >= _config.UpdatePeriodMs)
             {
                 _currentTimeUtc = currentTimeUtc;
-                var batch = GetLogsBatch((int)_config.MaxCountLogs);
+                var batch = GetLogsBatch((int) _config.MaxCountLogs);
                 if (batch.Count > 0)
                 {
                     LogBatch(batch.AsReadOnly());

@@ -10,8 +10,8 @@ namespace TheBestLogger
         public UnityApplicationLogSource(ILogConsumer logConsumer)
         {
             _logConsumer = logConsumer;
-            Application.logMessageReceivedThreaded -= OnLogMessageReceivedThreaded;
-            Application.logMessageReceivedThreaded += OnLogMessageReceivedThreaded;
+            Application.logMessageReceived -= OnLogMessageReceived;
+            Application.logMessageReceived += OnLogMessageReceived;
         }
 
         /// <summary>
@@ -21,14 +21,14 @@ namespace TheBestLogger
         /// <param name="stacktrace"></param>
         /// <param name="logType"></param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        private void OnLogMessageReceivedThreaded(string message, string stacktrace, LogType logType)
+        private void OnLogMessageReceived(string message, string stacktrace, LogType logType)
         {
-            _logConsumer.LogFormat(logType.ConvertToTheBestLoggerLogLevel(), nameof(UnityDebugLogSource), message,null, stacktrace);
+            _logConsumer.LogFormat(logType.ConvertToTheBestLoggerLogLevel(), nameof(UnityApplicationLogSource), message,null, stacktrace);
         }
-    
+
         public void Dispose()
-        { 
-            Application.logMessageReceivedThreaded -= OnLogMessageReceivedThreaded;
+        {
+            Application.logMessageReceived -= OnLogMessageReceived;
             _logConsumer = null;
         }
     }

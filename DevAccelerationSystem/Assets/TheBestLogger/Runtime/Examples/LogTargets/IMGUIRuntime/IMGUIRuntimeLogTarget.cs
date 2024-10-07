@@ -23,33 +23,37 @@ namespace TheBestLogger.Examples.LogTargets
                 .GetComponent<IMGUIRuntimeDrawer>();
             UnityEngine.Object.DontDestroyOnLoad(_drawer.gameObject);
         }
-        
-        public override void Log(LogLevel level, string category, string message,LogAttributes logAttributes, Exception exception = null
-            )
+
+        public override void Log(LogLevel level,
+                                 string category,
+                                 string message,
+                                 LogAttributes logAttributes,
+                                 Exception exception = null
+        )
         {
             var messageFormatted = "";
             if (_showTimestamp)
             {
-                 messageFormatted = ZString.Concat("[", logAttributes.TimeStampFormatted, "] ","[", category, "] ", message);
+                messageFormatted = ZString.Concat("[", logAttributes.TimeStampFormatted, "] ", "[", category, "] ", message);
             }
             else
             {
-                 messageFormatted = ZString.Concat("[", category, "] ", message);
+                messageFormatted = ZString.Concat("[", category, "] ", message);
             }
-            
-            if (messageFormatted.Length > _configuration.MaxStringLengthForOneMessage)
-           {
-               messageFormatted = messageFormatted.Substring(0, _configuration.MaxStringLengthForOneMessage);
-           }
-           _logEntries.Enqueue( messageFormatted);
-           
-           // Keep only the last 100 logs to avoid too much memory usage
-           if (_logEntries.Count > (_configuration?.CountLogsToPick ?? 100))
-           {
-               _logEntries.TryDequeue(out var result);
-           }
-        }
 
+            if (messageFormatted.Length > _configuration.MaxStringLengthForOneMessage)
+            {
+                messageFormatted = messageFormatted.Substring(0, _configuration.MaxStringLengthForOneMessage);
+            }
+
+            _logEntries.Enqueue(messageFormatted);
+
+            // Keep only the last 100 logs to avoid too much memory usage
+            if (_logEntries.Count > (_configuration?.CountLogsToPick ?? 100))
+            {
+                _logEntries.TryDequeue(out var result);
+            }
+        }
 
         public override void ApplyConfiguration(LogTargetConfiguration configuration)
         {
@@ -60,6 +64,8 @@ namespace TheBestLogger.Examples.LogTargets
                 _drawer.Initialize(_configuration, _logEntries);
             }
         }
+
+        public override string LogTargetConfigurationName => nameof(IMGUIRuntimeLogTargetConfiguration);
 
         public override void Mute(bool mute)
         {
