@@ -1,7 +1,8 @@
 using System;
+using System.Linq;
 using System.Threading;
 
-namespace TheBestLogger
+namespace TheBestLogger.Core.Utilities
 {
     internal class UtilitySupplier : IUtilitySupplier
     {
@@ -11,22 +12,22 @@ namespace TheBestLogger
         private readonly uint _minTimestampPeriodMs;
         private DateTime LocalTime => new DateTime(DateTime.UtcNow.Ticks + _timezoneOffsetTicks, DateTimeKind.Local);
         private TimestampData _timeStampCachedData;
-        
+
         public UtilitySupplier(uint minTimestampPeriodMs)
         {
             _mainThreadId = Thread.CurrentThread.ManagedThreadId;
-            
+
             _minTimestampPeriodMs = minTimestampPeriodMs;
             _timeStampCachedData = new TimestampData(DateTime.MinValue, string.Empty);
-            //_timezoneOffsetTicks = (DateTime.Now - DateTime.UtcNow).Ticks;
-       }
+            TagsRegistry = new ConcurrentTagsRegistry(2, 4);
+//_timezoneOffsetTicks = (DateTime.Now - DateTime.UtcNow).Ticks;
+        }
 
-       
         public (DateTime currentTimeUtc, string timeStampFormatted) GetTimeStamp()
         {
             var timeUtc = DateTime.UtcNow;
-            var timeStampCachedData = _timeStampCachedData; 
-            
+            var timeStampCachedData = _timeStampCachedData;
+
             if ((timeUtc - timeStampCachedData.TimeStampCachedUtc).TotalMilliseconds >= _minTimestampPeriodMs)
             {
                 var newTimeStampString = timeUtc.ToString(
@@ -39,6 +40,7 @@ namespace TheBestLogger
 
             return (timeUtc, _timeStampCachedData.TimeStampStringCachedFormatted);
         }
-    }
 
+        public ITagsRegistry TagsRegistry { get; }
+    }
 }

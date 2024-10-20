@@ -1,10 +1,11 @@
 using System;
 
-namespace TheBestLogger
+namespace TheBestLogger.Core.Utilities
 {
-    internal interface IUtilitySupplier
+    public interface IUtilitySupplier
     {
         bool IsMainThread { get; }
         (DateTime currentTimeUtc, string timeStampFormatted) GetTimeStamp();
+        ITagsRegistry TagsRegistry{ get; }
     }
 }

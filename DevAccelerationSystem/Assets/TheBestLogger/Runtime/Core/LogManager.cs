@@ -1,3 +1,9 @@
+#if !UNITY_EDITOR || LOGGER_PLATFORM_BUILD_SIMULATION
+#define LOGGER_NOT_UNITY_EDITOR
+#else
+#define LOGGER_UNITY_EDITOR
+#endif
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -6,6 +12,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Cysharp.Text;
+using TheBestLogger.Core.Utilities;
 using UnityEngine;
 
 namespace TheBestLogger
@@ -14,7 +21,7 @@ namespace TheBestLogger
     //https://docs.unity.com/ugs/en-us/manual/game-server-hosting/manual/beta/debugging-logging
     //https://opentelemetry.io/docs/what-is-opentelemetry/
 
-    public class LogManager
+    public partial class LogManager
     {
         private static ConcurrentDictionary<string, ILogger> _loggers;
         private static IReadOnlyList<ILogTarget> _decoratedLogTargets = Array.Empty<ILogTarget>();
@@ -26,6 +33,7 @@ namespace TheBestLogger
         private static DateTime _timeStampPrevious;
         private static string _timeStampPreviousString;
 
+        private static string _debugId = string.Empty;
         private static bool _isRunningUpdates = false;
         private static bool _wasDisposed = false;
         private static List<IScheduledUpdate> _targetUpdates;
@@ -33,33 +41,26 @@ namespace TheBestLogger
         private static bool _isInitialized = false;
         private static readonly ILogger FallbackLogger = new FallbackLogger();
 
-        public static ILogger CreateLogger(string categoryName)
-        {
-            Diagnostics.Write("starting for category: " + categoryName);
 
+        private static bool IsNotProperlyConfigured()
+        {
             if (!_isInitialized)
             {
                 FallbackLogger.LogWarning(
-                    "LogManager is not initialized! Fallback logger based on Debug.Log* for the requested category : " + categoryName + " will be returned");
-                return FallbackLogger;
+                    "LogManager is not initialized!");
+                return true;
             }
 
-            if (!_loggers.TryGetValue(categoryName, out var logger))
+            if (_decoratedLogTargets == null || _decoratedLogTargets.Count < 1)
             {
-                Diagnostics.Write(" will create a new logger for category: " + categoryName);
-
-                logger = new CoreLogger(categoryName, _decoratedLogTargets, _utilitySupplier);
-                _loggers.TryAdd(categoryName, logger);
-            }
-            else
-            {
-                Diagnostics.Write(" will get a cached logger for category: " + categoryName);
+                Diagnostics.Write("The current LogTargets are empty or null", LogLevel.Warning);
+                return true;
             }
 
-            return logger;
+            return false;
         }
 
-#if UNITY_EDITOR
+#if LOGGER_UNITY_EDITOR
         /// <summary>
         /// to avoid changes on scriptable objects when modified configs at runtime
         /// </summary>
@@ -89,7 +90,7 @@ namespace TheBestLogger
                 {
                     var key = logTargetConfigSo.Configuration.GetType().Name;
 
-#if !UNITY_EDITOR// || LOGGER_PLATFORM_BUILD_SIMULATION
+#if LOGGER_NOT_UNITY_EDITOR
                     logTargetConfigurationsData[key] = logTargetConfigSo.Configuration;
 #else
                     var config = logTargetConfigSo.Configuration;
@@ -106,22 +107,40 @@ namespace TheBestLogger
             return logTargetConfigurationsData;
         }
 
-        public static void UpdateLogTargetsConfigurations(Dictionary<string, LogTargetConfiguration> logTargetConfigurations)
+        private static void TrySetDebugMode(ILogTarget logTarget,
+                                            string debugId,
+                                            bool state)
         {
             Diagnostics.Write("begin");
-            TryApplyConfigurations(logTargetConfigurations, _decoratedLogTargets);
-            Diagnostics.Write("end");
-        }
 
-        public static Dictionary<string, LogTargetConfiguration> GetCurrentLogTargetConfigurations()
-        {
-            var logTargetConfigurations = new Dictionary<string, LogTargetConfiguration>();
-            foreach (var logTarget in _decoratedLogTargets)
+            var debugModeEnabled = false;
+            if (logTarget?.Configuration != null)
             {
-                logTargetConfigurations[logTarget.LogTargetConfigurationName] = logTarget.Configuration;
+                var debugMode = logTarget.Configuration.DebugMode;
+                
+                if (debugMode.Enabled && debugMode.IDs != null && debugMode.IDs.Length > 0)
+                {
+                    foreach (var id in debugMode.IDs)
+                    {
+                        if (id == debugId)
+                        {
+                            Diagnostics.Write($"For LogTarget: {logTarget.GetType()} was enabled {state} debugMode");
+                            debugModeEnabled = state;
+                            break;
+                        }
+                    }
+                }
+
+                //does it make sense to plaer prefs safe to get logs from launch the game ?
+                logTarget.SetDebugMode(debugModeEnabled);
+            }
+            else
+            {
+                Diagnostics.Write(
+                    $"logTarget or logTarget.configuration is null", LogLevel.Error);
             }
 
-            return logTargetConfigurations;
+            Diagnostics.Write("end with debugModeEnabled:"+debugModeEnabled);
         }
 
         /// <summary>
@@ -129,11 +148,13 @@ namespace TheBestLogger
         /// </summary>
         /// <param name="logTargetConfigurations"></param>
         /// <param name="logTargets"></param>
+        /// <param name="debugId"></param>
         private static void TryApplyConfigurations(Dictionary<string, LogTargetConfiguration> logTargetConfigurations,
-                                                   IReadOnlyList<ILogTarget> logTargets)
+                                                   IReadOnlyList<ILogTarget> logTargets,
+                                                   string debugId)
         {
             Diagnostics.Write("begin");
- 
+
             if (logTargetConfigurations == null || logTargetConfigurations.Count < 1)
             {
                 Diagnostics.Write("logTargetConfigurations is null or empty", LogLevel.Warning);
@@ -146,42 +167,31 @@ namespace TheBestLogger
                 return;
             }
 
-            var udid = SystemInfo.deviceUniqueIdentifier; // main thread needs
-
             foreach (var logTarget in logTargets)
             {
+                if (logTarget == null)
+                {
+                    Diagnostics.Write("Log target is null", LogLevel.Error);
+                    continue;
+                }
+
                 var logTargetConfigurationName = logTarget.LogTargetConfigurationName;
                 Diagnostics.Write("logTarget: " + logTarget.GetType() + " with " + logTargetConfigurationName, LogLevel.Debug);
 
                 logTargetConfigurations.TryGetValue(logTargetConfigurationName, out var logTargetConfiguration);
-
-                if (logTargetConfiguration != null)
+                if (logTargetConfiguration == null)
                 {
                     Diagnostics.Write(
-                        "For LogTarget:" + logTarget.GetType() + " was applied logtargetconfiguration:" + logTargetConfiguration.GetType());
-
-                    var debugMode = logTargetConfiguration.DebugMode;
-                    var debugModeEnabled = false;
-                    if (debugMode.Enabled && debugMode.IDs.Length > 0)
-                    {
-                        foreach (var id in debugMode.IDs)
-                        {
-                            if (id == udid)
-                            {
-                                Diagnostics.Write("For LogTarget:" + logTarget.GetType() + " was enabled debugMode");
-                                debugModeEnabled = true;
-                            }
-                        }
-                    }
-
-                    logTarget.ApplyConfiguration(logTargetConfiguration);
-                    logTarget.SetDebugMode(debugModeEnabled);
-                }
-                else
-                {
-                    Diagnostics.Write($"Can not match {logTargetConfigurationName} with configurations files. LogTargetConfigurationDefault was applied!", LogLevel.Warning);
+                        $"Can not match {logTargetConfigurationName} with configurations files. LogTargetConfigurationDefault was applied!", LogLevel.Error);
                     logTarget.ApplyConfiguration(new LogTargetConfigurationDefault(logTarget.GetType().ToString()));
+                    continue;
                 }
+
+                logTarget.ApplyConfiguration(logTargetConfiguration);
+                Diagnostics.Write(
+                    "For LogTarget:" + logTarget.GetType() + " was applied logtargetconfiguration:" + logTargetConfiguration.GetType());
+
+                TrySetDebugMode(logTarget, debugId, true);
             }
 
             Diagnostics.Write("end");
@@ -273,84 +283,11 @@ namespace TheBestLogger
             Diagnostics.Write(" finished");
         }
 
-        /// <summary>
-        ///  Should be called from Unity main thread
-        /// </summary>
-        /// <param name="logTargets">List of targets to print logs. It has to be assigned log target configs so into logmanagerconfiguration</param>
-        /// <param name="disposingToken">As example dispose logger when application exit</param>
-        /// <param name="resourceSubFolderThatContainsConfigs">Inside Unity some Resources folder. Example "Logger/Dev/"</param>
-        public static void Initialize(IReadOnlyList<LogTarget> logTargets,
-                                      string resourceSubFolderThatContainsConfigs, 
-                                      CancellationToken disposingToken)
+        private static void SetApplicationLogTypesStackTrace(LogManagerConfiguration logManagerConfiguration)
         {
-            if (_isInitialized)
+            foreach (var entry in logManagerConfiguration.ApplicationLogTypesStackTrace)
             {
-                Diagnostics.Write("LogManager is already initialized! Wrong behaviour usage detected", LogLevel.Warning);
-                return;
-            }
-
-            try
-            {
-                Diagnostics.Write("LogManager is initializing!");
-
-                if (logTargets == null || logTargets.Count < 1)
-                {
-                    throw new ArgumentException(nameof(logTargets));
-                }
-
-                _disposingToken = disposingToken;
-                _disposingToken.Register(Dispose);
-
-                logTargets = PatchUnityEditorConsoleLogTarget(logTargets);
-
-                _originalLogTargets = logTargets;
-                _loggers = new ConcurrentDictionary<string, ILogger>(4, 25);
-
-                var configuration = Resources.Load<LogManagerConfiguration>(resourceSubFolderThatContainsConfigs + nameof(LogManagerConfiguration));
-
-                _configuration = configuration;
-                _utilitySupplier = new UtilitySupplier(_configuration.MinTimestampPeriodMs);
-
-                _minUpdatesPeriodMs = _configuration.MinUpdatesPeriodMs;
-                var dict = ConvertToDictionaryWithKeyNameAndValueConfigSpecificData(configuration.LogTargetConfigs);
-                TryApplyConfigurations(dict, logTargets);
-
-                var currentTimeUtc = _utilitySupplier.GetTimeStamp().currentTimeUtc;
-                _decoratedLogTargets = TryDecorateLogTargets(logTargets, currentTimeUtc);
-
-                _targetUpdates = TrySubscribeForUpdates(_decoratedLogTargets);
-
-                UnityEngine.Debug.unityLogger.filterLogType = configuration.DebugUnityLoggerFilterLogType;
-
-#if !UNITY_EDITOR
-                foreach (var entry in _configuration.ApplicationLogTypesStackTrace)
-                {
-                    Application.SetStackTraceLogType(entry.LogType, entry.StackTraceLevel);
-                }
-#endif
-                _isInitialized = true;
-                var logger = CreateLogger(configuration.DefaultUnityLogsCategoryName);
-
-                var logSources = new List<ILogSource>(4) { };
-                _logSources = logSources.AsReadOnly();
-
-#if UNITY_EDITOR && !LOGGER_PLATFORM_BUILD_SIMULATION
-                logSources.Add(new UnityDebugLogSource(logger as ILogConsumer));
-#else
-                logSources.Add(new UnityApplicationLogSource(logger as ILogConsumer));
-#endif
-
-                if (_targetUpdates.Count > 0)
-                {
-                    RunUpdates(_targetUpdates, _minUpdatesPeriodMs, currentTimeUtc, disposingToken).FireAndForget();
-                }
-
-                Diagnostics.Write("LogManager has initialized!");
-            }
-            catch (Exception ex)
-            {
-                FallbackLogger.LogError($"During LogManager initialization happened exception {ex.Message}:\n{ex.StackTrace}");
-                Dispose();
+                Application.SetStackTraceLogType(entry.LogType, entry.StackTraceLevel);
             }
         }
 
@@ -366,7 +303,7 @@ namespace TheBestLogger
                 }
             }
 
-#if UNITY_EDITOR && !LOGGER_PLATFORM_BUILD_SIMULATION
+#if LOGGER_UNITY_EDITOR
             if (unityEditorConsoleLogTarget == null)
             {
                 var logTargetsTemp = logTargets.ToList();

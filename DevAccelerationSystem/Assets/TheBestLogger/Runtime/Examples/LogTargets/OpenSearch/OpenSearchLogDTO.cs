@@ -16,5 +16,6 @@ namespace TheBestLogger.Examples.LogTargets
         public string TimeUTC;
         public string Attributes;
         public bool DebugMode;
+        public string[] Tags;
     }
 }

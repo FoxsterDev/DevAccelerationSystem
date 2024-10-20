@@ -61,7 +61,7 @@ namespace TheBestLogger.Examples.LogTargets
                     var logLevel = LogLevelToString(log.level);
                     var logDataJson = LogDataToJson(logLevel, log.category, log.message, log.logAttributes.StackTrace,
                                              log.logAttributes.TimeStampFormatted,
-                                             log.logAttributes.Props.ToSimpleNotEscapedJson());
+                                             log.logAttributes.Props.ToSimpleNotEscapedJson(), log.logAttributes.Tags);
 
                     sb.AppendLine(ZString.Format("{{ \"index\" : {{ \"_index\" : \"{0}\" }} }}", _indexName));
                     sb.AppendLine(logDataJson);
@@ -81,7 +81,7 @@ namespace TheBestLogger.Examples.LogTargets
             var logLevel = LogLevelToString(level);
             var json = LogDataToJson(logLevel, category, message, logAttributes.StackTrace,
                                      logAttributes.TimeStampFormatted,
-                                     logAttributes.Props.ToSimpleNotEscapedJson());
+                                     logAttributes.Props.ToSimpleNotEscapedJson(), logAttributes.Tags);
             var send = "";
             using (var sb = ZString.CreateStringBuilder())
             {
@@ -95,7 +95,7 @@ namespace TheBestLogger.Examples.LogTargets
         }
 
         private OpenSearchLogDTO CreateDto(string logLevel, string category, string message, string stackTrace,
-            string timestamp, string attributes)
+            string timestamp, string attributes, string[] tags)
         {
             var dto = _dtoFactory != null ? _dtoFactory.Invoke() : new OpenSearchLogDTO();
             dto.GameVersion = _gameVersion;
@@ -110,13 +110,14 @@ namespace TheBestLogger.Examples.LogTargets
             dto.Attributes = attributes;
             dto.Category = category;
             dto.DebugMode = Configuration.DebugMode.Enabled;
+            dto.Tags = tags;
             return dto;
         }
 
         private string LogDataToJson(string logLevel, string category, string message, string stackTrace,
-            string timestamp, string attributes)
+            string timestamp, string attributes, string[] tags)
         {
-            var dto = CreateDto(logLevel, category, message, stackTrace, timestamp, attributes);
+            var dto = CreateDto(logLevel, category, message, stackTrace, timestamp, attributes, tags);
             var jsonString = JsonUtility.ToJson(dto);
        
             return jsonString;
