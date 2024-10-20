@@ -12,75 +12,38 @@ namespace TheBestLogger
 {
     internal class Diagnostics
     {
+        private readonly LogLevel _minLogLevel;
+        private string _logsDirectory;
+        private int _mainThreadId;
         private static readonly Lazy<Diagnostics> _instance = new Lazy<Diagnostics>(() => new Diagnostics());
         private static Diagnostics Instance => _instance.Value;
 
-        private readonly IUtilitySupplier _utilitySupplier;
+        private ConcurrentDictionary<string, FileBackgroundAsyncWriter> _writers = new ConcurrentDictionary<string, FileBackgroundAsyncWriter>(2, 4);
+        private FileBackgroundAsyncWriter GetWriter(string writerId)
+        {
+            if (!_writers.TryGetValue(writerId, out var writer))
+            {
+                writer = new FileBackgroundAsyncWriter(_logsDirectory, writerId+".txt");
+                _writers.TryAdd(writerId, writer);
+                return writer;
+            }
 
-        private readonly ConcurrentQueue<string> _logQueue;
-        private readonly AutoResetEvent _logEvent;
-        private CancellationTokenSource _cancellationTokenSource;
-        private readonly Task _logTask;
+            return writer;
+        }
 
-        private Diagnostics(LogLevel minLogLevel = LogLevel.Warning)
+      /// <summary>
+      /// Should be called from main thread
+      /// </summary>
+      /// <param name="minLogLevel"></param>
+        private Diagnostics(LogLevel minLogLevel = LogLevel.Debug)
         {
 #if LOGGER_DIAGNOSTICS_ENABLED
-            _cancellationTokenSource = new CancellationTokenSource();
-
-            _logQueue = new ConcurrentQueue<string>();
-            _logEvent = new AutoResetEvent(false);
-
+            _minLogLevel = minLogLevel;
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            //not thread safe
             var rootDirectory = Application.persistentDataPath;
-
-            _logTask = Task.Run(() => ProcessLogQueueAsync(rootDirectory, _cancellationTokenSource.Token));
+            _logsDirectory = Path.Combine(rootDirectory, "DiagnosticLoggers", $"logs_{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
 #endif
-        }
-
-        /// <summary>
-        /// Enqueue a log message for asynchronous writing to the file.
-        /// </summary>
-        /// <param name="message">The log message to write.</param>
-        private void Log(string message)
-        {
-            _logQueue.Enqueue(message);
-            _logEvent.Set(); // Notify the background task that a new log is available
-        }
-
-        /// <summary>
-        /// Asynchronously processes the log queue and writes to the file.
-        /// </summary>
-        /// <param name="rootDirectory"></param>
-        /// <param name="cancellationToken">Cancellation token to stop the logging task.</param>
-        private async Task ProcessLogQueueAsync(string rootDirectory, CancellationToken cancellationToken)
-        {
-            var logsDirectory = Path.Combine(rootDirectory, "DiagnosticLoggers");
-            if (!Directory.Exists(logsDirectory))
-            {
-                Directory.CreateDirectory(logsDirectory);
-            }
-
-            var logFilePath = Path.Combine(logsDirectory, $"logs_{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}.txt");
-
-            using (var fileStream =
-                   new FileStream(logFilePath, FileMode.Append, FileAccess.Write, FileShare.Read, 4096, true))
-            using (var streamWriter = new StreamWriter(fileStream, Encoding.UTF8) { AutoFlush = true })
-            {
-                while (!cancellationToken.IsCancellationRequested)
-                {
-                    _logEvent.WaitOne(100);
-
-                    while (_logQueue.TryDequeue(out var logEntry))
-                    {
-                        await streamWriter.WriteLineAsync(logEntry);
-                    }
-                }
-
-                // Ensure all remaining log entries are flushed when stopping
-                while (_logQueue.TryDequeue(out var remainingEntry))
-                {
-                    await streamWriter.WriteLineAsync(remainingEntry);
-                }
-            }
         }
 
         [Conditional(LoggerScriptingDefineSymbols.LOGGER_DIAGNOSTICS_ENABLED)]
@@ -92,35 +55,50 @@ namespace TheBestLogger
         private void Dispose()
         {
             Write("begin");
-            if (!_cancellationTokenSource.IsCancellationRequested)
+            if (_writers != null)
             {
-                _cancellationTokenSource.Cancel();
-            }
+                foreach (var wr in _writers)
+                {
+                    wr.Value?.Dispose();
+                }
 
-            _cancellationTokenSource.Dispose();
-            _cancellationTokenSource = null;
+                _writers = null;
+            }
         }
 
         [Conditional(LoggerScriptingDefineSymbols.LOGGER_DIAGNOSTICS_ENABLED)]
         public static void Write(string message,
                                  LogLevel level = LogLevel.Debug,
                                  Exception ex = null,
+                                 string writerId = null,
                                  [CallerMemberName] string memberName = "",
                                  [CallerFilePath] string filePath = "",
                                  [CallerLineNumber] int lineNumber = 0)
         {
+            if (level < Instance._minLogLevel)
+            {
+                return;
+            }
+
             var exString = string.Empty;
             if (ex != null)
             {
-                exString = $"-->Exception message: {ex?.Message}\nStacktrace:{ex?.StackTrace}";
+                exString = $"\n\n-->Exception message: {ex?.Message}\nStacktrace:{ex?.StackTrace}";
             }
 
-            // Fallback to "Unknown File" if filePath is not available
+            var mainThread = Thread.CurrentThread.ManagedThreadId == Instance._mainThreadId
+                                 ? ""
+                                 : "BackThread";
             var fileName = string.IsNullOrEmpty(filePath)
                                ? "Unknown File"
                                : Path.GetFileName(filePath);
-            var logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} {level}: {fileName}:{lineNumber}-[{memberName}]-->{message} {exString}";
-            Instance.Log(logEntry);
+            var logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} {level}: {fileName}:{lineNumber}-[{memberName}][{mainThread}:{Thread.CurrentThread.ManagedThreadId}]-->{message} {exString}";
+            if (string.IsNullOrEmpty(writerId))
+            {
+                writerId = "Main";
+            }
+
+            Instance.GetWriter(writerId).Write(logEntry);
         }
     }
 }

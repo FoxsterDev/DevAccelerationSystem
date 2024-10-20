@@ -18,7 +18,7 @@ namespace TheBestLogger
         public string StackTrace;
         public string TimeStampFormatted;
         public DateTime TimeUtc;
-
+        public string[] Tags = Array.Empty<string>();
         public Object UnityContextObject;
 
         [Preserve]

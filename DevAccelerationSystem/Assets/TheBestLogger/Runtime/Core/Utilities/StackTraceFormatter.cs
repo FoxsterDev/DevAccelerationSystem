@@ -33,7 +33,7 @@ namespace TheBestLogger.Core.Utilities
             return stackTrace;
         }*/
 
-        private static string _projectFolder = "";
+        //private static string _projectFolder = "";
 
         /*[RequiredByNativeCode]
         internal static void SetProjectFolder(string folder)

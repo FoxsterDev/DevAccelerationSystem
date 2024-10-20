@@ -1,3 +1,9 @@
+#if !UNITY_EDITOR || LOGGER_PLATFORM_BUILD_SIMULATION
+#define LOGGER_NOT_UNITY_EDITOR
+#else 
+#define LOGGER_UNITY_EDITOR
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -111,7 +117,8 @@ namespace TheBestLogger
             if (_logTargets == null) return;
 
             var isMainThread = _utilitySupplier.IsMainThread;
-            for (var index = 0; index < _logTargets.Count; index++)
+            var logTargetsCount = _logTargets.Count;
+            for (var index = 0; index < logTargetsCount; index++)
             {
                 var logTarget = _logTargets[index];
                 if (logTarget == null) continue;
@@ -140,6 +147,7 @@ namespace TheBestLogger
                     logAttributes.TimeStampFormatted = timeStamp.Item2;
                     logAttributes.TimeUtc = timeStamp.Item1;
                     logAttributes.StackTrace = stackTrace;
+                    logAttributes.Tags = _utilitySupplier.TagsRegistry.GetAllTags();
                 }
 
                 if (string.IsNullOrEmpty(logAttributes.StackTrace))
@@ -172,6 +180,22 @@ namespace TheBestLogger
                                     Object context,
                                     params object[] args)
         {
+#if LOGGER_DIAGNOSTICS_ENABLED
+            var message2 = message;
+            if (message2 == "{0}")
+            {
+                message2 = string.Format(message, args);
+            }
+            Diagnostics.Write($"[{logLevel}] {message2}{stackTrace}", LogLevel.Debug, exception, logSourceId);
+#endif
+
+#if LOGGER_UNITY_EDITOR
+            //temporary for debug, avoid recursive callbacks
+            if (logSourceId != nameof(UnityDebugLogSource))
+            {
+                return;
+            }
+#endif
             SendToLogTargets(logLevel, message, exception, stackTrace, context, null, args);
         }
 

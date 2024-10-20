@@ -27,25 +27,6 @@ public static class TaskExtensions
         }
     }
 
-    public static void FireAndForget(this Task task, ILogger logger)
-    {
-#pragma warning disable VSTHRD110
-        task.ContinueWith(t =>
-        {
-            if (t.IsCanceled)
-            {
-                logger.LogFormat(LogLevel.Debug,"Task was canceled. Task ID: {0}", null, t.Id);
-                return;
-            }
-            if (t.IsFaulted)
-            {
-                var ex = t.Exception?.Flatten().InnerException;
-                logger.LogException(ex);
-            }
-        }, TaskScheduler.FromCurrentSynchronizationContext());
-#pragma warning restore VSTHRD110
-    }
-
     /// <summary>
     /// Runs a task safely, catching and handling any exceptions.
     /// </summary>
@@ -64,7 +45,7 @@ public static class TaskExtensions
             Debug.LogError($"Unhandled exception in safe task: {ex.Message}\n{ex.StackTrace}");
         }
     }
-    
+
     /// <summary>
     /// Converts an async task to a Unity coroutine.
     /// </summary>
@@ -84,22 +65,7 @@ public static class TaskExtensions
                 Debug.LogError($"Task faulted with exception: {innerException?.Message}");
         }
     }
-    
-    /// <summary>
-    /// Runs a task on Unity's main thread.
-    /// </summary>
-    /// <param name="task">The task to run on the main thread.</param>
-    /*public static void RunOnMainThread(this Task task)
-    {
-        task.ContinueWith(t =>
-        {
-            if (t.IsFaulted)
-            {
-                Debug.LogError($"Exception in task: {t.Exception?.Flatten().InnerException.Message}");
-            }
-        }, TaskScheduler.FromCurrentSynchronizationContext());
-    }*/
-    
+
     /// <summary>
     /// Retries a task a specified number of times with an optional delay between retries.
     /// </summary>
@@ -146,27 +112,26 @@ public static class TaskExtensions
             throw new TimeoutException($"Task timed out after {timeoutMilliseconds} milliseconds.");
         }
     }
-    
+
     /// <summary>
     /// Extension method to handle exceptions for tasks without a return result.
     /// </summary>
     /// <param name="task">The task to handle exceptions for.</param>
     /// <param name="onException">Action to handle exceptions on the current synchronization context.</param>
-    public static void HandleExceptions(this Task task, Action<Exception> onException)
+    public static void HandleExceptions(this Task task, Action<Exception> onException, Action onCanceled)
     {
 #pragma warning disable VSTHRD110
         task.ContinueWith(t =>
         {
             if (t.IsCanceled)
             {
-                UnityEngine.Debug.Log(string.Concat("Task was canceled. Task ID:", t.Id));
+                onCanceled?.Invoke();
                 return;
             }
-            
+
             if (t.IsFaulted)
             {
                 var ex = t.Exception?.Flatten().InnerException;
-                UnityEngine.Debug.LogException(ex);
                 onException?.Invoke(ex);
             }
         }, TaskScheduler.FromCurrentSynchronizationContext());
@@ -196,24 +161,4 @@ public static class TaskExtensions
 #pragma warning restore VSTHRD110
     }
 
-    public static void ToDebugLogException(this Task task)
-    {
-#pragma warning disable VSTHRD110
-        task.ContinueWith(t =>
-        {
-            if (t.IsCanceled)
-            {
-                UnityEngine.Debug.LogFormat("Task was canceled. Task ID: {0}", t.Id);
-                return;
-            }
-            if (t.IsFaulted)
-            {
-                var ex = t.Exception?.Flatten().InnerException;
-                UnityEngine.Debug.LogException(ex);
-            }
-        }, TaskScheduler.FromCurrentSynchronizationContext());
-#pragma warning restore VSTHRD110
-    }
-    
-   
 }

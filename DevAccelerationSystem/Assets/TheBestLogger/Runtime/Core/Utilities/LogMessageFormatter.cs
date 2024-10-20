@@ -6,11 +6,13 @@ namespace TheBestLogger.Core.Utilities
 {
     public static class LogMessageFormatter
     {
-        public static string TryFormat(string category, string message, params object[] args)
+        public static string TryFormat(string category,
+                                       string message,
+                                       params object[] args)
         {
             var formatError = false;
             var formattedMessage = message;
-            
+
             if (args != null && args.Length > 0 && !string.IsNullOrEmpty(message))
             {
                 formattedMessage = args.Length switch
@@ -29,23 +31,28 @@ namespace TheBestLogger.Core.Utilities
             if (formatError)
             {
                 //build str from args ?
-                message = ZString.Concat("[",category, "] ", message, " =>can not be formatted");
+                message = ZString.Concat("[", category, "] ", message, " =>can not be formatted");
             }
             else
             {
-                message = ZString.Concat("[",category, "] ", formattedMessage);
+                message = ZString.Concat("[", category, "] ", formattedMessage);
             }
-            
+
             return message;
         }
-        public static string TryFormat(string message, Exception ex, params object[] args)
+
+        public static string TryFormat(string message,
+                                       Exception ex,
+                                       params object[] args)
         {
             var formatError = false;
 
             if (ex != null)
             {
                 message = ZString.Concat(
-                    ex.GetType().Name, ": ", (ex.Message != null ? ex.Message : string.Empty), message);
+                    ex.GetType().Name, ": ", (ex.Message != null
+                                                  ? ex.Message
+                                                  : string.Empty), message);
             }
 
             var formattedMessage = message;
@@ -64,14 +71,14 @@ namespace TheBestLogger.Core.Utilities
 
                 formatError = string.IsNullOrEmpty(formattedMessage);
             }
-            
+
             return formattedMessage;
         }
 
         public static string ToSimpleNotEscapedJson(this List<KeyValuePair<string, object>> keyValuePairs)
         {
             if (keyValuePairs == null || keyValuePairs.Count < 1) return string.Empty;
-            
+
             var sb = new Utf16ValueStringBuilder(true);
             try
             {
@@ -108,10 +115,6 @@ namespace TheBestLogger.Core.Utilities
             {
                 sb.Dispose();
             }
-            
-           
-
         }
-
     }
 }
