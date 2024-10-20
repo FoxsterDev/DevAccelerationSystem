@@ -1,9 +1,18 @@
+using System;
+using System.Linq;
 using UnityEngine;
 
 namespace TheBestLogger
 {
     internal static class UnityLogExtension
     {
+        private static int _logLevelMaxIntValue = -1;
+        public static int LogLevelMaxIntValue()
+        {
+            if (_logLevelMaxIntValue > -1) return _logLevelMaxIntValue;
+            return (_logLevelMaxIntValue = Enum.GetValues(typeof(LogLevel)).Cast<int>().Max());
+        }
+
         public static LogLevel ConvertToTheBestLoggerLogLevel(this LogType unityLogType)
         {
             return unityLogType switch

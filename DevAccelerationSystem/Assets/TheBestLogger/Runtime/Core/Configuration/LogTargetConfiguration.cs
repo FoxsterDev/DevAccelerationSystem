@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using UnityEngine.Serialization;
 
 namespace TheBestLogger
@@ -11,8 +13,14 @@ namespace TheBestLogger
         public LogTargetBatchLogsConfiguration BatchLogs;
         public DebugModeConfiguration DebugMode = new DebugModeConfiguration();
         public bool IsThreadSafe;
-        public bool ShowTimestamp;
-        public LogLevelStackTraceConfiguration LogLevelLevelStackTrace = new LogLevelStackTraceConfiguration();
+        public LogLevelStackTraceConfiguration[] StackTraces = new LogLevelStackTraceConfiguration[5]
+        {
+            new LogLevelStackTraceConfiguration{ Level = LogLevel.Debug, Enabled = false},
+            new LogLevelStackTraceConfiguration{ Level = LogLevel.Info, Enabled = false},
+            new LogLevelStackTraceConfiguration{ Level = LogLevel.Warning, Enabled = false},
+            new LogLevelStackTraceConfiguration{ Level = LogLevel.Error, Enabled = true},
+            new LogLevelStackTraceConfiguration{ Level = LogLevel.Exception, Enabled = true}
+        };
 
         public virtual void Merge(LogTargetConfiguration newConfig)
         {
@@ -27,8 +35,7 @@ namespace TheBestLogger
             BatchLogs = newConfig.BatchLogs;
             if (newConfig.DebugMode != null) DebugMode = newConfig.DebugMode;
             IsThreadSafe = newConfig.IsThreadSafe;
-            ShowTimestamp = newConfig.ShowTimestamp;
-
+            if (newConfig.StackTraces != null && newConfig.StackTraces.Length == UnityLogExtension.LogLevelMaxIntValue() + 1) StackTraces = newConfig.StackTraces;
             Diagnostics.Write(" end for "+GetType().Name);
         }
     }

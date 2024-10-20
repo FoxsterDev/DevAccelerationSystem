@@ -61,7 +61,7 @@ namespace TheBestLogger
         [HideInCallstack] //handled or unhandled exceptions
         void ILogHandler.LogException(Exception exception, UnityEngine.Object context)
         {
-            _logConsumer.LogFormat(LogLevel.Exception, nameof(UnityDebugLogSource), exception.Message, exception, null, context);
+            _logConsumer.LogFormat(LogLevel.Exception, nameof(UnityDebugLogSource), string.Empty, exception, null, context);
         }
     }
 }

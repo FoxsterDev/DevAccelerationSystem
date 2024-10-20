@@ -6,8 +6,6 @@ namespace TheBestLogger
 {
     public abstract class LogTarget : ILogTarget
     {
-        private  bool _isThreadSafe;
-        protected bool _showTimestamp;
         private  LogLevel _minLogLevel;
         private  bool _muted;
         private LogTargetCategory[] _overrideCategories = new LogTargetCategory[0];
@@ -24,11 +22,19 @@ namespace TheBestLogger
 
         public virtual bool IsStackTraceEnabled(LogLevel level, string category)
         {
-            return Configuration?.LogLevelLevelStackTrace !=null && Configuration.LogLevelLevelStackTrace.IsEnabled(level);
+            // Check if the LogLevelStackTrace list is not null and that the index is within bounds
+            if (Configuration?.StackTraces != null && level >= 0 && (int)level < Configuration.StackTraces.Length)
+            {
+                return Configuration.StackTraces[(int)level].Enabled;
+            }
+            else
+            {
+                return false; // Default to false if there's no valid configuration
+            }
         }
 
         internal bool DebugModeEnabled = false;
-        
+
         public virtual bool IsLogLevelAllowed(LogLevel logLevel, string category)
         {
             if (_muted) return false;
@@ -85,8 +91,6 @@ namespace TheBestLogger
         {
             Diagnostics.Write(" begin for "+GetType().Name+" before minLogLevel: "+_minLogLevel+" , new minLogLevel: "+configuration.MinLogLevel);
             Configuration = configuration;
-            _isThreadSafe = configuration.IsThreadSafe;
-            _showTimestamp = configuration.ShowTimestamp;
             _minLogLevel = configuration.MinLogLevel;
             _muted = configuration.Muted;
             _overrideCategories = configuration.OverrideCategories;

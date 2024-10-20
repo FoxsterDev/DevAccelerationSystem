@@ -15,7 +15,7 @@ namespace TheBestLogger
 
         private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            _logConsumer?.LogFormat(LogLevel.Exception, nameof(CurrentDomainUnhandledExceptionLogSource), "UnhandledException" , (Exception)e.ExceptionObject);
+            _logConsumer?.LogFormat(LogLevel.Exception, nameof(CurrentDomainUnhandledExceptionLogSource), string.Empty , (Exception)e.ExceptionObject);
         }
 
         public void Dispose()
