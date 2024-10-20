@@ -32,14 +32,7 @@ namespace TheBestLogger.Examples.LogTargets
         )
         {
             var messageFormatted = "";
-            if (_showTimestamp)
-            {
-                messageFormatted = ZString.Concat("[", logAttributes.TimeStampFormatted, "] ", "[", category, "] ", message);
-            }
-            else
-            {
-                messageFormatted = ZString.Concat("[", category, "] ", message);
-            }
+            messageFormatted = ZString.Concat("[", logAttributes.TimeStampFormatted, "] ", "[", category, "] ", message);
 
             if (messageFormatted.Length > _configuration.MaxStringLengthForOneMessage)
             {

@@ -10,7 +10,7 @@ public class GameLoggerSample : MonoBehaviour
 {
     private void Start()
     {
-        RunTest();
+        //RunTest();
     }
 
     private async void RunTest()

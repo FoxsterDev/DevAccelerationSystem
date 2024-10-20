@@ -16,7 +16,6 @@ public class GameLoggerEntryPoint
 #if UNITY_EDITOR
             new UnityEditorConsoleLogTarget(),
 #endif
-
             new IMGUIRuntimeLogTarget()
         };
 

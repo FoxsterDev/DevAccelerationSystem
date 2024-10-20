@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c145627daa0784657bc5e2210003c629, type: 3}
+  m_Name: OpenSearchLogTargetConfiguration
+  m_EditorClassIdentifier: 
+  SpecificConfiguration:
+    Muted: 0
+    MinLogLevel: 2
+    OverrideCategories:
+    - Category: GamePlay
+      MinLevel: 1
+    BatchLogs:
+      Enabled: 1
+      UpdatePeriodMs: 1000
+      MaxCountLogs: 20
+    DebugMode:
+      Enabled: 1
+      MinLogLevel: 1
+      IDs:
+      - 4o3984u-vfdnvn843-403
+      - dksmdkcmfdmk-3924i39i493
+      OverrideCategories:
+      - Category: Loading
+        MinLevel: 0
+      - Category: Popups
+        MinLevel: 1
+    IsThreadSafe: 1
+    ShowTimestamp: 0
+    StackTraces:
+    - Level: 0
+      Enabled: 0
+    - Level: 1
+      Enabled: 0
+    - Level: 2
+      Enabled: 1
+    - Level: 3
+      Enabled: 1
+    - Level: 4
+      Enabled: 1
+    OpenSearchHostUrl: https://google.com
+    OpenSearchSingleLogMethod: /logs
+    IndexPrefix: -logs-
+    ApiKey: dsldm4934imckfdmkfdmk

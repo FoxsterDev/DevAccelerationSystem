@@ -1,5 +1,3 @@
-using UnityEngine;
-
 public class ErrorWhenDevelopmentBuild
 {
     private void Start()

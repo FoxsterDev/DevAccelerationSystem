@@ -28,14 +28,7 @@ namespace TheBestLogger
                                  Exception exception = null
         )
         {
-            if (_showTimestamp)
-            {
-                message = ZString.Concat("[", logAttributes.TimeStampFormatted, "] ", "[", category, "] ", message);
-            }
-            else
-            {
-                message = ZString.Concat("[", category, "] ", message);
-            }
+            message = ZString.Concat("[", category, "] ", message);
 
             switch (level)
             {
