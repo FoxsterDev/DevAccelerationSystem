@@ -3,6 +3,7 @@
     "com.foxsterdev.devaccelerationsystem": "file:../../DevAccelerationSystem/Assets/DevAccelerationSystem",
     "com.cysharp.zstring": "file:../../DevAccelerationSystem/Packages/ZString.Unity.2.6.0.tgz",
     "com.foxsterdev.thebestlogger": "file:../../DevAccelerationSystem/Assets/TheBestLogger",
+  "com.unity.nuget.newtonsoft-json": "3.2.1",
     "com.unity.2d.animation": "7.0.10",
     "com.unity.2d.sprite": "1.0.0",
     "com.unity.2d.spriteshape": "7.0.7",

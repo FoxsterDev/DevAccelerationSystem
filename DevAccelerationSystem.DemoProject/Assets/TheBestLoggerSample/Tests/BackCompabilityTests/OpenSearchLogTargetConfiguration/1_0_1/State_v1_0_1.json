@@ -1,0 +1,60 @@
+{
+  "Muted": false,
+  "MinLogLevel": 2,
+  "OverrideCategories": [
+    {
+      "Category": "GamePlay",
+      "MinLevel": 1
+    }
+  ],
+  "BatchLogs": {
+    "Enabled": true,
+    "UpdatePeriodMs": 1000,
+    "MaxCountLogs": 20
+  },
+  "DebugMode": {
+    "Enabled": true,
+    "MinLogLevel": 1,
+    "IDs": [
+      "4o3984u-vfdnvn843-403",
+      "dksmdkcmfdmk-3924i39i493"
+    ],
+    "OverrideCategories": [
+      {
+        "Category": "Loading",
+        "MinLevel": 0
+      },
+      {
+        "Category": "Popups",
+        "MinLevel": 1
+      }
+    ]
+  },
+  "IsThreadSafe": true,
+  "StackTraces": [
+    {
+      "Level": 0,
+      "Enabled": false
+    },
+    {
+      "Level": 1,
+      "Enabled": false
+    },
+    {
+      "Level": 2,
+      "Enabled": false
+    },
+    {
+      "Level": 3,
+      "Enabled": true
+    },
+    {
+      "Level": 4,
+      "Enabled": true
+    }
+  ],
+  "OpenSearchHostUrl": "https://google.com",
+  "OpenSearchSingleLogMethod": "/logs",
+  "IndexPrefix": "-logs-",
+  "ApiKey": "dsldm4934imckfdmkfdmk"
+}

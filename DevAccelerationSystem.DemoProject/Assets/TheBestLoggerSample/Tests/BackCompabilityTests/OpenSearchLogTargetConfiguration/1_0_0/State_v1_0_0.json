@@ -1,0 +1,46 @@
+{
+  "Muted": false,
+  "MinLogLevel": 3,
+  "OverrideCategories": [
+    {
+      "Category": "LoadingFunnel",
+      "MinLevel": 1
+    },
+    {
+      "Category": "GamePlay",
+      "MinLevel": 1
+    },
+    {
+      "Category": "Technical",
+      "MinLevel": 1
+    }
+  ],
+  "BatchLogs": {
+    "Enabled": true,
+    "UpdatePeriodMs": 1000,
+    "MaxCountLogs": 20
+  },
+  "DebugMode": {
+    "Enabled": false,
+    "MinLogLevel": 1,
+    "IDs": [
+      "4BC968B8-5991-53A2-8C50-984A3CEB0390"
+         ],
+    "OverrideCategories": [
+      {
+        "Category": "LoadingFunnel",
+        "MinLevel": 0
+      },
+      {
+        "Category": "GamePlay",
+        "MinLevel": 0
+      }
+    ]
+  },
+  "IsThreadSafe": false,
+  "ShowTimestamp": false,
+  "OpenSearchHostUrl": "https://OpenSearchHostUrl.com",
+  "OpenSearchSingleLogMethod": "/logs",
+  "IndexPrefix": "-logs-",
+  "ApiKey": "someapikey"
+}
