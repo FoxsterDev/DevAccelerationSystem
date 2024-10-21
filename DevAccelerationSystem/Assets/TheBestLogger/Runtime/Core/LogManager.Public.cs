@@ -59,7 +59,7 @@ namespace TheBestLogger
                 TryApplyConfigurations(dict, logTargets, _debugId);
 
                 var currentTimeUtc = _utilitySupplier.GetTimeStamp().currentTimeUtc;
-                _decoratedLogTargets = TryDecorateLogTargets(logTargets, currentTimeUtc);
+                _decoratedLogTargets = TryDecorateLogTargets(logTargets, currentTimeUtc, _utilitySupplier);
 
                 _targetUpdates = TrySubscribeForUpdates(_decoratedLogTargets);
 

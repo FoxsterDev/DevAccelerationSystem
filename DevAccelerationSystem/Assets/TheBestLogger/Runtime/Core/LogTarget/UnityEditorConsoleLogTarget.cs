@@ -51,6 +51,7 @@ namespace TheBestLogger
         public override void LogBatch(
             IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> logBatch)
         {
+            if (logBatch == null) return;
             if (logBatch.Count == 1)
             {
                 Log(

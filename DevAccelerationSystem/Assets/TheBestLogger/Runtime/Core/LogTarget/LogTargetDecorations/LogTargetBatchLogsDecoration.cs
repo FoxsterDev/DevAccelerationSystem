@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace TheBestLogger
 {
@@ -13,7 +12,7 @@ namespace TheBestLogger
         private ConcurrentBag<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> _bagNiceToHaveImportance;
         private ConcurrentBag<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> _bagRegularImportance;
 
-        uint IScheduledUpdate.PeriodMs => _config.UpdatePeriodMs;
+        uint IScheduledUpdate.PeriodMs => Configuration.BatchLogs.UpdatePeriodMs;
 
         public LogTargetBatchLogsDecoration(LogTargetBatchLogsConfiguration config,
                                             ILogTarget original,
@@ -30,13 +29,13 @@ namespace TheBestLogger
             _currentTimeUtc = currentTimeUtc;
         }
 
-        public void Dispose()
+        public  void Dispose()
         {
             _original.Dispose();
         }
 
-        public LogTargetConfiguration Configuration => _original.Configuration;
-        public string LogTargetConfigurationName => _original.LogTargetConfigurationName;
+         public LogTargetConfiguration Configuration => _original.Configuration;
+         string ILogTarget.LogTargetConfigurationName => _original.LogTargetConfigurationName;
 
         void ILogTarget.Mute(bool mute)
         {
@@ -108,6 +107,11 @@ namespace TheBestLogger
                             LogAttributes logAttributes,
                             Exception exception)
         {
+            if (!_config.Enabled)
+            {
+                _original.Log(level, category, message, logAttributes, exception);
+                return;
+            }
             if (logAttributes.LogImportance == LogImportance.Critical)
             {
                 //send existing bucket immediately or send just logs
@@ -129,7 +133,7 @@ namespace TheBestLogger
             ((IScheduledUpdate) this).Update(logAttributes.TimeUtc, (uint) (logAttributes.TimeUtc - _currentTimeUtc).TotalMilliseconds);
         }
 
-        public void LogBatch(IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> logBatch)
+         public void LogBatch(IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> logBatch)
         {
             _original.LogBatch(logBatch);
         }
@@ -140,7 +144,7 @@ namespace TheBestLogger
             _config = configuration.BatchLogs;
         }
 
-        public void SetDebugMode(bool isDebugModeEnabled)
+         void ILogTarget.SetDebugMode(bool isDebugModeEnabled)
         {
             _original.SetDebugMode(isDebugModeEnabled);
         }

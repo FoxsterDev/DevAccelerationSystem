@@ -62,7 +62,7 @@ namespace TheBestLogger
                     wr.Value?.Dispose();
                 }
 
-                _writers = null;
+                //_writers = null;
             }
         }
 
@@ -98,7 +98,7 @@ namespace TheBestLogger
                 writerId = "Main";
             }
 
-            Instance.GetWriter(writerId).Write(logEntry);
+            Instance.GetWriter(writerId)?.Write(logEntry);
         }
     }
 }

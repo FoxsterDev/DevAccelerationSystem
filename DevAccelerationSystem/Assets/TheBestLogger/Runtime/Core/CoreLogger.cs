@@ -125,10 +125,13 @@ namespace TheBestLogger
 
                 if (!logTarget.Configuration.IsThreadSafe && !isMainThread)
                 {
-                    Diagnostics.Write(
-                        message + " was skipped because " + logTarget.Configuration.GetType() +
-                        " is not thread safe and called outside of unity main thread", LogLevel.Warning);
-                    continue;
+                    if (!logTarget.Configuration.DispatchingLogsToMainThread.Enabled)
+                    {
+                        Diagnostics.Write(
+                            "Message:{"+message + "} was skipped because " + logTarget.Configuration.GetType() +
+                            " is not thread safe and called outside of unity main thread", LogLevel.Warning);
+                        continue;
+                    }
                 }
 
                 if (!logTarget.IsLogLevelAllowed(logLevel, _categoryName))

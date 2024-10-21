@@ -12,7 +12,7 @@ namespace TheBestLogger
         public LogTargetCategory[] OverrideCategories = new LogTargetCategory[0];
         public LogTargetBatchLogsConfiguration BatchLogs;
         public DebugModeConfiguration DebugMode = new DebugModeConfiguration();
-        public bool IsThreadSafe;
+
         public LogLevelStackTraceConfiguration[] StackTraces = new LogLevelStackTraceConfiguration[5]
         {
             new LogLevelStackTraceConfiguration{ Level = LogLevel.Debug, Enabled = false},
@@ -21,6 +21,9 @@ namespace TheBestLogger
             new LogLevelStackTraceConfiguration{ Level = LogLevel.Error, Enabled = true},
             new LogLevelStackTraceConfiguration{ Level = LogLevel.Exception, Enabled = true}
         };
+
+        public bool IsThreadSafe;
+        public LogTargetDispatchingLogsToMainThreadConfiguration DispatchingLogsToMainThread;
 
         public virtual void Merge(LogTargetConfiguration newConfig)
         {

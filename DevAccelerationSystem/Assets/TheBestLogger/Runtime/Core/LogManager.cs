@@ -199,33 +199,58 @@ namespace TheBestLogger
 
         private static IReadOnlyList<ILogTarget> TryDecorateLogTargets(
             IReadOnlyList<LogTarget> originalLogTargets,
-            DateTime currentTimeUtc)
+            DateTime currentTimeUtc, IUtilitySupplier utilitySupplier)
         {
             Diagnostics.Write("begin");
 
             var list = new List<ILogTarget>(originalLogTargets.Count);
+
             foreach (var originalLogTarget in originalLogTargets)
             {
-                if (originalLogTarget.Configuration == null)
+                var config = originalLogTarget.Configuration;
+                if (config == null)
                 {
                     Diagnostics.Write("originalLogTarget.Configuration == null for " + originalLogTarget.GetType(), LogLevel.Error);
                     continue;
                 }
 
-                if (originalLogTarget.Configuration.BatchLogs.Enabled)
+                ILogTarget decoratedLogTarget = null;
+                if (config.DispatchingLogsToMainThread.Enabled)
                 {
-                    var decoratedLogTarget = new LogTargetBatchLogsDecoration(
-                                                 originalLogTarget.Configuration.BatchLogs, originalLogTarget, currentTimeUtc) as ILogTarget;
+                    if (config.IsThreadSafe)
+                    {
+                        FallbackLogger.LogWarning($" {config} IsThreadSafe but DispatchingLogsToMainThread.Enabled");
+                    }
+
+                    decoratedLogTarget = new LogTargetDispatchingLogsToMainThreadDecoration(
+                                             config.DispatchingLogsToMainThread, originalLogTarget, SynchronizationContext.Current, utilitySupplier) as ILogTarget;
 
                     Diagnostics.Write(
                         originalLogTarget.GetType() + " was decorated by " +
                         decoratedLogTarget.GetType());
-
-                    list.Add(decoratedLogTarget);
-                    continue;
                 }
 
-                list.Add(originalLogTarget);
+                if (config.BatchLogs.Enabled)
+                {
+                    var toDecorate = decoratedLogTarget ?? originalLogTarget;
+                    decoratedLogTarget = new LogTargetBatchLogsDecoration(
+                                             config.BatchLogs, toDecorate, currentTimeUtc) as ILogTarget;
+
+                    Diagnostics.Write(
+                        toDecorate.GetType() + " was decorated by " +
+                        decoratedLogTarget.GetType());
+
+                }
+
+                if (decoratedLogTarget != null)
+                {
+                    list.Add(decoratedLogTarget);
+                }
+                else
+                {
+                    list.Add(originalLogTarget);
+                }
+
             }
 
             Diagnostics.Write("end");

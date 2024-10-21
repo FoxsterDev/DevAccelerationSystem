@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -8,14 +9,19 @@ using Debug = UnityEngine.Debug;
 
 public class GameLoggerSample : MonoBehaviour
 {
-    private void Start()
+    private async void Start()
     {
         //RunTest();
+        print(Application.persistentDataPath);
+        ThrowAsyncOnBackThread("ThrowAsyncOnBackThread_1");
+        await Task.Delay(100);
+        ThrowAsyncOnBackThread("ThrowAsyncOnBackThread_2");
+        //CreateFaultedTask("Faulted back task");
     }
 
     private async void RunTest()
     {
-        print(Application.persistentDataPath);
+       
         GameLogger.GameLoading.LogInfo("StartTest", new LogAttributes(LogImportance.Critical));
 
         await Task.Delay(100);
@@ -60,7 +66,7 @@ public class GameLoggerSample : MonoBehaviour
 
         Debug.LogWarning("Some unity debuglogwarning6");
 
-        Start2("backthread exception7");
+        ThrowAsyncOnBackThread("backthread exception7");
 
         throw new ArgumentException("Unhandled exception on main thread8");
     }
@@ -70,7 +76,7 @@ public class GameLoggerSample : MonoBehaviour
         LogManager.Dispose();
     }
 
-    private void Start2(string message)
+    private void ThrowAsyncOnBackThread(string message)
     {
         //ThreadPool.QueueUserWorkItem(o => Throw("from thread pool"));
         //new Thread(() => ThrowAsync("from thread")).Start();
@@ -104,10 +110,10 @@ public class GameLoggerSample : MonoBehaviour
         throw new Exception($"Throw() Exception {message}");
     }
 
-    private static void CreateFaultedTask()
+    private static void CreateFaultedTask(string message)
     {
         // Create a task that will throw an exception
-        Task.Run(() => { throw new InvalidOperationException("test UnobservedTaskException Task failure!"); });
+        Task.Run(() => { throw new InvalidOperationException(message); });
 
         // The exception from the above task is never observed (not awaited or caught)
     }

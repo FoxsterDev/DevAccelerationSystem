@@ -1,3 +1,5 @@
+using UnityEngine.Serialization;
+
 namespace TheBestLogger
 {
     [System.Serializable]
@@ -10,5 +12,15 @@ namespace TheBestLogger
         public uint UpdatePeriodMs;
         
         public uint MaxCountLogs;
+    }
+    
+    [System.Serializable]
+    public struct LogTargetDispatchingLogsToMainThreadConfiguration
+    {
+        public bool Enabled;
+        [FormerlySerializedAs("SingleLogDispatch")]
+        public bool SingleLogDispatchEnabled;
+        [FormerlySerializedAs("BatchLogsDispatch")]
+        public bool BatchLogsDispatchEnabled;
     }
 }
