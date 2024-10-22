@@ -1,17 +1,18 @@
 using System;
 using NUnit.Framework;
+using TheBestLogger.Tests.Editor;
 
 namespace TheBestLogger.Core.Tests
 {
     [TestFixture]
     public class LogTargetTests
     {
-        private TestLogTarget _logTarget;
+        private ILogTarget _logTarget;
 
         [SetUp]
         public void Setup()
         {
-            _logTarget = new TestLogTarget();
+            _logTarget = new MockLogTarget();
         }
 
         [Test]
@@ -41,7 +42,7 @@ namespace TheBestLogger.Core.Tests
         public void IsLogLevelAllowed_ShouldReturnTrue_WhenLogLevelIsAboveMinLevel()
         {
             // Arrange
-            var config = new TestLogTargetConfiguration
+            var config = new MockLogTargetConfiguration
             {
                 MinLogLevel = LogLevel.Info,
                 Muted = false
@@ -59,7 +60,7 @@ namespace TheBestLogger.Core.Tests
         public void IsLogLevelAllowed_ShouldReturnFalse_WhenMuted()
         {
             // Arrange
-            var config = new TestLogTargetConfiguration
+            var config = new MockLogTargetConfiguration
             {
                 MinLogLevel = LogLevel.Info,
                 Muted = true
@@ -77,7 +78,7 @@ namespace TheBestLogger.Core.Tests
         public void ApplyConfiguration_ShouldUpdateConfigurationCorrectly()
         {
             // Arrange
-            var config = new TestLogTargetConfiguration
+            var config = new MockLogTargetConfiguration
             {
                 MinLogLevel = LogLevel.Warning,
                 Muted = true
@@ -98,21 +99,7 @@ namespace TheBestLogger.Core.Tests
             _logTarget.SetDebugMode(true);
 
             // Assert
-            Assert.IsTrue(_logTarget.DebugModeEnabled, "Debug mode should be enabled.");
-        }
-
-        private class TestLogTargetConfiguration : LogTargetConfiguration
-        {
-
-        }
-        private class TestLogTarget : LogTarget
-        {
-            public override string LogTargetConfigurationName => "TestLogTarget";
-
-            public override void Log(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception = null)
-            {
-                // Test implementation
-            }
+            Assert.IsTrue(((MockLogTarget) _logTarget).DebugModeEnabled, "Debug mode should be enabled.");
         }
     }
 }

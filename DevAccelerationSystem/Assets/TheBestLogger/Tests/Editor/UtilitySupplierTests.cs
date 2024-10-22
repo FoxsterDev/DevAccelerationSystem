@@ -19,7 +19,7 @@ namespace TheBestLogger.Tests.Utilities
         public void IsMainThread_OnMainThread_ReturnsTrue()
         {
             // Act
-            bool isMainThread = _utilitySupplier.IsMainThread;
+            var isMainThread = _utilitySupplier.IsMainThread;
 
             // Assert
             Assert.IsTrue(isMainThread);

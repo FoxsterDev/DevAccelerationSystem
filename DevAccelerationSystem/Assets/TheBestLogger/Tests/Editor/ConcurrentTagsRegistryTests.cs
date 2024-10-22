@@ -2,11 +2,14 @@ using NUnit.Framework;
 using System.Linq;
 using System.Threading.Tasks;
 using TheBestLogger.Core.Utilities;
-
+using NUnit.Framework;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using TheBestLogger;
 
 namespace TheBestLogger.Tests.Utilities
 {
-    
     [TestFixture]
     public class ConcurrentTagsRegistryTests
     {
@@ -22,10 +25,10 @@ namespace TheBestLogger.Tests.Utilities
         public void AddTag_TagDoesNotExist_ReturnsTrueAndAddsTag()
         {
             // Arrange
-            string tag = "TestTag";
+            var tag = "TestTag";
 
             // Act
-            bool result = _registry.AddTag(tag);
+            var result = _registry.AddTag(tag);
 
             // Assert
             Assert.IsTrue(result);
@@ -36,11 +39,11 @@ namespace TheBestLogger.Tests.Utilities
         public void AddTag_TagAlreadyExists_ReturnsFalse()
         {
             // Arrange
-            string tag = "TestTag";
+            var tag = "TestTag";
             _registry.AddTag(tag);
 
             // Act
-            bool result = _registry.AddTag(tag);
+            var result = _registry.AddTag(tag);
 
             // Assert
             Assert.IsFalse(result);
@@ -50,11 +53,11 @@ namespace TheBestLogger.Tests.Utilities
         public void RemoveTag_TagExists_ReturnsTrueAndRemovesTag()
         {
             // Arrange
-            string tag = "TestTag";
+            var tag = "TestTag";
             _registry.AddTag(tag);
 
             // Act
-            bool result = _registry.RemoveTag(tag);
+            var result = _registry.RemoveTag(tag);
 
             // Assert
             Assert.IsTrue(result);
@@ -65,10 +68,10 @@ namespace TheBestLogger.Tests.Utilities
         public void RemoveTag_TagDoesNotExist_ReturnsFalse()
         {
             // Arrange
-            string tag = "NonExistentTag";
+            var tag = "NonExistentTag";
 
             // Act
-            bool result = _registry.RemoveTag(tag);
+            var result = _registry.RemoveTag(tag);
 
             // Assert
             Assert.IsFalse(result);
@@ -78,11 +81,11 @@ namespace TheBestLogger.Tests.Utilities
         public void ContainsTag_TagExists_ReturnsTrue()
         {
             // Arrange
-            string tag = "TestTag";
+            var tag = "TestTag";
             _registry.AddTag(tag);
 
             // Act
-            bool result = _registry.ContainsTag(tag);
+            var result = _registry.ContainsTag(tag);
 
             // Assert
             Assert.IsTrue(result);
@@ -92,10 +95,10 @@ namespace TheBestLogger.Tests.Utilities
         public void ContainsTag_TagDoesNotExist_ReturnsFalse()
         {
             // Arrange
-            string tag = "NonExistentTag";
+            var tag = "NonExistentTag";
 
             // Act
-            bool result = _registry.ContainsTag(tag);
+            var result = _registry.ContainsTag(tag);
 
             // Assert
             Assert.IsFalse(result);
@@ -112,7 +115,7 @@ namespace TheBestLogger.Tests.Utilities
             }
 
             // Act
-            string[] result = _registry.GetAllTags();
+            var result = _registry.GetAllTags();
 
             // Assert
             CollectionAssert.AreEquivalent(tags, result);
@@ -122,13 +125,13 @@ namespace TheBestLogger.Tests.Utilities
         public void GetAllTags_CacheIsUpdatedCorrectly()
         {
             // Arrange
-            string tag = "Tag1";
+            var tag = "Tag1";
             _registry.AddTag(tag);
             _registry.GetAllTags(); // Populate cache
 
             // Act
             _registry.RemoveTag(tag);
-            string[] result = _registry.GetAllTags();
+            var result = _registry.GetAllTags();
 
             // Assert
             Assert.IsEmpty(result);
@@ -138,7 +141,7 @@ namespace TheBestLogger.Tests.Utilities
         public void ConcurrentAccess_AddAndRemoveTags_HandlesConcurrencyCorrectly()
         {
             // Arrange
-            string[] tagsToAdd = Enumerable.Range(0, 100).Select(i => $"Tag{i}").ToArray();
+            var tagsToAdd = Enumerable.Range(0, 100).Select(i => $"Tag{i}").ToArray();
 
             // Act
             Parallel.ForEach(tagsToAdd, tag => _registry.AddTag(tag));

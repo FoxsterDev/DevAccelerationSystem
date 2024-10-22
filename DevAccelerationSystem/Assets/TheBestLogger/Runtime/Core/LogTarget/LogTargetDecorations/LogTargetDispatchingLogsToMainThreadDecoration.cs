@@ -10,7 +10,8 @@ namespace TheBestLogger
         private LogTargetDispatchingLogsToMainThreadConfiguration _config;
         private readonly ILogTarget _original;
         private SynchronizationContext _unityContext;
-        private IUtilitySupplier _utilitySupplier;
+        private readonly IUtilitySupplier _utilitySupplier;
+ 
         public LogTargetDispatchingLogsToMainThreadDecoration(LogTargetDispatchingLogsToMainThreadConfiguration config,
                                                               ILogTarget original,  SynchronizationContext unityContext, 
                                                               IUtilitySupplier utilitySupplier) 
