@@ -19,7 +19,7 @@ MonoBehaviour:
     - Category: GameLoading
       MinLevel: 1
     BatchLogs:
-      Enabled: 1
+      Enabled: 0
       UpdatePeriodMs: 500
       MaxCountLogs: 5
     DebugMode:

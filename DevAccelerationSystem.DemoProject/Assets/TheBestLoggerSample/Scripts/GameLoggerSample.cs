@@ -13,6 +13,7 @@ public class GameLoggerSample : MonoBehaviour
     {
         //RunTest();
         print(Application.persistentDataPath);
+        return;
         ThrowAsyncOnBackThread("ThrowAsyncOnBackThread_1");
         await Task.Delay(100);
         ThrowAsyncOnBackThread("ThrowAsyncOnBackThread_2");
@@ -80,10 +81,10 @@ public class GameLoggerSample : MonoBehaviour
     {
         //ThreadPool.QueueUserWorkItem(o => Throw("from thread pool"));
         //new Thread(() => ThrowAsync("from thread")).Start();
-        Task.Run(() => ThrowAsync(message)); //.Wait();
+        Task.Run(() => ThrowHandledAsync(message)); //.Wait();
     }
 
-    private void ThrowAsync(string message)
+    private void ThrowHandledAsync(string message)
     {
         try
         {

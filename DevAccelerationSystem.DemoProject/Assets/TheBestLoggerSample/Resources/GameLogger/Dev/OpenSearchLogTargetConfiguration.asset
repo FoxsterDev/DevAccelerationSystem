@@ -33,8 +33,6 @@ MonoBehaviour:
         MinLevel: 0
       - Category: Popups
         MinLevel: 1
-    IsThreadSafe: 1
-    ShowTimestamp: 0
     StackTraces:
     - Level: 0
       Enabled: 0
@@ -46,6 +44,11 @@ MonoBehaviour:
       Enabled: 1
     - Level: 4
       Enabled: 1
+    IsThreadSafe: 1
+    DispatchingLogsToMainThread:
+      Enabled: 1
+      SingleLogDispatchEnabled: 0
+      BatchLogsDispatchEnabled: 1
     OpenSearchHostUrl: https://google.com
     OpenSearchSingleLogMethod: /logs
     IndexPrefix: -logs-

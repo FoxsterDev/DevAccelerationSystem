@@ -82,7 +82,8 @@ namespace TheBestLogger
                 logSources.Add(new UnobservedTaskExceptionLogSource(logger as ILogConsumer));
                 logSources.Add(new SystemDiagnosticsDebugLogSource(logger as ILogConsumer));
 #else
-                logSources.Add(new UnityApplicationLogSource(logger as ILogConsumer));
+                logSources.Add(new UnityApplicationLogSourceThreaded(logger as ILogConsumer));
+                logSources.Add(new UnobservedTaskExceptionLogSource(logger as ILogConsumer));
 #endif
 
                 if (_targetUpdates.Count > 0)
