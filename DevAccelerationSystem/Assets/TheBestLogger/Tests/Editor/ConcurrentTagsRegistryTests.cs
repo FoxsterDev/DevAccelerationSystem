@@ -7,7 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using TheBestLogger;
 
-namespace TheBestLogger.Tests.Utilities
+namespace TheBestLogger.Tests.Editor
 {
     [TestFixture]
     public class ConcurrentTagsRegistryTests

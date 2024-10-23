@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using UnityEngine;
 using UnityEngine.Serialization;
 
 namespace TheBestLogger
@@ -13,6 +14,10 @@ namespace TheBestLogger
         public LogTargetBatchLogsConfiguration BatchLogs;
         public DebugModeConfiguration DebugMode = new DebugModeConfiguration();
 
+        /// <summary>
+        /// For performance reasons it will accessed with the int of loglevel, [0] for Debug, [1] for Info, [2] for Warning, [3] for Error, [4] for Exception
+        /// </summary>
+        [Tooltip(" [0] for Debug, [1] for Info, [2] for Warning, [3] for Error, [4] for Exception")]
         public LogLevelStackTraceConfiguration[] StackTraces = new LogLevelStackTraceConfiguration[5]
         {
             new LogLevelStackTraceConfiguration{ Level = LogLevel.Debug, Enabled = false},
@@ -38,7 +43,8 @@ namespace TheBestLogger
             BatchLogs = newConfig.BatchLogs;
             if (newConfig.DebugMode != null) DebugMode = newConfig.DebugMode;
             IsThreadSafe = newConfig.IsThreadSafe;
-            if (newConfig.StackTraces != null && newConfig.StackTraces.Length == UnityLogExtension.LogLevelMaxIntValue() + 1) StackTraces = newConfig.StackTraces;
+            const int countOfLogLevels = 5;
+            if (newConfig.StackTraces != null && newConfig.StackTraces.Length == countOfLogLevels) StackTraces = newConfig.StackTraces;
             Diagnostics.Write(" end for "+GetType().Name);
         }
     }

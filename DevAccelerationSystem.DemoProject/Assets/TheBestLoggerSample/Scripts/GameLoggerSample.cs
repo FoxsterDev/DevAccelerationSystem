@@ -11,24 +11,25 @@ public class GameLoggerSample : MonoBehaviour
 {
     private async void Start()
     {
-        //RunTest();
+        
         print(Application.persistentDataPath);
-        return;
-        ThrowAsyncOnBackThread("ThrowAsyncOnBackThread_1");
+        RunTest();
+        //return;
+        //ThrowAsyncOnBackThread("ThrowAsyncOnBackThread_1");
         await Task.Delay(100);
-        ThrowAsyncOnBackThread("ThrowAsyncOnBackThread_2");
+        //ThrowAsyncOnBackThread("ThrowAsyncOnBackThread_2");
         //CreateFaultedTask("Faulted back task");
     }
 
     private async void RunTest()
     {
-       
         GameLogger.GameLoading.LogInfo("StartTest", new LogAttributes(LogImportance.Critical));
 
         await Task.Delay(100);
         GameLogger.GameLoading.LogDebug("debugtest1");
         await Task.Delay(100);
         GameLogger.GameLoading.LogDebug("debugtest2");
+        UnityEngine.Debug.Log("UnityEngine.Debug.Log2");
         await Task.Delay(100);
 
         var dict = LogManager.GetCurrentLogTargetConfigurations();

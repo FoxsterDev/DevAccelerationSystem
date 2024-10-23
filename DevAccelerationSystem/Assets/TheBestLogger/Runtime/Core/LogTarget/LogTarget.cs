@@ -6,8 +6,8 @@ namespace TheBestLogger
 {
     public abstract class LogTarget : ILogTarget
     {
-        private  LogLevel _minLogLevel;
-        private  bool _muted;
+        private LogLevel _minLogLevel;
+        private bool _muted;
         private LogTargetCategory[] _overrideCategories = new LogTargetCategory[0];
         private int _overrideCategoriesCount;
         private string _id;
@@ -23,9 +23,9 @@ namespace TheBestLogger
         public virtual bool IsStackTraceEnabled(LogLevel level, string category)
         {
             // Check if the LogLevelStackTrace list is not null and that the index is within bounds
-            if (Configuration?.StackTraces != null && level >= 0 && (int)level < Configuration.StackTraces.Length)
+            if (Configuration?.StackTraces != null && level >= 0 && (int) level < Configuration.StackTraces.Length)
             {
-                return Configuration.StackTraces[(int)level].Enabled;
+                return Configuration.StackTraces[(int) level].Enabled;
             }
             else
             {
@@ -38,66 +38,65 @@ namespace TheBestLogger
         public virtual bool IsLogLevelAllowed(LogLevel logLevel, string category)
         {
             if (_muted) return false;
-            if (logLevel >= _minLogLevel) return true;
+
+            if (DebugModeEnabled)
+            {
+                var debugMode = Configuration.DebugMode;
+
+                var overrideCategoriesCount = debugMode.OverrideCategories != null
+                                                  ? debugMode.OverrideCategories.Length
+                                                  : 0;
+                for (var index = 0; index < overrideCategoriesCount; index++)
+                {
+                    var logLevelOverride = debugMode.OverrideCategories[index];
+                    var areEqual = string.Equals(logLevelOverride.Category, category, StringComparison.Ordinal);
+                    if (areEqual)
+                    {
+                        return (logLevel >= logLevelOverride.MinLevel);
+                    }
+                }
+
+                return logLevel >= debugMode.MinLogLevel;
+            }
 
             if (_overrideCategoriesCount > 0)
             {
                 for (var index = 0; index < _overrideCategoriesCount; index++)
                 {
                     var logLevelOverride = _overrideCategories[index];
-                    if (logLevelOverride.Category == category)
+                    var areEqual = string.Equals(logLevelOverride.Category, category, StringComparison.Ordinal);
+                    if (areEqual)
                     {
-                        if (logLevel >= logLevelOverride.MinLevel)
-                        {
-                            return true;
-                        }
-
-                        break;
+                        return (logLevel >= logLevelOverride.MinLevel);
                     }
                 }
             }
 
-            if (DebugModeEnabled)
-            {
-                var debugMode = Configuration.DebugMode;
-                if (logLevel >= debugMode.MinLogLevel) return true;
-                
-                for (var index = 0; index < debugMode.OverrideCategories.Length; index++)
-                {
-                    var logLevelOverride = debugMode.OverrideCategories[index];
-                    if (logLevelOverride.Category == category)
-                    {
-                        if (logLevel >= logLevelOverride.MinLevel)
-                        {
-                            return true;
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-            return false;
+            return (logLevel >= _minLogLevel);
         }
 
+        public abstract void Log(LogLevel level,
+                                 string category,
+                                 string message,
+                                 LogAttributes logAttributes,
+                                 Exception exception = null);
 
-        public abstract void Log(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception = null);
-        public virtual void LogBatch(IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> logBatch)
-        {
-            throw new NotImplementedException();
-        }
+        public abstract void LogBatch(
+            IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> logBatch);
 
         public virtual void ApplyConfiguration(LogTargetConfiguration configuration)
         {
-            Diagnostics.Write(" begin for "+GetType().Name+" before minLogLevel: "+_minLogLevel+" , new minLogLevel: "+configuration.MinLogLevel);
+            Diagnostics.Write(" begin for " + GetType().Name + " before minLogLevel: " + _minLogLevel + " , new minLogLevel: " + configuration.MinLogLevel);
             Configuration = configuration;
             _minLogLevel = configuration.MinLogLevel;
             _muted = configuration.Muted;
             _overrideCategories = configuration.OverrideCategories;
             _overrideCategoriesCount =
-                _overrideCategories != null ? _overrideCategories.Length : 0;
+                _overrideCategories != null
+                    ? _overrideCategories.Length
+                    : 0;
 
-            Diagnostics.Write(" finish "+GetType().Name);
+            Diagnostics.Write(" finish " + GetType().Name);
         }
 
         public void SetDebugMode(bool isDebugModeEnabled)
@@ -115,7 +114,6 @@ namespace TheBestLogger
 
         public virtual void Dispose()
         {
-             
         }
 
         public override int GetHashCode()

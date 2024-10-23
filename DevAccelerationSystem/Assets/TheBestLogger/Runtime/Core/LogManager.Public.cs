@@ -109,6 +109,12 @@ namespace TheBestLogger
                 return FallbackLogger;
             }
 
+            if (string.IsNullOrEmpty(categoryName))
+            {
+                Diagnostics.Write("can not create a logger without categoryName, fallback logger will be returned", LogLevel.Error);
+                return FallbackLogger;
+            }
+
             if (!_loggers.TryGetValue(categoryName, out var logger))
             {
                 Diagnostics.Write(" will create a new logger for category: " + categoryName);

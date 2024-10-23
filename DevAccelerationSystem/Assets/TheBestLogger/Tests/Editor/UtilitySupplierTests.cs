@@ -2,7 +2,7 @@ using System.Threading;
 using NUnit.Framework;
 using TheBestLogger.Core.Utilities;
 
-namespace TheBestLogger.Tests.Utilities
+namespace TheBestLogger.Tests.Editor
 {
     [TestFixture]
     public class UtilitySupplierTests

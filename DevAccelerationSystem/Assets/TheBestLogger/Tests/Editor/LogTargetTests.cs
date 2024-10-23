@@ -1,22 +1,82 @@
 using System;
+using System.Collections.Generic;
 using NUnit.Framework;
-using TheBestLogger.Tests.Editor;
+using TheBestLogger;
 
-namespace TheBestLogger.Core.Tests
+namespace TheBestLogger.Tests.Editor
 {
     [TestFixture]
     public class LogTargetTests
     {
-        private ILogTarget _logTarget;
+        private MockLogTarget _logTarget;
+        private LogTargetConfiguration _config;
 
         [SetUp]
-        public void Setup()
+        public void SetUp()
         {
+            _config = new MockLogTargetConfiguration
+            {
+                MinLogLevel = LogLevel.Warning,
+                Muted = false,
+                StackTraces = new LogLevelStackTraceConfiguration[]
+                {
+                    new LogLevelStackTraceConfiguration{ Level = LogLevel.Debug, Enabled = false},
+                    new LogLevelStackTraceConfiguration{ Level = LogLevel.Info, Enabled = true},
+                    new LogLevelStackTraceConfiguration{ Level = LogLevel.Warning, Enabled = true},
+                    new LogLevelStackTraceConfiguration{ Level = LogLevel.Error, Enabled = true},
+                    new LogLevelStackTraceConfiguration{ Level = LogLevel.Exception, Enabled = true}
+                },
+                OverrideCategories = new LogTargetCategory[1]{ new LogTargetCategory{Category = "TestOverrideCategory", MinLevel = LogLevel.Warning}},
+                DebugMode = new DebugModeConfiguration
+                {
+                    Enabled = true,
+                    MinLogLevel = LogLevel.Info,
+                    OverrideCategories = new LogTargetCategory[1]{ new LogTargetCategory{Category = "TestDebugCategory", MinLevel = LogLevel.Debug}}
+                }
+            };
+
             _logTarget = new MockLogTarget();
+            _logTarget.ApplyConfiguration(_config);
         }
 
         [Test]
-        public void Mute_ShouldMuteLogTarget()
+        public void Mute_WhenCalled_SetsMutedState()
+        {
+            // Act
+            _logTarget.Mute(true);
+
+            // Assert
+            Assert.IsFalse(_logTarget.IsLogLevelAllowed(LogLevel.Info, "TestCategory"));
+        }
+
+        [Test]
+        public void IsStackTraceEnabled_WhenStackTraceEnabled_ReturnsTrue()
+        {
+            // Arrange
+            var level = LogLevel.Error;
+
+            // Act
+            var result = _logTarget.IsStackTraceEnabled(level, "TestCategory");
+
+            // Assert
+            Assert.IsTrue(result);
+        }
+
+        [Test]
+        public void IsStackTraceEnabled_WhenStackTraceDisabled_ReturnsFalse()
+        {
+            // Arrange
+            var level = LogLevel.Debug;
+
+            // Act
+            var result = _logTarget.IsStackTraceEnabled(level, "TestCategory");
+
+            // Assert
+            Assert.IsFalse(result);
+        }
+
+        [Test]
+        public void IsLogLevelAllowed_WhenMuted_ReturnsFalse()
         {
             // Arrange
             _logTarget.Mute(true);
@@ -25,67 +85,95 @@ namespace TheBestLogger.Core.Tests
             var result = _logTarget.IsLogLevelAllowed(LogLevel.Info, "TestCategory");
 
             // Assert
-            Assert.IsFalse(result, "LogTarget should not allow log levels when muted.");
+            Assert.IsFalse(result);
         }
 
         [Test]
-        public void IsStackTraceEnabled_ShouldReturnFalse_WhenConfigurationIsNull()
-        {
-            // Act
-            var result = _logTarget.IsStackTraceEnabled(LogLevel.Info, "TestCategory");
-
-            // Assert
-            Assert.IsFalse(result, "Stack trace should not be enabled if configuration is null.");
-        }
-
-        [Test]
-        public void IsLogLevelAllowed_ShouldReturnTrue_WhenLogLevelIsAboveMinLevel()
+        public void IsLogLevelAllowed_WhenDebugModeEnabledAndLogLevelAllowed_ReturnsTrue()
         {
             // Arrange
-            var config = new MockLogTargetConfiguration
-            {
-                MinLogLevel = LogLevel.Info,
-                Muted = false
-            };
-            _logTarget.ApplyConfiguration(config);
+            _logTarget.SetDebugMode(true);
 
             // Act
-            var result = _logTarget.IsLogLevelAllowed(LogLevel.Warning, "TestCategory");
+            var result = _logTarget.IsLogLevelAllowed(LogLevel.Debug, "TestDebugCategory");
 
             // Assert
-            Assert.IsTrue(result, "LogTarget should allow log levels greater than or equal to min log level.");
+            Assert.IsTrue(result);
         }
 
         [Test]
-        public void IsLogLevelAllowed_ShouldReturnFalse_WhenMuted()
+        public void IsLogLevelAllowed_WhenDebugModeEnabledAndLogLevelHigherDebugMinLevel_ReturnsTrue()
         {
             // Arrange
-            var config = new MockLogTargetConfiguration
-            {
-                MinLogLevel = LogLevel.Info,
-                Muted = true
-            };
-            _logTarget.ApplyConfiguration(config);
+            _logTarget.SetDebugMode(true);
 
             // Act
-            var result = _logTarget.IsLogLevelAllowed(LogLevel.Warning, "TestCategory");
+            var result = _logTarget.IsLogLevelAllowed(LogLevel.Info, "TestCategory");
 
             // Assert
-            Assert.IsFalse(result, "LogTarget should not allow any log levels when muted.");
+            Assert.IsTrue(result);
+        }
+        
+        [Test]
+        public void IsLogLevelAllowed_WhenDebugModeEnabledAndLogLevelBelowDebugMinLevel_ReturnsFalse()
+        {
+            // Arrange
+            _logTarget.SetDebugMode(true);
+
+            // Act
+            var result = _logTarget.IsLogLevelAllowed(LogLevel.Debug, "TestCategory");
+
+            // Assert
+            Assert.IsFalse(result);
+        }
+        
+        [Test]
+        public void IsLogLevelAllowed_WhenLogLevelBelowMin_ReturnsFalse()
+        {
+            // Arrange
+            _logTarget.ApplyConfiguration(new MockLogTargetConfiguration { MinLogLevel = LogLevel.Warning });
+
+            // Act
+            var result = _logTarget.IsLogLevelAllowed(LogLevel.Info, "TestCategory");
+
+            // Assert
+            Assert.IsFalse(result);
         }
 
         [Test]
-        public void ApplyConfiguration_ShouldUpdateConfigurationCorrectly()
+        public void IsLogLevelAllowed_WhenOverrideCategoryLogLevelHigherMin_ReturnsTrue()
         {
             // Arrange
-            var config = new MockLogTargetConfiguration
-            {
-                MinLogLevel = LogLevel.Warning,
-                Muted = true
-            };
+            //_logTarget.ApplyConfiguration(new MockLogTargetConfiguration { MinLogLevel = LogLevel.Error });
 
             // Act
-            _logTarget.ApplyConfiguration(config);
+            var result = _logTarget.IsLogLevelAllowed(LogLevel.Warning, "TestOverrideCategory");
+
+            // Assert
+            Assert.IsTrue(result);
+        }
+ 
+        [Test]
+        public void IsLogLevelAllowed_WhenOverrideCategoryLogLevelBelowMin_ReturnsFalse()
+        {
+            // Arrange
+            //_logTarget.ApplyConfiguration(new MockLogTargetConfiguration { MinLogLevel = LogLevel.Error });
+
+            // Act
+            var result = _logTarget.IsLogLevelAllowed(LogLevel.Info, "TestOverrideCategory");
+
+            // Assert
+            Assert.IsFalse(result);
+        }
+ 
+        [Test]
+        public void ApplyConfiguration_UpdatesLogLevelAndMutedState()
+        {
+            // Arrange
+            var newConfig = new MockLogTargetConfiguration { MinLogLevel = LogLevel.Warning, Muted = true };
+
+            // Act
+            _logTarget.ApplyConfiguration(newConfig);
 
             // Assert
             Assert.AreEqual(LogLevel.Warning, _logTarget.Configuration.MinLogLevel);
@@ -93,13 +181,13 @@ namespace TheBestLogger.Core.Tests
         }
 
         [Test]
-        public void SetDebugMode_ShouldEnableDebugMode()
+        public void SetDebugMode_WhenEnabled_SetsDebugModeState()
         {
             // Act
             _logTarget.SetDebugMode(true);
 
             // Assert
-            Assert.IsTrue(((MockLogTarget) _logTarget).DebugModeEnabled, "Debug mode should be enabled.");
+            Assert.IsTrue(_logTarget.DebugModeEnabled);
         }
     }
 }

@@ -48,6 +48,11 @@ namespace TheBestLogger.Examples.LogTargets
             }
         }
 
+        public override void LogBatch(IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> logBatch)
+        {
+            throw new NotImplementedException();
+        }
+
         public override void ApplyConfiguration(LogTargetConfiguration configuration)
         {
             base.ApplyConfiguration(configuration);
