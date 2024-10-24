@@ -68,6 +68,19 @@ namespace TheBestLogger.Integration.Tests
                             throw new Exception(logTargetConfigurationName + " is not valid");
                         }
                     });
+                
+                Assert.DoesNotThrow(
+                    () =>
+                    {
+                        var obj = JsonConvert.DeserializeObject<OpenSearchLogTargetConfiguration_2_0_0>(json);
+                        VerifyFieldsNotNull(obj);
+                        if (obj == null ||
+                            obj.DebugMode == null ||
+                            obj.BatchLogs.MaxCountLogs == 0)
+                        {
+                            throw new Exception(logTargetConfigurationName + " is not valid");
+                        }
+                    });
             }
         }
 
@@ -159,6 +172,7 @@ namespace TheBestLogger.Integration.Tests
         {
             if (logTargetConfigurationName == nameof(OpenSearchLogTargetConfiguration))
             {
+                //Debug.Log(nameof(ThePreviousVersionCanBeDeserializedWithUnityJson));
                 Assert.DoesNotThrow(
                     () =>
                     {
@@ -171,8 +185,22 @@ namespace TheBestLogger.Integration.Tests
                             throw new Exception(logTargetConfigurationName + " is not valid");
                         }
                     });
+                Assert.DoesNotThrow(
+                    () =>
+                    {
+                        var obj = JsonUtility.FromJson<OpenSearchLogTargetConfiguration_2_0_0>(json);
+                        VerifyFieldsNotNull(obj);
+                        if (obj == null ||
+                            obj.DebugMode == null ||
+                            obj.BatchLogs.MaxCountLogs == 0)
+                        {
+                            throw new Exception(logTargetConfigurationName + " is not valid");
+                        }
+                    });
             }
         }
+        
+   
 
         private static IEnumerable GetTestData()
         {

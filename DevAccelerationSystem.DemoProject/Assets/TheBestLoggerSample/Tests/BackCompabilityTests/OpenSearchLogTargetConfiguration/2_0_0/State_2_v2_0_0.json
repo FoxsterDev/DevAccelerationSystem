@@ -55,10 +55,5 @@
       "Enabled": true
     }
   ],
-  "IsThreadSafe": false,
-  "DispatchingLogsToMainThread": {
-    "Enabled": true,
-    "SingleLogDispatchEnabled": true,
-    "BatchLogsDispatchEnabled": true
-  }
+  "IsThreadSafe": false
 }

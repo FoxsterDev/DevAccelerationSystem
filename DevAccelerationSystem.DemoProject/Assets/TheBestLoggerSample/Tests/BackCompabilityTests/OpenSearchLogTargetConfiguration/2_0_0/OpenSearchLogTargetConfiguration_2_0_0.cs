@@ -14,7 +14,7 @@ public class OpenSearchLogTargetConfiguration_2_0_0
     public List<OverrideCategory> OverrideCategories;
     public BatchLogsConfiguration BatchLogs;
     public DebugModeConfiguration DebugMode;
-    public List<StackTraceConfiguration> StackTraces;
+    public List<StackTraceConfiguration> StackTraces = new List<StackTraceConfiguration>();
     public bool IsThreadSafe;
     public DispatchingLogsConfiguration DispatchingLogsToMainThread;
 

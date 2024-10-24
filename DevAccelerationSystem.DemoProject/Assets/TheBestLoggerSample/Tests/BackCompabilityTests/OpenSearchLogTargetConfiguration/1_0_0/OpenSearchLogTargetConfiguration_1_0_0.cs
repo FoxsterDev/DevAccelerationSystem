@@ -49,17 +49,5 @@ namespace TheBestLogger.Integration.Tests
             public List<string> IDs;
             public List<OverrideCategory> OverrideCategories;
         }
-
-        // Method to deserialize JSON string into an instance of LoggerConfiguration using Newtonsoft.Json
-        public static OpenSearchLogTargetConfiguration_1_0_0 FromJson(string jsonString)
-        {
-            return JsonConvert.DeserializeObject<OpenSearchLogTargetConfiguration_1_0_0>(jsonString);
-        }
-
-        // Method to deserialize JSON string using Unity's JsonUtility (for Unity compatibility)
-        public static OpenSearchLogTargetConfiguration_1_0_0 FromJsonUnity(string jsonString)
-        {
-            return JsonUtility.FromJson<OpenSearchLogTargetConfiguration_1_0_0>(jsonString);
-        }
     }
 }
