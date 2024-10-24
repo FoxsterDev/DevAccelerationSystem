@@ -1,0 +1,73 @@
+{
+  "OpenSearchHostUrl": "https://google.com",
+  "OpenSearchSingleLogMethod": "/logs",
+  "IndexPrefix": "-logs-",
+  "ApiKey": "someapikey",
+  "Muted": false,
+  "MinLogLevel": 2,
+  "OverrideCategories": [
+    {
+      "Category": "LoadingFunnel",
+      "MinLevel": 1
+    },
+    {
+      "Category": "GamePlay",
+      "MinLevel": 1
+    },
+    {
+      "Category": "Technical",
+      "MinLevel": 1
+    }
+  ],
+  "BatchLogs": {
+    "Enabled": true,
+    "UpdatePeriodMs": 1000,
+    "MaxCountLogs": 20
+  },
+  "DebugMode": {
+    "Enabled": true,
+    "MinLogLevel": 1,
+    "IDs": [
+      "somedebugkey1",
+      "somedebugkey2"
+    ],
+    "OverrideCategories": [
+      {
+        "Category": "LoadingFunnel",
+        "MinLevel": 0
+      },
+      {
+        "Category": "GamePlay",
+        "MinLevel": 0
+      }
+    ]
+  },
+  "StackTraces": [
+    {
+      "Level": 0,
+      "Enabled": false
+    },
+    {
+      "Level": 1,
+      "Enabled": false
+    },
+    {
+      "Level": 2,
+      "Enabled": false
+    },
+    {
+      "Level": 3,
+      "Enabled": true
+    },
+    {
+      "Level": 4,
+      "Enabled": true
+    }
+  ],
+  "IsThreadSafe": false,
+  "DispatchingLogsToMainThread": {
+    "Enabled": true,
+    "SingleLogDispatchEnabled": true,
+    "BatchLogsDispatchEnabled": true
+  }
+}

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using TheBestLogger.Examples.LogTargets;
@@ -38,7 +39,17 @@ namespace TheBestLogger.Integration.Tests
 
             return list;
         }
-
+        public static void VerifyFieldsNotNull(object obj)
+        {
+            foreach (var field in obj.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance))
+            {
+                object value = field.GetValue(obj);
+                if (value == null)
+                {
+                    throw new InvalidOperationException($"Field '{field.Name}' is null");
+                }
+            }
+        }
         [Test]
         [TestCaseSource(nameof(GetTestData))]
         public void ThePreviousVersionCanBeDeserializedWithNewtonJson(string logTargetConfigurationName, string json)
@@ -49,6 +60,7 @@ namespace TheBestLogger.Integration.Tests
                     () =>
                     {
                         var obj = JsonConvert.DeserializeObject<OpenSearchLogTargetConfiguration_1_0_0>(json);
+                        VerifyFieldsNotNull(obj);
                         if (obj == null ||
                             obj.DebugMode == null ||
                             obj.BatchLogs.MaxCountLogs == 0)
@@ -69,6 +81,7 @@ namespace TheBestLogger.Integration.Tests
                     () =>
                     {
                         var obj = JsonConvert.DeserializeObject<OpenSearchLogTargetConfiguration>(json);
+                        VerifyFieldsNotNull(obj);
                         if (obj == null ||
                             obj.DebugMode == null ||
                             obj.BatchLogs.MaxCountLogs == 0 || obj.StackTraces == null || obj.StackTraces.Length < 1)
@@ -150,6 +163,7 @@ namespace TheBestLogger.Integration.Tests
                     () =>
                     {
                         var obj = JsonUtility.FromJson<OpenSearchLogTargetConfiguration_1_0_0>(json);
+                        VerifyFieldsNotNull(obj);
                         if (obj == null ||
                             obj.DebugMode == null ||
                             obj.BatchLogs.MaxCountLogs == 0)
