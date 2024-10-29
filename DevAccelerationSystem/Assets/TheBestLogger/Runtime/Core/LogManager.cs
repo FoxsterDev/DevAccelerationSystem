@@ -33,7 +33,6 @@ namespace TheBestLogger
         private static DateTime _timeStampPrevious;
         private static string _timeStampPreviousString;
 
-        private static string _debugId = string.Empty;
         private static bool _isRunningUpdates = false;
         private static bool _wasDisposed = false;
         private static List<IScheduledUpdate> _targetUpdates;
@@ -107,17 +106,25 @@ namespace TheBestLogger
             return logTargetConfigurationsData;
         }
 
-        private static void TrySetDebugMode(ILogTarget logTarget,
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="logTarget"></param>
+        /// <param name="debugId">Key to match with predefined </param>
+        /// <param name="state"></param>
+        /// <returns>True if debugMode was changed for some logtarget</returns>
+        private static bool TryUpdateDebugModeStateForLogTarget(ILogTarget logTarget,
                                             string debugId,
                                             bool state)
         {
             Diagnostics.Write("begin");
 
-            var debugModeEnabled = false;
-            if (logTarget?.Configuration != null)
+            var debugModeState = false;
+            var debugModeStateChanged = false;
+            if (logTarget?.Configuration != null && logTarget.DebugModeEnabled != state)
             {
                 var debugMode = logTarget.Configuration.DebugMode;
-                
+
                 if (debugMode.Enabled && debugMode.IDs != null && debugMode.IDs.Length > 0)
                 {
                     foreach (var id in debugMode.IDs)
@@ -125,14 +132,15 @@ namespace TheBestLogger
                         if (id == debugId)
                         {
                             Diagnostics.Write($"For LogTarget: {logTarget.GetType()} was enabled {state} debugMode");
-                            debugModeEnabled = state;
+                            debugModeState = state;
+                            debugModeStateChanged = true;
                             break;
                         }
                     }
                 }
 
                 //does it make sense to plaer prefs safe to get logs from launch the game ?
-                logTarget.SetDebugMode(debugModeEnabled);
+                logTarget.DebugModeEnabled = debugModeState;
             }
             else
             {
@@ -140,7 +148,8 @@ namespace TheBestLogger
                     $"logTarget or logTarget.configuration is null", LogLevel.Error);
             }
 
-            Diagnostics.Write("end with debugModeEnabled:"+debugModeEnabled);
+            Diagnostics.Write("end with debugModeEnabled:"+debugModeState);
+            return debugModeStateChanged;
         }
 
         /// <summary>
@@ -150,8 +159,7 @@ namespace TheBestLogger
         /// <param name="logTargets"></param>
         /// <param name="debugId"></param>
         private static void TryApplyConfigurations(Dictionary<string, LogTargetConfiguration> logTargetConfigurations,
-                                                   IReadOnlyList<ILogTarget> logTargets,
-                                                   string debugId)
+                                                   IReadOnlyList<ILogTarget> logTargets)
         {
             Diagnostics.Write("begin");
 
@@ -190,8 +198,6 @@ namespace TheBestLogger
                 logTarget.ApplyConfiguration(logTargetConfiguration);
                 Diagnostics.Write(
                     "For LogTarget:" + logTarget.GetType() + " was applied logtargetconfiguration:" + logTargetConfiguration.GetType());
-
-                TrySetDebugMode(logTarget, debugId, true);
             }
 
             Diagnostics.Write("end");

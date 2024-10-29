@@ -194,7 +194,9 @@ namespace TheBestLogger
 
 #if LOGGER_UNITY_EDITOR
             //temporary for debug, avoid recursive callbacks
-            if (logSourceId != nameof(UnityDebugLogSource) && logSourceId != nameof(UnobservedTaskExceptionLogSource))
+            if (logSourceId != nameof(UnityDebugLogSource) &&
+                logSourceId != nameof(UnobservedTaskExceptionLogSource) && 
+                logSourceId != nameof(SystemDiagnosticsConsoleLogSource)) 
             {
                 return;
             }

@@ -32,6 +32,11 @@ namespace TheBestLogger.Tests.Editor
     {
         public List<List<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)>> LoggedBatches { get; } = new();
 
+        public void SetDebugMode(bool mode)
+        {
+            ((ILogTarget)(this)).DebugModeEnabled = mode;
+        }
+
         public override string LogTargetConfigurationName => "FakeLogTargetConfiguration";
 
         public override void Log(LogLevel level,

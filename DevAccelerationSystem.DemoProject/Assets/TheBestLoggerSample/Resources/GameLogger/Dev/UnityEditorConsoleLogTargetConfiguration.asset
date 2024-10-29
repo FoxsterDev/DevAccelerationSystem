@@ -17,14 +17,14 @@ MonoBehaviour:
     MinLogLevel: 0
     OverrideCategories:
     - Category: GameLoading
-      MinLevel: 3
+      MinLevel: 0
     BatchLogs:
       Enabled: 0
       UpdatePeriodMs: 500
       MaxCountLogs: 5
     DebugMode:
-      Enabled: 1
-      MinLogLevel: 3
+      Enabled: 0
+      MinLogLevel: 0
       IDs:
       - 4BC968B8-5991-53A2-8C50-984A3CEB0390
       OverrideCategories:
@@ -41,8 +41,8 @@ MonoBehaviour:
       Enabled: 1
     - Level: 4
       Enabled: 1
-    IsThreadSafe: 0
+    IsThreadSafe: 1
     DispatchingLogsToMainThread:
-      Enabled: 1
+      Enabled: 0
       SingleLogDispatchEnabled: 1
       BatchLogsDispatchEnabled: 1

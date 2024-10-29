@@ -12,6 +12,7 @@ namespace TheBestLogger
         private int _overrideCategoriesCount;
         private string _id;
         private readonly int _hash;
+        private bool _debugModeEnabled;
         public abstract string LogTargetConfigurationName { get; }
         public LogTargetConfiguration Configuration { get; private set; }
 
@@ -33,13 +34,11 @@ namespace TheBestLogger
             }
         }
 
-        internal bool DebugModeEnabled = false;
-
         public virtual bool IsLogLevelAllowed(LogLevel logLevel, string category)
         {
             if (_muted) return false;
 
-            if (DebugModeEnabled)
+            if (_debugModeEnabled)
             {
                 var debugMode = Configuration.DebugMode;
 
@@ -99,9 +98,10 @@ namespace TheBestLogger
             Diagnostics.Write(" finish " + GetType().Name);
         }
 
-        public void SetDebugMode(bool isDebugModeEnabled)
+        bool ILogTarget.DebugModeEnabled
         {
-            DebugModeEnabled = isDebugModeEnabled;
+            get => _debugModeEnabled;
+            set => _debugModeEnabled = value;
         }
 
         [Preserve]

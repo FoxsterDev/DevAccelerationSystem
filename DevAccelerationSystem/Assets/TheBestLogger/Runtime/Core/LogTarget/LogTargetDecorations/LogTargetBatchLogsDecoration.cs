@@ -11,7 +11,7 @@ namespace TheBestLogger
         private DateTime _currentTimeUtc;
         private ConcurrentBag<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> _bagNiceToHaveImportance;
         private ConcurrentBag<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> _bagRegularImportance;
-
+        
         uint IScheduledUpdate.PeriodMs => Configuration.BatchLogs.UpdatePeriodMs;
 
         public LogTargetBatchLogsDecoration(LogTargetBatchLogsConfiguration config,
@@ -144,9 +144,10 @@ namespace TheBestLogger
             _config = configuration.BatchLogs;
         }
 
-         void ILogTarget.SetDebugMode(bool isDebugModeEnabled)
+        bool ILogTarget.DebugModeEnabled
         {
-            _original.SetDebugMode(isDebugModeEnabled);
+            get => _original.DebugModeEnabled;
+            set =>  _original.DebugModeEnabled = value;
         }
 
         void IScheduledUpdate.Update(DateTime currentTimeUtc, uint timeDeltaMs)

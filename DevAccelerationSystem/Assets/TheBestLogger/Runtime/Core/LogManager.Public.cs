@@ -15,12 +15,13 @@ namespace TheBestLogger
     public partial class LogManager
     {
         /// <summary>
-        ///  Should be called from Unity main thread
+        /// Initializes the LogManager with specified log targets, configuration path, and disposal token.
+        /// Should be called from the Unity main thread.
         /// </summary>
-        /// <param name="logTargets">List of targets to print logs. It has to be assigned log target configs so into logmanagerconfiguration</param>
-        /// <param name="disposingToken">As example dispose logger when application exit</param>
-        /// <param name="resourceSubFolderThatContainsConfigs">Inside Unity some Resources folder. Example "Logger/Dev/"</param>
-        /// <param name="debugId">Is used to enabled debug mode</param>
+        /// <param name="logTargets">List of log targets to output logs, requiring configurations in LogManagerConfiguration.</param>
+        /// <param name="disposingToken">Token used to dispose the logger, e.g., when the application exits.</param>
+        /// <param name="resourceSubFolderThatContainsConfigs">Path to the Unity Resources folder containing log configurations (e.g., "Logger/Dev/").</param>
+        /// <param name="debugId">Optional identifier for enabling debug mode. If empty, a device ID will be used.</param>
         public static void Initialize(IReadOnlyList<LogTarget> logTargets,
                                       string resourceSubFolderThatContainsConfigs,
                                       CancellationToken disposingToken, string debugId = "")
@@ -43,7 +44,6 @@ namespace TheBestLogger
                 _disposingToken = disposingToken;
                 _disposingToken.Register(Dispose);
 
-                _debugId = !string.IsNullOrEmpty(debugId) ? debugId : SystemInfo.deviceUniqueIdentifier;
                 logTargets = PatchUnityEditorConsoleLogTarget(logTargets);
 
                 _originalLogTargets = logTargets;
@@ -56,7 +56,7 @@ namespace TheBestLogger
                 _minUpdatesPeriodMs = _configuration.MinUpdatesPeriodMs;
 
                 var dict = ConvertToDictionaryWithKeyNameAndValueConfigSpecificData(configuration.LogTargetConfigs);
-                TryApplyConfigurations(dict, logTargets, _debugId);
+                TryApplyConfigurations(dict, logTargets);
 
                 var currentTimeUtc = _utilitySupplier.GetTimeStamp().currentTimeUtc;
                 _decoratedLogTargets = TryDecorateLogTargets(logTargets, currentTimeUtc, _utilitySupplier);
@@ -75,21 +75,64 @@ namespace TheBestLogger
                 _logSources = logSources.AsReadOnly();
 
 #if LOGGER_UNITY_EDITOR
-                logSources.Add(new UnityDebugLogSource(logger as ILogConsumer));
-                logSources.Add(new UnityApplicationLogSource(logger as ILogConsumer));
-                logSources.Add(new UnityApplicationLogSourceThreaded(logger as ILogConsumer));
-                logSources.Add(new CurrentDomainUnhandledExceptionLogSource(logger as ILogConsumer));
-                logSources.Add(new UnobservedTaskExceptionLogSource(logger as ILogConsumer));
-                logSources.Add(new SystemDiagnosticsDebugLogSource(logger as ILogConsumer));
+                if (configuration.DebugLogSourceUnityEditor)
+                {
+                    logSources.Add(new UnityDebugLogSource(logger as ILogConsumer));
+                }
+
+                if (configuration.ApplicationLogSourceUnityEditor)
+                {
+                    logSources.Add(new UnityApplicationLogSource(logger as ILogConsumer));
+                }
+
+                if (configuration.ApplicationLogSourceThreadedUnityEditor)
+                {
+                    logSources.Add(new UnityApplicationLogSourceThreaded(logger as ILogConsumer));
+                }
+
+                if (configuration.CurrentDomainUnhandledExceptionLogSourceUnityEditor)
+                {
+                    logSources.Add(new CurrentDomainUnhandledExceptionLogSource(logger as ILogConsumer));
+                }
+
+                if (configuration.UnobservedTaskExceptionLogSourceUnityEditor)
+                {
+                    logSources.Add(new UnobservedTaskExceptionLogSource(logger as ILogConsumer));
+                }
+
+                if (configuration.SystemDiagnosticsDebugLogSourceUnityEditor)
+                {
+                    logSources.Add(new SystemDiagnosticsDebugLogSource(logger as ILogConsumer));
+                }
+                
+                if (configuration.SystemDiagnosticsConsoleLogSourceUnityEditor)
+                {
+                    logSources.Add(new SystemDiagnosticsConsoleLogSource(logger as ILogConsumer));
+                }
 #else
-                logSources.Add(new UnityApplicationLogSourceThreaded(logger as ILogConsumer));
-                logSources.Add(new UnobservedTaskExceptionLogSource(logger as ILogConsumer));
+                if (configuration.UnityApplicationLogSource)
+                {
+                    logSources.Add(new UnityApplicationLogSource(logger as ILogConsumer));
+                }
+
+                if (configuration.UnityApplicationLogSourceThreaded)
+                {
+                    logSources.Add(new UnityApplicationLogSourceThreaded(logger as ILogConsumer));
+                }
+
+                if (configuration.UnobservedTaskExceptionLogSource)
+                {
+                    logSources.Add(new UnobservedTaskExceptionLogSource(logger as ILogConsumer));
+                }
 #endif
 
                 if (_targetUpdates.Count > 0)
                 {
                     RunUpdates(_targetUpdates, _minUpdatesPeriodMs, currentTimeUtc, disposingToken).FireAndForget();
                 }
+
+                var id = !string.IsNullOrEmpty(debugId) ? debugId : SystemInfo.deviceUniqueIdentifier;
+                SetDebugMode(id, true);
 
                 Diagnostics.Write("LogManager has initialized!");
             }
@@ -100,6 +143,12 @@ namespace TheBestLogger
             }
         }
 
+        /// <summary>
+        /// Creates or retrieves a logger for a specific category.
+        /// If the LogManager is not properly configured, returns the fallback logger.
+        /// </summary>
+        /// <param name="categoryName">Name of the category for the logger.</param>
+        /// <returns>An ILogger instance for the specified category.</returns>
         public static ILogger CreateLogger(string categoryName)
         {
             Diagnostics.Write("begin for category: " + categoryName);
@@ -130,6 +179,11 @@ namespace TheBestLogger
             return logger;
         }
 
+        /// <summary>
+        /// Updates configurations for existing log targets based on the provided configurations dictionary.
+        /// If LogManager is not properly configured or configurations are null/empty, logs a warning and exits.
+        /// </summary>
+        /// <param name="logTargetConfigurations">Dictionary of log target configurations with log target names as keys.</param>
         public static void UpdateLogTargetsConfigurations(Dictionary<string, LogTargetConfiguration> logTargetConfigurations)
         {
             Diagnostics.Write("begin");
@@ -139,15 +193,22 @@ namespace TheBestLogger
                 return;
             }
 
-            TryApplyConfigurations(logTargetConfigurations, _decoratedLogTargets, _debugId);
+            if (logTargetConfigurations == null || logTargetConfigurations.Count < 1)
+            {
+                Diagnostics.Write("The logTargetConfigurations are empty or null", LogLevel.Warning);
+                return;
+            }
+
+            TryApplyConfigurations(logTargetConfigurations, _decoratedLogTargets);
 
             Diagnostics.Write("end");
         }
 
         /// <summary>
-        /// 
+        /// Retrieves the current configurations for each decorated log target.
+        /// If LogManager is not initialized, returns an empty dictionary.
         /// </summary>
-        /// <returns>In case if the logmanager is not initialized will return empty else fill the collection with the actual data from _decoratedLogTargets</returns>
+        /// <returns>Dictionary with current log target configurations, keyed by log target name.</returns>
         public static Dictionary<string, LogTargetConfiguration> GetCurrentLogTargetConfigurations()
         {
             Diagnostics.Write("begin");
@@ -170,27 +231,44 @@ namespace TheBestLogger
         }
 
         /// <summary>
-        /// 
+        /// Enables or disables debug mode for specified log targets based on the debugId and state provided.
+        /// If LogManager is not properly configured, logs a warning and returns false.
         /// </summary>
-        /// <param name="debugId">UDID or playerId , any string that is configured in config per target</param>
-        /// <param name="state"></param>
-        public static void SetDebugMode(string debugId, bool state)
+        /// <param name="debugId">Unique identifier (e.g., UDID, playerId) specific to each log target configuration.</param>
+        /// <param name="state">Debug mode state to set (true to enable, false to disable).</param>
+        /// <returns>True if debug mode state changes, false otherwise.</returns>
+        public static bool SetDebugMode(string debugId, bool state)
         {
             Diagnostics.Write("begin");
 
             if (IsNotProperlyConfigured())
             {
-                return;
+                Diagnostics.Write(nameof(IsNotProperlyConfigured));
+                return false;
             }
 
+            if (string.IsNullOrEmpty(debugId))
+            {
+                 FallbackLogger.LogWarning("Trying set debug mode with empty debugId");
+                 return false;
+            }
+
+            var debugModeStateChanged = false;
             foreach (var logTarget in _decoratedLogTargets)
             {
-                TrySetDebugMode(logTarget, debugId, state);
+                debugModeStateChanged |= TryUpdateDebugModeStateForLogTarget(logTarget, debugId, state);
             }
 
             Diagnostics.Write("end");
+            return debugModeStateChanged;
         }
 
+        /// <summary>
+        /// Adds a global tag to the tags registry, to be associated with all log outputs.
+        /// If LogManager is not properly configured or tag is null/empty, logs a warning and returns false.
+        /// </summary>
+        /// <param name="tag">Tag to be added globally across all logs.</param>
+        /// <returns>True if the tag is added successfully, false otherwise.</returns>
         public static bool AddGlobalTag(string tag)
         {
             Diagnostics.Write("begin");
@@ -199,11 +277,23 @@ namespace TheBestLogger
                 return false;
             }
 
+            if (string.IsNullOrEmpty(tag))
+            {
+                FallbackLogger.LogWarning("Trying set empty or null global tag");
+                return false;
+            }
+
             var result = _utilitySupplier.TagsRegistry.AddTag(tag);
             Diagnostics.Write("end "+result);
             return result;
         }
-        
+
+        /// <summary>
+        /// Removes a global tag from the tags registry.
+        /// If LogManager is not properly configured or tag is null/empty, logs a warning and returns false.
+        /// </summary>
+        /// <param name="tag">Tag to be removed from the global registry.</param>
+        /// <returns>True if the tag is removed successfully, false otherwise.</returns>
         public static bool RemoveGlobalTag(string tag)
         {
             Diagnostics.Write("begin");
@@ -211,6 +301,13 @@ namespace TheBestLogger
             {
                 return false;
             }
+
+            if (string.IsNullOrEmpty(tag))
+            {
+                FallbackLogger.LogWarning("Trying remove empty or null global tag");
+                return false;
+            }
+
             var result = _utilitySupplier.TagsRegistry.RemoveTag(tag);
             Diagnostics.Write("end "+result);
             return result;

@@ -39,17 +39,7 @@ namespace TheBestLogger.Integration.Tests
 
             return list;
         }
-        public static void VerifyFieldsNotNull(object obj)
-        {
-            foreach (var field in obj.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance))
-            {
-                object value = field.GetValue(obj);
-                if (value == null)
-                {
-                    throw new InvalidOperationException($"Field '{field.Name}' is null");
-                }
-            }
-        }
+        
         [Test]
         [TestCaseSource(nameof(GetTestData))]
         public void ThePreviousVersionCanBeDeserializedWithNewtonJson(string logTargetConfigurationName, string json)
@@ -60,22 +50,20 @@ namespace TheBestLogger.Integration.Tests
                     () =>
                     {
                         var obj = JsonConvert.DeserializeObject<OpenSearchLogTargetConfiguration_1_0_0>(json);
-                        VerifyFieldsNotNull(obj);
-                        if (obj == null ||
-                            obj.DebugMode == null ||
+                        VerifyObjAndFieldsNotNull(obj);
+                        if (obj.DebugMode == null ||
                             obj.BatchLogs.MaxCountLogs == 0)
                         {
                             throw new Exception(logTargetConfigurationName + " is not valid");
                         }
                     });
-                
+
                 Assert.DoesNotThrow(
                     () =>
                     {
                         var obj = JsonConvert.DeserializeObject<OpenSearchLogTargetConfiguration_2_0_0>(json);
-                        VerifyFieldsNotNull(obj);
-                        if (obj == null ||
-                            obj.DebugMode == null ||
+                        VerifyObjAndFieldsNotNull(obj);
+                        if (obj.DebugMode == null ||
                             obj.BatchLogs.MaxCountLogs == 0)
                         {
                             throw new Exception(logTargetConfigurationName + " is not valid");
@@ -94,7 +82,7 @@ namespace TheBestLogger.Integration.Tests
                     () =>
                     {
                         var obj = JsonConvert.DeserializeObject<OpenSearchLogTargetConfiguration>(json);
-                        VerifyFieldsNotNull(obj);
+                        VerifyObjAndFieldsNotNull(obj);
                         if (obj == null ||
                             obj.DebugMode == null ||
                             obj.BatchLogs.MaxCountLogs == 0 || obj.StackTraces == null || obj.StackTraces.Length < 1)
@@ -119,9 +107,8 @@ namespace TheBestLogger.Integration.Tests
                     () =>
                     {
                         var obj = JsonConvert.DeserializeObject<OpenSearchLogTargetConfiguration>(json);
-                        if (obj == null ||
-                            obj.DebugMode == null ||
-                            obj.BatchLogs.MaxCountLogs == 0 || obj.StackTraces == null || obj.StackTraces.Length < 1)
+                        VerifyObjAndFieldsNotNull(obj);
+                        if (obj.BatchLogs.MaxCountLogs == 0 || obj.StackTraces.Length < 1)
                         {
                             throw new Exception(logTargetConfigurationName + " is not valid");
                         }
@@ -177,10 +164,8 @@ namespace TheBestLogger.Integration.Tests
                     () =>
                     {
                         var obj = JsonUtility.FromJson<OpenSearchLogTargetConfiguration_1_0_0>(json);
-                        VerifyFieldsNotNull(obj);
-                        if (obj == null ||
-                            obj.DebugMode == null ||
-                            obj.BatchLogs.MaxCountLogs == 0)
+                        VerifyObjAndFieldsNotNull(obj);
+                        if (obj.BatchLogs.MaxCountLogs == 0)
                         {
                             throw new Exception(logTargetConfigurationName + " is not valid");
                         }
@@ -189,18 +174,14 @@ namespace TheBestLogger.Integration.Tests
                     () =>
                     {
                         var obj = JsonUtility.FromJson<OpenSearchLogTargetConfiguration_2_0_0>(json);
-                        VerifyFieldsNotNull(obj);
-                        if (obj == null ||
-                            obj.DebugMode == null ||
-                            obj.BatchLogs.MaxCountLogs == 0)
+                        VerifyObjAndFieldsNotNull(obj);
+                        if (obj.BatchLogs.MaxCountLogs == 0)
                         {
                             throw new Exception(logTargetConfigurationName + " is not valid");
                         }
                     });
             }
         }
-        
-   
 
         private static IEnumerable GetTestData()
         {
@@ -215,6 +196,22 @@ namespace TheBestLogger.Integration.Tests
                 else
                 {
                     Assert.Fail("JSON asset not found at: " + e.assetPath);
+                }
+            }
+        }
+
+        public static void VerifyObjAndFieldsNotNull(object obj)
+        {
+            if (obj == null)
+            {
+                throw new InvalidOperationException($"Object is null");
+            }
+            foreach (var field in obj.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance))
+            {
+                var value = field.GetValue(obj);
+                if (value == null)
+                {
+                    throw new InvalidOperationException($"Field '{field.Name}' is null");
                 }
             }
         }

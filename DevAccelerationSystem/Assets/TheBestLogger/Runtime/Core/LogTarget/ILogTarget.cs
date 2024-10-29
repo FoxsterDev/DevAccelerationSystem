@@ -17,6 +17,6 @@ namespace TheBestLogger
                 exception)> logBatch);
         void ApplyConfiguration(LogTargetConfiguration configuration);
 
-        void SetDebugMode(bool isDebugModeEnabled);
+        bool DebugModeEnabled { get; internal set; }
     }
 }

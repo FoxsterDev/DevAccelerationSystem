@@ -13,6 +13,11 @@ public class GameLoggerSample : MonoBehaviour
     {
         
         print(Application.persistentDataPath);
+        // This will be logged as a normal message
+        Console.WriteLine("This is a standard Console message.");
+
+        // This will be logged as an error message
+        Console.Error.WriteLine("This is an error Console.Error message.");
         RunTest();
         //return;
         //ThrowAsyncOnBackThread("ThrowAsyncOnBackThread_1");
@@ -24,7 +29,7 @@ public class GameLoggerSample : MonoBehaviour
     private async void RunTest()
     {
         GameLogger.GameLoading.LogInfo("StartTest", new LogAttributes(LogImportance.Critical));
-
+        
         await Task.Delay(100);
         GameLogger.GameLoading.LogDebug("debugtest1");
         await Task.Delay(100);

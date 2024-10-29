@@ -35,3 +35,13 @@ MonoBehaviour:
     LogTypeAssert:
       LogType: 1
       StackTraceLevel: 1
+  DebugLogSourceUnityEditor: 1
+  ApplicationLogSourceUnityEditor: 0
+  ApplicationLogSourceThreadedUnityEditor: 0
+  CurrentDomainUnhandledExceptionLogSourceUnityEditor: 0
+  UnobservedTaskExceptionLogSourceUnityEditor: 0
+  SystemDiagnosticsDebugLogSourceUnityEditor: 0
+  SystemDiagnosticsConsoleLogSourceUnityEditor: 1
+  UnityApplicationLogSource: 0
+  UnityApplicationLogSourceThreaded: 1
+  UnobservedTaskExceptionLogSource: 1

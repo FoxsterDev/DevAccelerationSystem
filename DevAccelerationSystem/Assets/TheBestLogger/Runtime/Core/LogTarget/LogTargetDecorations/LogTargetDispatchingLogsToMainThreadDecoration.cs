@@ -11,7 +11,7 @@ namespace TheBestLogger
         private readonly ILogTarget _original;
         private SynchronizationContext _unityContext;
         private readonly IUtilitySupplier _utilitySupplier;
- 
+      
         public LogTargetDispatchingLogsToMainThreadDecoration(LogTargetDispatchingLogsToMainThreadConfiguration config,
                                                               ILogTarget original,  SynchronizationContext unityContext, 
                                                               IUtilitySupplier utilitySupplier) 
@@ -98,9 +98,10 @@ namespace TheBestLogger
             _config = configuration.DispatchingLogsToMainThread;
         }
 
-        void ILogTarget.SetDebugMode(bool isDebugModeEnabled)
+        bool ILogTarget.DebugModeEnabled
         {
-            _original.SetDebugMode(isDebugModeEnabled);
+            get => _original.DebugModeEnabled;
+            set => _original.DebugModeEnabled = value;
         }
     }
 }

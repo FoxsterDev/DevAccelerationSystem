@@ -8,7 +8,7 @@ namespace TheBestLogger.Tests.Editor
     [TestFixture]
     public class LogTargetTests
     {
-        private MockLogTarget _logTarget;
+        private ILogTarget _logTarget;
         private LogTargetConfiguration _config;
 
         [SetUp]
@@ -92,7 +92,7 @@ namespace TheBestLogger.Tests.Editor
         public void IsLogLevelAllowed_WhenDebugModeEnabledAndLogLevelAllowed_ReturnsTrue()
         {
             // Arrange
-            _logTarget.SetDebugMode(true);
+            _logTarget.DebugModeEnabled = true;
 
             // Act
             var result = _logTarget.IsLogLevelAllowed(LogLevel.Debug, "TestDebugCategory");
@@ -105,7 +105,7 @@ namespace TheBestLogger.Tests.Editor
         public void IsLogLevelAllowed_WhenDebugModeEnabledAndLogLevelHigherDebugMinLevel_ReturnsTrue()
         {
             // Arrange
-            _logTarget.SetDebugMode(true);
+            _logTarget.DebugModeEnabled = true;
 
             // Act
             var result = _logTarget.IsLogLevelAllowed(LogLevel.Info, "TestCategory");
@@ -118,7 +118,7 @@ namespace TheBestLogger.Tests.Editor
         public void IsLogLevelAllowed_WhenDebugModeEnabledAndLogLevelBelowDebugMinLevel_ReturnsFalse()
         {
             // Arrange
-            _logTarget.SetDebugMode(true);
+            _logTarget.DebugModeEnabled = true;
 
             // Act
             var result = _logTarget.IsLogLevelAllowed(LogLevel.Debug, "TestCategory");
@@ -184,7 +184,7 @@ namespace TheBestLogger.Tests.Editor
         public void SetDebugMode_WhenEnabled_SetsDebugModeState()
         {
             // Act
-            _logTarget.SetDebugMode(true);
+            _logTarget.DebugModeEnabled = true;
 
             // Assert
             Assert.IsTrue(_logTarget.DebugModeEnabled);
