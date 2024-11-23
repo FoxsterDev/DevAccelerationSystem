@@ -39,7 +39,7 @@ MonoBehaviour:
   ApplicationLogSourceUnityEditor: 0
   ApplicationLogSourceThreadedUnityEditor: 0
   CurrentDomainUnhandledExceptionLogSourceUnityEditor: 0
-  UnobservedTaskExceptionLogSourceUnityEditor: 0
+  UnobservedTaskExceptionLogSourceUnityEditor: 1
   SystemDiagnosticsDebugLogSourceUnityEditor: 0
   SystemDiagnosticsConsoleLogSourceUnityEditor: 1
   UnityApplicationLogSource: 0
