@@ -72,8 +72,7 @@ namespace TheBestLogger
                 var logger = CreateLogger(configuration.DefaultUnityLogsCategoryName);
 
                 var logSources = new List<ILogSource>(4) { };
-                _logSources = logSources.AsReadOnly();
-
+  
 #if LOGGER_UNITY_EDITOR
                 if (configuration.DebugLogSourceUnityEditor)
                 {
@@ -125,6 +124,7 @@ namespace TheBestLogger
                     logSources.Add(new UnobservedTaskExceptionLogSource(logger as ILogConsumer));
                 }
 #endif
+                _logSources = logSources.AsReadOnly();
 
                 if (_targetUpdates.Count > 0)
                 {
