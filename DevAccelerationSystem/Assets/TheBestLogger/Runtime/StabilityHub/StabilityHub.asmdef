@@ -1,0 +1,16 @@
+{
+    "name": "StabilityHub",
+    "rootNamespace": "",
+    "references": [
+        "TheBestLogger.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
