@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 849eaa94a86e46fe8cc917186905bd2a, type: 3}
+  m_Name: AppleSystemLogTargetConfiguration
+  m_EditorClassIdentifier: 
+  SpecificConfiguration:
+    Muted: 0
+    MinLogLevel: 0
+    OverrideCategories: []
+    BatchLogs:
+      Enabled: 0
+      UpdatePeriodMs: 0
+      MaxCountLogs: 0
+    DebugMode:
+      Enabled: 0
+      MinLogLevel: 2
+      IDs: []
+      OverrideCategories: []
+    StackTraces:
+    - Level: 0
+      Enabled: 0
+    - Level: 1
+      Enabled: 0
+    - Level: 2
+      Enabled: 0
+    - Level: 3
+      Enabled: 1
+    - Level: 4
+      Enabled: 1
+    IsThreadSafe: 1
+    DispatchingLogsToMainThread:
+      Enabled: 0
+      SingleLogDispatchEnabled: 0
+      BatchLogsDispatchEnabled: 0
