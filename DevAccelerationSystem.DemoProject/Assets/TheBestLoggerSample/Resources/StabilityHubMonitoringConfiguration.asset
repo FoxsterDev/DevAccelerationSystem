@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: StabilityHubMonitoringConfiguration
   m_EditorClassIdentifier: 
   CrashReporterModule:
-    Enabled: 0
-    AutoProjectSettingsSetup: 1
+    Enabled: 1
+    AutoProjectSettingsSetup: 0
     IOS:
       Enabled: 1
