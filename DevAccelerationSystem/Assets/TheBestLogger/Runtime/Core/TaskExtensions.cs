@@ -11,6 +11,27 @@ public static class TaskExtensions
     /// Fires a task without waiting for it, and logs any exceptions that occur.
     /// </summary>
     /// <param name="task">The task to run.</param>
+    /// <param name="logger"></param>
+    public static async void FireAndLogWhenExceptions(this Task task, ILogger logger)
+    {
+        try
+        {
+            await task;
+        }
+        catch (OperationCanceledException)
+        {
+            //Debug.Log("Task was canceled.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"Unhandled exception in fire-and-forget task: {ex.Message}", new LogAttributes(ex.StackTrace));
+        }
+    }
+    
+    /// <summary>
+    /// Fires a task without waiting for it, and logs any exceptions that occur.
+    /// </summary>
+    /// <param name="task">The task to run.</param>
     public static async void FireAndForget(this Task task)
     {
         try
@@ -38,6 +59,10 @@ public static class TaskExtensions
         try
         {
             await task;
+        }
+        catch (OperationCanceledException)
+        {
+            //Debug.Log("Task was canceled.");
         }
         catch (Exception ex)
         {

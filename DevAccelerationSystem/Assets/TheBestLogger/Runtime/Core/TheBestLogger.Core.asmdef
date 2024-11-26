@@ -15,7 +15,7 @@
     "versionDefines": [
         {
             "name": "com.cysharp.zstring",
-            "expression": "[1.0.0,2.5.0]",
+            "expression": "",
             "define": "LOGGER_ZSTRING_ENABLED"
         }
     ],

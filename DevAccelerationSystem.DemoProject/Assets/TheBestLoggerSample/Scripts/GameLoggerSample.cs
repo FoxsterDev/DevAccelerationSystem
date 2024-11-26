@@ -11,7 +11,7 @@ public class GameLoggerSample : MonoBehaviour
 {
     private async void Start()
     {
-        
+        return;
         print(Application.persistentDataPath);
         // This will be logged as a normal message
         Console.WriteLine("This is a standard Console message.");
@@ -37,10 +37,11 @@ public class GameLoggerSample : MonoBehaviour
         UnityEngine.Debug.Log("UnityEngine.Debug.Log2");
         await Task.Delay(100);
 
+#if UNITY_EDITOR
         var dict = LogManager.GetCurrentLogTargetConfigurations();
         dict[nameof(UnityEditorConsoleLogTargetConfiguration)].MinLogLevel = LogLevel.Warning;
         LogManager.UpdateLogTargetsConfigurations(dict);
-
+#endif
         GameLogger.GameLoading.LogDebug("debugtest3");
         GameLogger.GameLoading.LogWarning("warningtest3");
         await Task.Delay(100);
@@ -49,11 +50,12 @@ public class GameLoggerSample : MonoBehaviour
 
         Debug.LogError("Some unity debuglogerror2");
         await Task.Delay(1000);
-       
+#if UNITY_EDITOR      
         var dict2 = LogManager.GetCurrentLogTargetConfigurations();
         dict2[nameof(UnityEditorConsoleLogTargetConfiguration)].MinLogLevel = LogLevel.Debug;
         LogManager.UpdateLogTargetsConfigurations(dict);
-        
+#endif
+       
         try
         {
             throw new ArgumentException("handled exception on main thread3");

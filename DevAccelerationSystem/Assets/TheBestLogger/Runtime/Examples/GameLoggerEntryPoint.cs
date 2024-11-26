@@ -2,7 +2,9 @@
 
 using System.Collections.Generic;
 using System.Threading;
+using StabilityHub;
 using TheBestLogger;
+using TheBestLogger.Examples;
 using TheBestLogger.Examples.LogTargets;
 using UnityEngine;
 
@@ -16,6 +18,8 @@ public class GameLoggerEntryPoint
 #if UNITY_EDITOR
             new UnityEditorConsoleLogTarget(),
 #endif
+         
+            new AppleSystemLogTarget(Application.identifier, "Unity"),
             new IMGUIRuntimeLogTarget()
         };
 
@@ -25,6 +29,9 @@ public class GameLoggerEntryPoint
 #endif
 
         LogManager.Initialize(logTargets.AsReadOnly(), "GameLogger/Dev/", cancelToken);
+        StabilityHubService.Initialize(GameLogger.Stability);
+
+        StabilityHubService.RetrieveAndLogPreviousSessionIssues();
     }
 }
 

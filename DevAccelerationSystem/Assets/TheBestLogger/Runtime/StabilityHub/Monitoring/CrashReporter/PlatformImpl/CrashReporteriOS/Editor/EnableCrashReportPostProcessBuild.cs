@@ -4,35 +4,36 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
-/*public class PrebuildCallback : IPreprocessBuildWithReport
+namespace StabilityHub.Monitoring.CrashReporting.Editor
 {
-    public int callbackOrder => 1000;
-    public void OnPreprocessBuild(BuildReport report)
+    public class CrashReportingPreprocessBuildStep : IPreprocessBuildWithReport
     {
-        
-    }
-}*/
-public class EnableCrashReportPostProcessBuild : IPreprocessBuildWithReport
-{
-    public int callbackOrder => 1000;
+        public int callbackOrder => 1000;
 
-    public void OnPreprocessBuild(BuildReport report)
-    {
-        if (report.summary.platform == BuildTarget.iOS)
+        public void OnPreprocessBuild(BuildReport report)
         {
-            var crashReporterModuleConfiguration = StabilityHub.StabilityHubService.MonitoringConfig.CrashReporterModule;
-            if (crashReporterModuleConfiguration.Enabled && crashReporterModuleConfiguration.IOS.Enabled)
+            if (report.summary.platform == BuildTarget.iOS)
             {
-                Debug.Log("EnableCrashReportPostProcessBuildfor target " + report.summary.platform + " at path " + report.summary.outputPath);
-                EnableCrashReporting();
+                var config = StabilityHub.StabilityHubService.MonitoringConfig;
+                var crashReporterModuleConfiguration = config.CrashReporterModule;
+                if (crashReporterModuleConfiguration.AutoProjectSettingsSetup)
+                {
+                    Debug.Log(
+                        "OnPreprocessBuild " + nameof(CrashReportingPreprocessBuildStep) + " " + report.summary.platform + " at path "
+                        + report.summary.outputPath);
+
+                    var enabled = crashReporterModuleConfiguration.Enabled && crashReporterModuleConfiguration.IOS.Enabled;
+                    EnableCrashReporting(enabled);
+                }
             }
         }
-    }
 
-    private static void EnableCrashReporting()
-    {
-        PlayerSettings.enableCrashReportAPI = true;
+        public static void EnableCrashReporting(bool enabled)
+        {
+            Debug.Log("Set to  PlayerSettings.enableCrashReportAPI = true");
+            PlayerSettings.enableCrashReportAPI = enabled;
 
-        Debug.Log("Crash Reporting API has been enabled in Player Settings.");
+            Debug.Log("Crash Reporting API has been enabled in Player Settings.");
+        }
     }
 }
