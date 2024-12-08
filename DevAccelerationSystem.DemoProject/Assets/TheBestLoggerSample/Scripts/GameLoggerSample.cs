@@ -11,7 +11,7 @@ public class GameLoggerSample : MonoBehaviour
 {
     private async void Start()
     {
-        return;
+        //return;
         print(Application.persistentDataPath);
         // This will be logged as a normal message
         Console.WriteLine("This is a standard Console message.");
