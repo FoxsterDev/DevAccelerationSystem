@@ -71,16 +71,18 @@ namespace TheBestLogger
 
 
         /// <summary>
-        /// Enables logging for application logs outside of the Unity Editor.
+        /// Enables logging for Unity app logs outside of the Unity Editor.  Application.logMessageReceived is used.
         /// Set to true to capture application-specific logs in platform builds.
         /// </summary>
         [Header("LOG SOURCES FOR NOT UNITY EDITOR")]
+        [Tooltip("Enables logging for Unity app logs outside of the Unity Editor.  Application.logMessageReceived is used.\nSet to true to capture application-specific logs in platform builds.")]
         public bool UnityApplicationLogSource = false;
 
         /// <summary>
-        /// Enables logging for threaded application logs outside of the Unity Editor.
-        /// Set to true to capture logs from multi-threaded operations in platform builds.
+        /// Enables logging for Unity app logs outside of the Unity Editor.  Application.logMessageReceivedThreaded is used.
+        /// Set to true to capture application-specific logs in platform builds.
         /// </summary>
+        [Tooltip("Enables logging for Unity app threaded logs outside of the Unity Editor. It will catch logs from not unity main thread. Application.logMessageReceivedThreaded is used.\nSet to true to capture application-specific logs in platform builds.")]
         public bool UnityApplicationLogSourceThreaded = true;
 
         /// <summary>
