@@ -71,12 +71,10 @@ namespace TheBestLogger
         {
             var needFileInfo = false;
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             needFileInfo = true;
-#else
-            needFileInfo = Debug.isDebugBuild;
 #endif
-            
+
             string stackTrace;
             if (exception != null)
             {
