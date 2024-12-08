@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading;
 
 namespace TheBestLogger.Core.Utilities
@@ -11,6 +10,7 @@ namespace TheBestLogger.Core.Utilities
         private readonly long _timezoneOffsetTicks;
         private readonly uint _minTimestampPeriodMs;
         private DateTime LocalTime => new DateTime(DateTime.UtcNow.Ticks + _timezoneOffsetTicks, DateTimeKind.Local);
+
         private TimestampData _timeStampCachedData;
 
         public UtilitySupplier(uint minTimestampPeriodMs)

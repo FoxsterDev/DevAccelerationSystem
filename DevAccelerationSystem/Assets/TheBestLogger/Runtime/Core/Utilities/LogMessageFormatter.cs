@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Cysharp.Text;
 
 namespace TheBestLogger.Core.Utilities
 {
@@ -17,11 +16,11 @@ namespace TheBestLogger.Core.Utilities
             {
                 formattedMessage = args.Length switch
                 {
-                    1 => ZString.Format(message, args[0]),
-                    2 => ZString.Format(message, args[0], args[1]),
-                    3 => ZString.Format(message, args[0], args[1], args[2]),
-                    4 => ZString.Format(message, args[0], args[1], args[2], args[3]),
-                    5 => ZString.Format(message, args[0], args[1], args[2], args[3], args[4]),
+                    1 => StringOperations.Format(message, args[0]),
+                    2 => StringOperations.Format(message, args[0], args[1]),
+                    3 => StringOperations.Format(message, args[0], args[1], args[2]),
+                    4 => StringOperations.Format(message, args[0], args[1], args[2], args[3]),
+                    5 => StringOperations.Format(message, args[0], args[1], args[2], args[3], args[4]),
                     _ => string.Format(message, args)
                 };
 
@@ -31,11 +30,11 @@ namespace TheBestLogger.Core.Utilities
             if (formatError)
             {
                 //build str from args ?
-                message = ZString.Concat("[", category, "] ", message, " =>can not be formatted");
+                message = StringOperations.Concat("[", category, "] ", message, " =>can not be formatted");
             }
             else
             {
-                message = ZString.Concat("[", category, "] ", formattedMessage);
+                message = StringOperations.Concat("[", category, "] ", formattedMessage);
             }
 
             return message;
@@ -49,10 +48,10 @@ namespace TheBestLogger.Core.Utilities
 
             if (ex != null)
             {
-                message = ZString.Concat(
-                    ex.GetType().Name, ": ", (ex.Message != null
-                                                  ? ex.Message
-                                                  : string.Empty), message);
+                message = StringOperations.Concat(
+                    ex.GetType().Name, ": ", ex.Message != null
+                                                 ? ex.Message
+                                                 : string.Empty, message);
             }
 
             var formattedMessage = message;
@@ -61,11 +60,11 @@ namespace TheBestLogger.Core.Utilities
             {
                 formattedMessage = args.Length switch
                 {
-                    1 => ZString.Format(message, args[0]),
-                    2 => ZString.Format(message, args[0], args[1]),
-                    3 => ZString.Format(message, args[0], args[1], args[2]),
-                    4 => ZString.Format(message, args[0], args[1], args[2], args[3]),
-                    5 => ZString.Format(message, args[0], args[1], args[2], args[3], args[4]),
+                    1 => StringOperations.Format(message, args[0]),
+                    2 => StringOperations.Format(message, args[0], args[1]),
+                    3 => StringOperations.Format(message, args[0], args[1], args[2]),
+                    4 => StringOperations.Format(message, args[0], args[1], args[2], args[3]),
+                    5 => StringOperations.Format(message, args[0], args[1], args[2], args[3], args[4]),
                     _ => string.Format(message, args)
                 };
 
@@ -77,10 +76,12 @@ namespace TheBestLogger.Core.Utilities
 
         public static string ToSimpleNotEscapedJson(this List<KeyValuePair<string, object>> keyValuePairs)
         {
-            if (keyValuePairs == null || keyValuePairs.Count < 1) return string.Empty;
+            if (keyValuePairs == null || keyValuePairs.Count < 1)
+            {
+                return string.Empty;
+            }
 
-            var sb = new Utf16ValueStringBuilder(true);
-            try
+            using (var sb = StringOperations.CreateStringBuilder(512, false))
             {
                 sb.Append('{');
                 var count = keyValuePairs.Count;
@@ -110,10 +111,6 @@ namespace TheBestLogger.Core.Utilities
 
                 sb.Append('}');
                 return sb.ToString();
-            }
-            finally
-            {
-                sb.Dispose();
             }
         }
     }

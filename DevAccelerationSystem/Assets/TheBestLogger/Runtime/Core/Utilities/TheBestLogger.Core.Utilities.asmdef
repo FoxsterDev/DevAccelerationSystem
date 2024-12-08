@@ -11,6 +11,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.cysharp.zstring",
+            "expression": "1.0.0",
+            "define": "THEBESTLOGGER_ZSTRING_ENABLED"
+        }
+    ],
     "noEngineReferences": false
 }

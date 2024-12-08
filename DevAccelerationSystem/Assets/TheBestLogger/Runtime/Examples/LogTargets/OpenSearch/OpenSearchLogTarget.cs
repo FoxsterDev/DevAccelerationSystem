@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Cysharp.Text;
+//using Cysharp.Text;
 using TheBestLogger.Core.Utilities;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -42,10 +42,10 @@ namespace TheBestLogger.Examples.LogTargets
                 _apiKey = config.ApiKey;
                 var utcNow = DateTime.UtcNow;
                 var formattedDate = utcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-                _indexName = ZString.Concat(config.IndexPrefix, formattedDate);
+                _indexName = StringOperations.Concat(config.IndexPrefix, formattedDate);
 
                 _openSearchUrl =
-                    ZString.Concat(config.OpenSearchHostUrl, config.OpenSearchSingleLogMethod);
+                    StringOperations.Concat(config.OpenSearchHostUrl, config.OpenSearchSingleLogMethod);
             }
         }
 
@@ -54,23 +54,31 @@ namespace TheBestLogger.Examples.LogTargets
                 exception)> logBatch)
         {
             var send = "";
-            using (var sb = ZString.CreateStringBuilder())
+            var sb = StringOperations.CreateStringBuilder();
+            try
             {
                 foreach (var log in logBatch)
                 {
                     var logLevel = LogLevelToString(log.level);
                     var logDataJson = LogDataToJson(logLevel, log.category, log.message, log.logAttributes.StackTrace,
-                                             log.logAttributes.TimeStampFormatted,
-                                             log.logAttributes.Props.ToSimpleNotEscapedJson(), log.logAttributes.Tags);
+                                                    log.logAttributes.TimeStampFormatted,
+                                                    log.logAttributes.Props.ToSimpleNotEscapedJson(), log.logAttributes.Tags);
 
-                    sb.AppendLine(ZString.Format("{{ \"index\" : {{ \"_index\" : \"{0}\" }} }}", _indexName));
+                    sb.AppendLine(StringOperations.Format("{{ \"index\" : {{ \"_index\" : \"{0}\" }} }}", _indexName));
                     sb.AppendLine(logDataJson);
                 }
 
                 send = sb.ToString();
             }
-
+            finally
+            {
+                // when use with `ref`, can not use `using`.
+                sb.Dispose();
+            }
+            
             PostLog(_openSearchUrl, send);
+
+          
         }
 
         public override string LogTargetConfigurationName => nameof(OpenSearchLogTargetConfiguration);
@@ -83,9 +91,9 @@ namespace TheBestLogger.Examples.LogTargets
                                      logAttributes.TimeStampFormatted,
                                      logAttributes.Props.ToSimpleNotEscapedJson(), logAttributes.Tags);
             var send = "";
-            using (var sb = ZString.CreateStringBuilder())
+            using (var sb = StringOperations.CreateStringBuilder())
             {
-                sb.AppendLine(ZString.Format("{{ \"index\" : {{ \"_index\" : \"{0}\" }} }}", _indexName));
+                sb.AppendLine(StringOperations.Format("{{ \"index\" : {{ \"_index\" : \"{0}\" }} }}", _indexName));
                 sb.AppendLine(json);
 
                 send = sb.ToString();

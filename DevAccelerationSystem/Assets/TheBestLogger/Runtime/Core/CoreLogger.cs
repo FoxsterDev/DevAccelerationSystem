@@ -67,40 +67,7 @@ namespace TheBestLogger
             SendToLogTargets(logLevel, message, null, null, null, logAttributes, args);
         }
 
-        private string ExtractStackTrace(Exception exception)
-        {
-            var needFileInfo = false;
-
-#if UNITY_EDITOR
-            needFileInfo = true;
-#else
-            needFileInfo = Debug.isDebugBuild;
-#endif
-            
-            string stackTrace;
-            if (exception != null)
-            {
-                string exceptionMessage;
-                string stackTrace1;
-
-                StackTraceFormatter.ExtractStringFromExceptionInternal(exception, out exceptionMessage, out stackTrace1, 3, 5, needFileInfo);
-                if (needFileInfo)
-                {
-                    stackTrace = exceptionMessage + "\n" + stackTrace1;
-                }
-                else
-                {
-                    stackTrace = stackTrace1;
-                }
-                //
-            }
-            else
-            {
-                stackTrace = StackTraceFormatter.ExtractFormattedStackTrace(4, needFileInfo);
-            }
-
-            return stackTrace;
-        }
+        
 
         [HideInCallstack]
         private void SendToLogTargets(LogLevel logLevel,
@@ -157,7 +124,7 @@ namespace TheBestLogger
                 {
                     if (logTarget.IsStackTraceEnabled(logLevel, _categoryName))
                     {
-                        logAttributes.StackTrace = ExtractStackTrace(exception);
+                        logAttributes.StackTrace = StackTraceFormatter.ExtractStackTrace(exception);
                     }
                 }
 
