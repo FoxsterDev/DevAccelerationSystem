@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace TheBestLogger
 {
@@ -29,7 +30,7 @@ namespace TheBestLogger
         /// Enables logging for Unity's Debug Log source in the Unity Editor.
         /// Set to true to capture standard Unity debug logs.
         /// </summary>
-        [Header("LOG SOURCES FOR UNITY EDITOR")]
+        [Header("LOG SOURCES FOR UNITY EDITOR RUNTIME")]
         public bool DebugLogSourceUnityEditor = true;
 
         /// <summary>
@@ -74,21 +75,23 @@ namespace TheBestLogger
         /// Enables logging for Unity app logs outside of the Unity Editor.  Application.logMessageReceived is used.
         /// Set to true to capture application-specific logs in platform builds.
         /// </summary>
-        [Header("LOG SOURCES FOR NOT UNITY EDITOR")]
+        [Header("LOG SOURCES FOR PLATFORM BUILDS RUNTIME (NOT UNITY EDITOR)")]
+        public bool UnityDebugLogSourceForBuildRuntime = false;
+
         [Tooltip("Enables logging for Unity app logs outside of the Unity Editor.  Application.logMessageReceived is used.\nSet to true to capture application-specific logs in platform builds.")]
-        public bool UnityApplicationLogSource = false;
+        public bool UnityApplicationLogMessageReceivedSourceForBuildRuntime = false;
 
         /// <summary>
         /// Enables logging for Unity app logs outside of the Unity Editor.  Application.logMessageReceivedThreaded is used.
         /// Set to true to capture application-specific logs in platform builds.
         /// </summary>
         [Tooltip("Enables logging for Unity app threaded logs outside of the Unity Editor. It will catch logs from not unity main thread. Application.logMessageReceivedThreaded is used.\nSet to true to capture application-specific logs in platform builds.")]
-        public bool UnityApplicationLogSourceThreaded = true;
+        public bool UnityApplicationLogMessageReceivedThreadedSourceForBuildRuntime = true;
 
         /// <summary>
         /// Enables logging for unobserved task exceptions outside of the Unity Editor.
         /// Set to true to capture unobserved task exceptions that occur during asynchronous operations in platform builds.
         /// </summary>
-        public bool UnobservedTaskExceptionLogSource = true;
+        public bool SystemThreadingTaskUnobservedTaskExceptionLogSourceForBuildRuntime = true;
     }
 }

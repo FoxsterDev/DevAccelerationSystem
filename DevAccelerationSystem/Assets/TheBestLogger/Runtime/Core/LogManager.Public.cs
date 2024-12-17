@@ -109,17 +109,22 @@ namespace TheBestLogger
                     logSources.Add(new SystemDiagnosticsConsoleLogSource(logger as ILogConsumer));
                 }
 #else
-                if (configuration.UnityApplicationLogSource)
+                if (configuration.UnityDebugLogSourceForBuildRuntime)
+                {
+                    logSources.Add(new UnityDebugLogSource(logger as ILogConsumer));
+                }
+
+                if (configuration.UnityApplicationLogMessageReceivedSourceForBuildRuntime)
                 {
                     logSources.Add(new UnityApplicationLogSource(logger as ILogConsumer));
                 }
 
-                if (configuration.UnityApplicationLogSourceThreaded)
+                if (configuration.UnityApplicationLogMessageReceivedThreadedSourceForBuildRuntime)
                 {
                     logSources.Add(new UnityApplicationLogSourceThreaded(logger as ILogConsumer));
                 }
 
-                if (configuration.UnobservedTaskExceptionLogSource)
+                if (configuration.SystemThreadingTaskUnobservedTaskExceptionLogSourceForBuildRuntime)
                 {
                     logSources.Add(new UnobservedTaskExceptionLogSource(logger as ILogConsumer));
                 }
