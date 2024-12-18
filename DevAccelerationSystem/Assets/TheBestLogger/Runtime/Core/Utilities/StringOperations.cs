@@ -29,6 +29,22 @@ namespace TheBestLogger.Core.Utilities
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static
+#if THEBESTLOGGER_ZSTRING_ENABLED
+            Cysharp.Text.Utf16ValueStringBuilder
+#else
+            TheBestLogger.Core.Utilities.PooledStringBuilder
+#endif
+            CreateUtf16StringBuilder(int preferableSize = 512,  bool notNested = true)
+        {
+#if THEBESTLOGGER_ZSTRING_ENABLED
+            return Cysharp.Text.ZString.CreateStringBuilder(notNested) ;
+#else
+            return new TheBestLogger.Core.Utilities.PooledStringBuilder(SbPool);
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Format<T1>(string format, T1 arg1)
         {
 #if THEBESTLOGGER_ZSTRING_ENABLED

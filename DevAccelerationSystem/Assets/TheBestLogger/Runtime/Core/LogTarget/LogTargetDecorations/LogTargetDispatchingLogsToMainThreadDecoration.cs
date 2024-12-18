@@ -5,16 +5,17 @@ using TheBestLogger.Core.Utilities;
 
 namespace TheBestLogger
 {
-    public class LogTargetDispatchingLogsToMainThreadDecoration : ILogTarget
+    internal class LogTargetDispatchingLogsToMainThreadDecoration : ILogTarget
     {
         private LogTargetDispatchingLogsToMainThreadConfiguration _config;
         private readonly ILogTarget _original;
         private SynchronizationContext _unityContext;
-        private readonly IUtilitySupplier _utilitySupplier;
-      
+        private readonly UtilitySupplier _utilitySupplier;
+
         public LogTargetDispatchingLogsToMainThreadDecoration(LogTargetDispatchingLogsToMainThreadConfiguration config,
-                                                              ILogTarget original,  SynchronizationContext unityContext, 
-                                                              IUtilitySupplier utilitySupplier) 
+                                                              ILogTarget original,
+                                                              SynchronizationContext unityContext,
+                                                              UtilitySupplier utilitySupplier)
         {
             _config = config;
             _original = original;
@@ -58,7 +59,7 @@ namespace TheBestLogger
                 Diagnostics.Write("_config.Enabled && _config.SingleLogDispatchEnabled");
                 if (_unityContext != null && !_utilitySupplier.IsMainThread)
                 {
-                    Diagnostics.Write("_unityContext.Post: "+message);
+                    Diagnostics.Write("_unityContext.Post: " + message);
                     _unityContext.Post(
                         _ => { _original.Log(level, category, message, logAttributes, exception); }, null);
                     return;
@@ -81,9 +82,12 @@ namespace TheBestLogger
                         Diagnostics.Write("_unityContext.Post: logBatch is null or empty");
                         return;
                     }
-                    Diagnostics.Write("_unityContext.Post: logBatch.Count" + (logBatch.Count));
+
+                    Diagnostics.Write("_unityContext.Post: logBatch.Count" + logBatch.Count);
                     _unityContext.Post(
-                        stateObj => _original.LogBatch((IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)>)stateObj), logBatch);
+                        stateObj => _original.LogBatch(
+                            (IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)>) stateObj),
+                        logBatch);
                     return;
                 }
             }

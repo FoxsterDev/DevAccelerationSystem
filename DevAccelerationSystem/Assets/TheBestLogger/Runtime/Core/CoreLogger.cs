@@ -17,11 +17,11 @@ namespace TheBestLogger
     {
         private readonly string _categoryName;
         private IReadOnlyList<ILogTarget> _logTargets;
-        private IUtilitySupplier _utilitySupplier;
+        private UtilitySupplier _utilitySupplier;
 
         public CoreLogger(string categoryName,
                           IReadOnlyList<ILogTarget> logTargets,
-                          IUtilitySupplier utilitySupplier)
+                          UtilitySupplier utilitySupplier)
         {
             _logTargets = logTargets;
             _categoryName = categoryName;
@@ -124,7 +124,7 @@ namespace TheBestLogger
                 {
                     if (logTarget.IsStackTraceEnabled(logLevel, _categoryName))
                     {
-                        logAttributes.StackTrace = StackTraceFormatter.ExtractStackTrace(exception);
+                        logAttributes.StackTrace = _utilitySupplier.StackTraceFormatter.Extract(exception);
                     }
                 }
 

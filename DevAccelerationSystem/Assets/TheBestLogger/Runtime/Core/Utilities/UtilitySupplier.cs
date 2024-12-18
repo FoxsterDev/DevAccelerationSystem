@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace TheBestLogger.Core.Utilities
 {
-    internal class UtilitySupplier : IUtilitySupplier
+    internal sealed class UtilitySupplier 
     {
         private readonly int _mainThreadId;
         public bool IsMainThread => _mainThreadId == Thread.CurrentThread.ManagedThreadId;
@@ -13,7 +13,7 @@ namespace TheBestLogger.Core.Utilities
 
         private TimestampData _timeStampCachedData;
 
-        public UtilitySupplier(uint minTimestampPeriodMs)
+        public UtilitySupplier(uint minTimestampPeriodMs, StackTraceFormatter stackTraceFormatter)
         {
             _mainThreadId = Thread.CurrentThread.ManagedThreadId;
 
@@ -21,6 +21,7 @@ namespace TheBestLogger.Core.Utilities
             _timeStampCachedData = new TimestampData(DateTime.MinValue, string.Empty);
             TagsRegistry = new ConcurrentTagsRegistry(2, 4);
 //_timezoneOffsetTicks = (DateTime.Now - DateTime.UtcNow).Ticks;
+            StackTraceFormatter = stackTraceFormatter;
         }
 
         public (DateTime currentTimeUtc, string timeStampFormatted) GetTimeStamp()
@@ -42,5 +43,6 @@ namespace TheBestLogger.Core.Utilities
         }
 
         public ITagsRegistry TagsRegistry { get; }
+        public StackTraceFormatter StackTraceFormatter { get; }
     }
 }

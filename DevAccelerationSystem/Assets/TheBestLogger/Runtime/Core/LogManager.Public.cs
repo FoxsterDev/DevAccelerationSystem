@@ -52,7 +52,10 @@ namespace TheBestLogger
                 var configuration = Resources.Load<LogManagerConfiguration>(resourceSubFolderThatContainsConfigs + nameof(LogManagerConfiguration));
 
                 _configuration = configuration;
-                _utilitySupplier = new UtilitySupplier(_configuration.MinTimestampPeriodMs);
+
+                var stackTraceFormatter = new StackTraceFormatter(Application.dataPath, _configuration.StackTraceFormatterConfiguration);
+                _utilitySupplier = new UtilitySupplier(_configuration.MinTimestampPeriodMs, stackTraceFormatter);
+
                 _minUpdatesPeriodMs = _configuration.MinUpdatesPeriodMs;
 
                 var dict = ConvertToDictionaryWithKeyNameAndValueConfigSpecificData(configuration.LogTargetConfigs);

@@ -1,3 +1,4 @@
+using TheBestLogger.Core.Utilities;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -24,6 +25,8 @@ namespace TheBestLogger
         [Tooltip("This is used in NOT Unity editor runtime")]
         public UnityLogTypeStackTraceConfiguration ApplicationLogTypesStackTrace = new();
 
+        [Tooltip("Configure stack trace formatting")]
+        public StackTraceFormatterConfiguration StackTraceFormatterConfiguration;
         // Specifies whether log sources should be enabled or disabled for different scenarios in the Unity Editor or a non-Unity environment.
 
         /// <summary>

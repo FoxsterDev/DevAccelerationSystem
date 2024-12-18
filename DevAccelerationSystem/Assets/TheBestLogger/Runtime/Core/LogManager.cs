@@ -26,7 +26,7 @@ namespace TheBestLogger
         private static IReadOnlyList<LogTarget> _originalLogTargets = Array.Empty<LogTarget>();
         private static IReadOnlyList<ILogSource> _logSources = Array.Empty<ILogSource>();
         private static LogManagerConfiguration _configuration;
-        private static IUtilitySupplier _utilitySupplier;
+        private static UtilitySupplier _utilitySupplier;
         private static uint _minUpdatesPeriodMs;
         private static DateTime _timeStampPrevious;
         private static string _timeStampPreviousString;
@@ -203,7 +203,7 @@ namespace TheBestLogger
 
         private static IReadOnlyList<ILogTarget> TryDecorateLogTargets(
             IReadOnlyList<LogTarget> originalLogTargets,
-            DateTime currentTimeUtc, IUtilitySupplier utilitySupplier)
+            DateTime currentTimeUtc, UtilitySupplier utilitySupplier)
         {
             Diagnostics.Write("begin");
 
