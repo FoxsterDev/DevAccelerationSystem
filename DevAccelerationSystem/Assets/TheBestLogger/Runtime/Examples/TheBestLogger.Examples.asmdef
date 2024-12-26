@@ -5,7 +5,8 @@
         "TheBestLogger.Core",
         "TheBestLogger.Core.Utilities",
         "ZString",
-        "StabilityHub"
+        "StabilityHub",
+        "UniTask"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -17,8 +18,13 @@
     "versionDefines": [
         {
             "name": "com.cysharp.zstring",
-            "expression": "",
+            "expression": "1.0.0",
             "define": "LOGGER_ZSTRING_ENABLED"
+        },
+        {
+            "name": "com.cysharp.unitask",
+            "expression": "1.0.0",
+            "define": "LOGGER_UNITASK_ENABLED"
         }
     ],
     "noEngineReferences": false
