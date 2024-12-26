@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace TheBestLogger.Core.Utilities
 {
-    internal sealed class UtilitySupplier 
+    internal class UtilitySupplier 
     {
         private readonly int _mainThreadId;
         public bool IsMainThread => _mainThreadId == Thread.CurrentThread.ManagedThreadId;

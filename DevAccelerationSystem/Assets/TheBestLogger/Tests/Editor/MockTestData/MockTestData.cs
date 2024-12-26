@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using TheBestLogger.Core.Utilities;
+using UnityEngine;
 
 namespace TheBestLogger.Tests.Editor
 {
@@ -12,16 +13,22 @@ namespace TheBestLogger.Tests.Editor
             d(state);
         }
     }
-    internal class MockUtilitySupplier : IUtilitySupplier
+    internal class MockUtilitySupplier : UtilitySupplier
     {
-        public bool IsMainThread { get; set; }
+        public new bool IsMainThread { get; set; }
 
-        public (DateTime currentTimeUtc, string timeStampFormatted) GetTimeStamp()
+        public new ITagsRegistry TagsRegistry { get; }
+
+        public MockUtilitySupplier(uint minTimestampPeriodMs, StackTraceFormatter stackTraceFormatter)
+            : base(minTimestampPeriodMs, stackTraceFormatter)
         {
-            throw new NotImplementedException();
         }
 
-        public ITagsRegistry TagsRegistry { get; }
+        public MockUtilitySupplier()
+            : base(10, new StackTraceFormatter(Application.dataPath, new StackTraceFormatterConfiguration()))
+        {
+            
+        }
     }
 
     internal class MockLogTargetConfiguration : LogTargetConfiguration

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using NUnit.Framework;
+using TheBestLogger.Core.Utilities;
+using UnityEngine;
 
 namespace TheBestLogger.Tests.Editor
 {
@@ -21,7 +23,7 @@ namespace TheBestLogger.Tests.Editor
                 { Enabled = true, SingleLogDispatchEnabled = true, BatchLogsDispatchEnabled = true };
             _mockLogTarget = new MockLogTarget();
             _synchronizationContext = new MakeSynchronizationContext();
-            _utilitySupplier = new MockUtilitySupplier { IsMainThread = false };
+            _utilitySupplier = new MockUtilitySupplier() { IsMainThread = false };
             _logDecoratedTarget = new LogTargetDispatchingLogsToMainThreadDecoration(_config, _mockLogTarget, _synchronizationContext, _utilitySupplier);
         }
 
