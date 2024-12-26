@@ -77,17 +77,17 @@ namespace TheBestLogger
                 var logSources = new List<ILogSource>(4) { };
   
 #if LOGGER_UNITY_EDITOR
-                if (configuration.DebugLogSourceUnityEditor)
+                if (configuration.UnityDebugLogSourceForUnityEditor)
                 {
                     logSources.Add(new UnityDebugLogSource(logger as ILogConsumer));
                 }
 
-                if (configuration.ApplicationLogSourceUnityEditor)
+                if (configuration.UnityApplicationLogMessageReceivedSourceForUnityEditor)
                 {
                     logSources.Add(new UnityApplicationLogSource(logger as ILogConsumer));
                 }
 
-                if (configuration.ApplicationLogSourceThreadedUnityEditor)
+                if (configuration.UnityApplicationLogMessageReceivedThreadedSourceForUnityEditor)
                 {
                     logSources.Add(new UnityApplicationLogSourceThreaded(logger as ILogConsumer));
                 }
@@ -97,7 +97,7 @@ namespace TheBestLogger
                     logSources.Add(new CurrentDomainUnhandledExceptionLogSource(logger as ILogConsumer));
                 }
 
-                if (configuration.UnobservedTaskExceptionLogSourceUnityEditor)
+                if (configuration.UnobservedSystemTaskExceptionLogSourceForUnityEditor)
                 {
                     logSources.Add(new UnobservedTaskExceptionLogSource(logger as ILogConsumer));
                 }
@@ -106,7 +106,7 @@ namespace TheBestLogger
                 {
                     logSources.Add(new SystemDiagnosticsDebugLogSource(logger as ILogConsumer));
                 }
-                
+
                 if (configuration.SystemDiagnosticsConsoleLogSourceUnityEditor)
                 {
                     logSources.Add(new SystemDiagnosticsConsoleLogSource(logger as ILogConsumer));
@@ -127,7 +127,7 @@ namespace TheBestLogger
                     logSources.Add(new UnityApplicationLogSourceThreaded(logger as ILogConsumer));
                 }
 
-                if (configuration.SystemThreadingTaskUnobservedTaskExceptionLogSourceForBuildRuntime)
+                if (configuration.UnobservedSystemTaskExceptionLogSourceForBuildRuntime)
                 {
                     logSources.Add(new UnobservedTaskExceptionLogSource(logger as ILogConsumer));
                 }

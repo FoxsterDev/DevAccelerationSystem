@@ -34,19 +34,19 @@ namespace TheBestLogger
         /// Set to true to capture standard Unity debug logs.
         /// </summary>
         [Header("LOG SOURCES FOR UNITY EDITOR RUNTIME")]
-        public bool DebugLogSourceUnityEditor = true;
+        public bool UnityDebugLogSourceForUnityEditor = true;
 
         /// <summary>
         /// Enables logging for application-level logs in the Unity Editor.
         /// Set to true to capture application-specific logs in the Unity Editor.
         /// </summary>
-        public bool ApplicationLogSourceUnityEditor = true;
+        public bool UnityApplicationLogMessageReceivedSourceForUnityEditor = false;
 
         /// <summary>
         /// Enables logging for threaded application logs in the Unity Editor.
         /// Set to true to capture logs from multi-threaded operations in the Unity Editor.
         /// </summary>
-        public bool ApplicationLogSourceThreadedUnityEditor = true;
+        public bool UnityApplicationLogMessageReceivedThreadedSourceForUnityEditor = true;
 
         /// <summary>
         /// Enables logging for unhandled exceptions in the current application domain in the Unity Editor.
@@ -58,7 +58,7 @@ namespace TheBestLogger
         /// Enables logging for unobserved task exceptions in the Unity Editor.
         /// Set to true to capture unobserved exceptions that occur during asynchronous operations in the Unity Editor.
         /// </summary>
-        public bool UnobservedTaskExceptionLogSourceUnityEditor = true;
+        public bool UnobservedSystemTaskExceptionLogSourceForUnityEditor = true;
 
         /// <summary>
         /// Enables logging for system diagnostics debug logs in the Unity Editor.
@@ -79,7 +79,7 @@ namespace TheBestLogger
         /// Set to true to capture application-specific logs in platform builds.
         /// </summary>
         [Header("LOG SOURCES FOR PLATFORM BUILDS RUNTIME (NOT UNITY EDITOR)")]
-        public bool UnityDebugLogSourceForBuildRuntime = false;
+        public bool UnityDebugLogSourceForBuildRuntime = true;
 
         [Tooltip("Enables logging for Unity app logs outside of the Unity Editor.  Application.logMessageReceived is used.\nSet to true to capture application-specific logs in platform builds.")]
         public bool UnityApplicationLogMessageReceivedSourceForBuildRuntime = false;
@@ -95,6 +95,6 @@ namespace TheBestLogger
         /// Enables logging for unobserved task exceptions outside of the Unity Editor.
         /// Set to true to capture unobserved task exceptions that occur during asynchronous operations in platform builds.
         /// </summary>
-        public bool SystemThreadingTaskUnobservedTaskExceptionLogSourceForBuildRuntime = true;
+        public bool UnobservedSystemTaskExceptionLogSourceForBuildRuntime = true;
     }
 }
