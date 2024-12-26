@@ -4,7 +4,6 @@ namespace TheBestLogger.Core.Utilities
     internal class FilterOutStackTraceLineEntry
     {
         public string DeclaringTypeNamespace = "";
-        public string DeclaringTypeName = "";
-        public string MethodName = "";
+        public FilterOutDeclaringTypeNameEntry[] TypeNameEntries = new FilterOutDeclaringTypeNameEntry[0];
     }
 }

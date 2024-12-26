@@ -10,16 +10,47 @@ namespace TheBestLogger.Core.Utilities
 
         public FilterOutStackTraceLineEntry[] FilterOutLinesWhen = new[]
         {
-            new FilterOutStackTraceLineEntry { DeclaringTypeNamespace = "UnityEngine", DeclaringTypeName = "Debug" },
-            new FilterOutStackTraceLineEntry { DeclaringTypeNamespace = "UnityEngine", DeclaringTypeName = "Logger" },
-            new FilterOutStackTraceLineEntry { DeclaringTypeNamespace = "UnityEngine", DeclaringTypeName = "DebugLogHandler" },
-            new FilterOutStackTraceLineEntry { DeclaringTypeNamespace = "UnityEngine", DeclaringTypeName = "StackTraceUtility" },
-            new FilterOutStackTraceLineEntry { DeclaringTypeNamespace = "TheBestLogger", DeclaringTypeName = "" },
-            new FilterOutStackTraceLineEntry { DeclaringTypeNamespace = "UnityEngine.Assertions", DeclaringTypeName = "Assert" },
-            new FilterOutStackTraceLineEntry { DeclaringTypeNamespace = "UnityEngine", DeclaringTypeName = "MonoBehaviour", MethodName = "print"},
-            new FilterOutStackTraceLineEntry { DeclaringTypeNamespace = "UnityEngine", DeclaringTypeName = "UnitySynchronizationContext"},
-            new FilterOutStackTraceLineEntry { DeclaringTypeNamespace = "System.Runtime.CompilerServices", DeclaringTypeName = "MoveNextRunner"},
-            new FilterOutStackTraceLineEntry { DeclaringTypeNamespace = "System.Threading", DeclaringTypeName = "ExecutionContext"},
+            new FilterOutStackTraceLineEntry
+            {
+                DeclaringTypeNamespace = "UnityEngine", TypeNameEntries = new FilterOutDeclaringTypeNameEntry[]
+                {
+                    new FilterOutDeclaringTypeNameEntry { DeclaringTypeName = "Debug" },
+                    new FilterOutDeclaringTypeNameEntry { DeclaringTypeName = "Logger" },
+                    new FilterOutDeclaringTypeNameEntry { DeclaringTypeName = "DebugLogHandler" },
+                    new FilterOutDeclaringTypeNameEntry { DeclaringTypeName = "StackTraceUtility" },
+                    new FilterOutDeclaringTypeNameEntry { DeclaringTypeName = "MonoBehaviour", MethodName = "print" },
+                    new FilterOutDeclaringTypeNameEntry { DeclaringTypeName = "UnitySynchronizationContext" },
+                    new FilterOutDeclaringTypeNameEntry { DeclaringTypeName = "WorkRequest" },
+                }
+            },
+            new FilterOutStackTraceLineEntry
+            {
+                DeclaringTypeNamespace = "TheBestLogger", TypeNameEntries = new FilterOutDeclaringTypeNameEntry[]
+                {
+                    new FilterOutDeclaringTypeNameEntry { DeclaringTypeName = "" },
+                }
+            },
+            new FilterOutStackTraceLineEntry
+            {
+                DeclaringTypeNamespace = "UnityEngine.Assertions", TypeNameEntries = new FilterOutDeclaringTypeNameEntry[]
+                {
+                    new FilterOutDeclaringTypeNameEntry { DeclaringTypeName = "Assert" },
+                }
+            },
+            new FilterOutStackTraceLineEntry
+            {
+                DeclaringTypeNamespace = "System.Runtime.CompilerServices", TypeNameEntries = new FilterOutDeclaringTypeNameEntry[]
+                {
+                    new FilterOutDeclaringTypeNameEntry { DeclaringTypeName = "MoveNextRunner" },
+                }
+            },
+            new FilterOutStackTraceLineEntry
+            {
+                DeclaringTypeNamespace = "System.Threading", TypeNameEntries = new FilterOutDeclaringTypeNameEntry[]
+                {
+                    new FilterOutDeclaringTypeNameEntry { DeclaringTypeName = "ExecutionContext" },
+                }
+            }
         };
     }
 }

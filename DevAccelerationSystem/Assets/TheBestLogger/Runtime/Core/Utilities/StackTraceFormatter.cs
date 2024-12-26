@@ -94,27 +94,34 @@ namespace TheBestLogger.Core.Utilities
                 if (namespaceName != item.DeclaringTypeNamespace)
                     continue;
 
-                // If type name matches exactly, set filter and break
-                if (declaringTypeName == item.DeclaringTypeName)
+                if (item.TypeNameEntries.Length < 1)
                 {
                     filter = true;
                     break;
                 }
 
-                // If type name is not specified, filter applies
-                if (string.IsNullOrEmpty(item.DeclaringTypeName))
+                for (var index2 = 0; index2 < item.TypeNameEntries.Length; index++)
                 {
-                    filter = true;
-                    break;
-                }
+                    var item2 = item.TypeNameEntries[index];
+                    if (declaringTypeName != item2.DeclaringTypeName)
+                        continue;
 
-                // If a specific method name is given and it matches the current method, move on
-                if (!string.IsNullOrEmpty(item.MethodName) && methodName == item.MethodName)
-                {
+                    // If a specific method name is given and it matches the current method, move on
+                    if (!string.IsNullOrEmpty(item2.MethodName))
+                    {
+                        if (methodName == item2.MethodName)
+                        {
+                            filter = true;
+                            break;
+                        }
+
+                        continue;
+                    }
+
                     filter = true;
                     break;
                 }
-            }
+           }
 
             return filter;
         }
@@ -193,7 +200,6 @@ namespace TheBestLogger.Core.Utilities
                         sb.Append(":");
                         sb.Append(frame.GetFileLineNumber().ToString());
                         sb.Append(")");
-                    
                 }
 
                 sb.Append("\n");
@@ -202,7 +208,6 @@ namespace TheBestLogger.Core.Utilities
 
         public static unsafe string ExtractStackTrace(int bufferMax = 16384)
         {
-            //return new StackTrace(false).ToString();
             var buffer = stackalloc byte[bufferMax];
             var stackTraceNoAlloc = UnityEngine.Debug.ExtractStackTraceNoAlloc(buffer, bufferMax, "");
 

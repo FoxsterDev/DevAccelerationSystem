@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace TheBestLogger
 {
-    internal static class UnityLogExtension
+    public static class UnityLogExtension
     {
         private static int _logLevelMaxIntValue = -1;
         public static int LogLevelMaxIntValue()
@@ -22,7 +22,7 @@ namespace TheBestLogger
                 LogType.Assert => LogLevel.Error,
                 LogType.Warning => LogLevel.Warning,
                 LogType.Log => LogLevel.Debug,
-                _ => LogLevel.Info
+                _ => LogLevel.Debug
             };
         }
 
