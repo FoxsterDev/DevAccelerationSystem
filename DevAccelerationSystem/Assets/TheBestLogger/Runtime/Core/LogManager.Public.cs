@@ -3,6 +3,7 @@
 #else
 #define LOGGER_UNITY_EDITOR
 #endif
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -76,62 +77,45 @@ namespace TheBestLogger
 
                 var logSources = new List<ILogSource>(4) { };
   
-#if LOGGER_UNITY_EDITOR
-                if (configuration.UnityDebugLogSourceForUnityEditor)
+                if (configuration.UnityDebugLogSourceEnabled)
                 {
                     logSources.Add(new UnityDebugLogSource(logger as ILogConsumer));
                 }
 
-                if (configuration.UnityApplicationLogMessageReceivedSourceForUnityEditor)
+                if (configuration.UnityApplicationLogMessageReceivedThreadedSourceEnabled)
+                {
+                    logSources.Add(new UnityApplicationLogSourceThreaded(logger as ILogConsumer));
+                }
+                else if (configuration.UnityApplicationLogMessageReceivedSourceEnabled)
                 {
                     logSources.Add(new UnityApplicationLogSource(logger as ILogConsumer));
                 }
 
-                if (configuration.UnityApplicationLogMessageReceivedThreadedSourceForUnityEditor)
+                if (configuration.UnobservedSystemTaskExceptionLogSourceEnabled)
                 {
-                    logSources.Add(new UnityApplicationLogSourceThreaded(logger as ILogConsumer));
+                    logSources.Add(new UnobservedTaskExceptionLogSource(logger as ILogConsumer));
                 }
 
-                if (configuration.CurrentDomainUnhandledExceptionLogSourceUnityEditor)
+                if (configuration.UnobservedUniTaskExceptionLogSourceEnabled)
+                {
+                    logSources.Add(new UnobservedUniTaskExceptionLogSource(logger as ILogConsumer));
+                }
+
+                if (configuration.CurrentDomainUnhandledExceptionLogSourceEnabled)
                 {
                     logSources.Add(new CurrentDomainUnhandledExceptionLogSource(logger as ILogConsumer));
                 }
 
-                if (configuration.UnobservedSystemTaskExceptionLogSourceForUnityEditor)
-                {
-                    logSources.Add(new UnobservedTaskExceptionLogSource(logger as ILogConsumer));
-                }
-
-                if (configuration.SystemDiagnosticsDebugLogSourceUnityEditor)
+                if (configuration.SystemDiagnosticsDebugLogSourceEnabled)
                 {
                     logSources.Add(new SystemDiagnosticsDebugLogSource(logger as ILogConsumer));
                 }
 
-                if (configuration.SystemDiagnosticsConsoleLogSourceUnityEditor)
+                if (configuration.SystemDiagnosticsConsoleLogSourceEnabled)
                 {
                     logSources.Add(new SystemDiagnosticsConsoleLogSource(logger as ILogConsumer));
                 }
-#else
-                if (configuration.UnityDebugLogSourceForBuildRuntime)
-                {
-                    logSources.Add(new UnityDebugLogSource(logger as ILogConsumer));
-                }
-
-                if (configuration.UnityApplicationLogMessageReceivedSourceForBuildRuntime)
-                {
-                    logSources.Add(new UnityApplicationLogSource(logger as ILogConsumer));
-                }
-
-                if (configuration.UnityApplicationLogMessageReceivedThreadedSourceForBuildRuntime)
-                {
-                    logSources.Add(new UnityApplicationLogSourceThreaded(logger as ILogConsumer));
-                }
-
-                if (configuration.UnobservedSystemTaskExceptionLogSourceForBuildRuntime)
-                {
-                    logSources.Add(new UnobservedTaskExceptionLogSource(logger as ILogConsumer));
-                }
-#endif
+    
                 _logSources = logSources.AsReadOnly();
 
                 if (_targetUpdates.Count > 0)

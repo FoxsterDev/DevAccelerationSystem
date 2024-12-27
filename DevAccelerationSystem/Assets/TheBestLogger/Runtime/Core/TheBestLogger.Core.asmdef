@@ -3,7 +3,8 @@
     "rootNamespace": "",
     "references": [
         "TheBestLogger.Core.Utilities",
-        "ZString"
+        "ZString",
+        "UniTask"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -15,8 +16,13 @@
     "versionDefines": [
         {
             "name": "com.cysharp.zstring",
-            "expression": "",
+            "expression": "1.0.0",
             "define": "THEBESTLOGGER_ZSTRING_ENABLED"
+        },
+        {
+            "name": "com.cysharp.unitask",
+            "expression": "1.0.0",
+            "define": "THEBESTLOGGER_UNITASK_ENABLED"
         }
     ],
     "noEngineReferences": false
