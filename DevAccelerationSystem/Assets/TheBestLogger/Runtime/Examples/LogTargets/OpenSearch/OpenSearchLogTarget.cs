@@ -140,7 +140,7 @@ namespace TheBestLogger.Examples.LogTargets
 
             request.uploadHandler = new UploadHandlerRaw(jsonToSend);
 
-#if LOGGER_DIAGNOSTICS_ENABLED
+#if THEBESTLOGGER_DIAGNOSTICS_ENABLED
             request.downloadHandler = new DownloadHandlerBuffer();
 #else
             request.downloadHandler = null; // Do not process the response body
@@ -151,7 +151,7 @@ namespace TheBestLogger.Examples.LogTargets
             async.completed += operation =>
             {
 
-#if LOGGER_DIAGNOSTICS_ENABLED
+#if THEBESTLOGGER_DIAGNOSTICS_ENABLED
                 if (request.result != UnityWebRequest.Result.Success)
                 {
                     Diagnostics.Write($" has error result: {request.result}, error: {request.error}, response: {request.downloadHandler?.text}\nsent:{jsonData}");
