@@ -38,7 +38,8 @@ namespace TheBestLoggerSample.CrashReporting
         public void Start()
         {
             _context = SynchronizationContext.Current;
-            Application.logMessageReceivedThreaded += (string condition,
+            
+            /*Application.logMessageReceivedThreaded += (string condition,
                                                        string stacktrace,
                                                        LogType type) =>
             {
@@ -46,7 +47,7 @@ namespace TheBestLoggerSample.CrashReporting
                 {
                     _context.Post((s) => { _consoleLabel.text += $"{type}:" + condition; }, null);
                 }
-            };
+            };*/
             var list = ListTriggerMethods();
             // Log the methods to the Unity console
             if (list.Any())
