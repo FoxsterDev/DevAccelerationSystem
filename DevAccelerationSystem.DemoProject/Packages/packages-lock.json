@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.cysharp.unitask": {
+      "version": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "b0d01ca75fc890b76e81202d655d17c1f4214a18"
+    },
     "com.cysharp.zstring": {
       "version": "file:../../DevAccelerationSystem/Packages/ZString.Unity.2.6.0.tgz",
       "depth": 0,

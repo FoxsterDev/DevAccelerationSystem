@@ -1,4 +1,4 @@
-#if LOGGER_AUTO_INITIALIZATION
+#if THEBESTLOGGER_AUTO_INITIALIZATION
 
 using System.Collections.Generic;
 using System.Threading;
@@ -18,7 +18,7 @@ public class GameLoggerEntryPoint
 #if UNITY_EDITOR
             new UnityEditorConsoleLogTarget(),
 #endif
-         
+
             new AppleSystemLogTarget(Application.identifier, "Unity"),
             new IMGUIRuntimeLogTarget()
         };

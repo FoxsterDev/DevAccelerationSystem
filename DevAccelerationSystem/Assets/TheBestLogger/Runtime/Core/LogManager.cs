@@ -1,4 +1,4 @@
-#if !UNITY_EDITOR || LOGGER_PLATFORM_BUILD_SIMULATION
+#if !UNITY_EDITOR || THEBESTLOGGER_PLATFORM_BUILD_SIMULATION
 #define LOGGER_NOT_UNITY_EDITOR
 #else
 #define LOGGER_UNITY_EDITOR
@@ -7,11 +7,9 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Cysharp.Text;
 using TheBestLogger.Core.Utilities;
 using UnityEngine;
 
@@ -28,7 +26,7 @@ namespace TheBestLogger
         private static IReadOnlyList<LogTarget> _originalLogTargets = Array.Empty<LogTarget>();
         private static IReadOnlyList<ILogSource> _logSources = Array.Empty<ILogSource>();
         private static LogManagerConfiguration _configuration;
-        private static IUtilitySupplier _utilitySupplier;
+        private static UtilitySupplier _utilitySupplier;
         private static uint _minUpdatesPeriodMs;
         private static DateTime _timeStampPrevious;
         private static string _timeStampPreviousString;
@@ -205,7 +203,7 @@ namespace TheBestLogger
 
         private static IReadOnlyList<ILogTarget> TryDecorateLogTargets(
             IReadOnlyList<LogTarget> originalLogTargets,
-            DateTime currentTimeUtc, IUtilitySupplier utilitySupplier)
+            DateTime currentTimeUtc, UtilitySupplier utilitySupplier)
         {
             Diagnostics.Write("begin");
 

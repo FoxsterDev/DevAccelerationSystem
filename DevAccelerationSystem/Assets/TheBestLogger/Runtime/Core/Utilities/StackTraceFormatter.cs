@@ -1,194 +1,220 @@
 using System;
 using System.Diagnostics;
-using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
-using Cysharp.Text;
-using UnityEngine;
 
 namespace TheBestLogger.Core.Utilities
 {
-    public static class StackTraceFormatter
+    internal class StackTraceFormatter
     {
-        /*public static string ExtractStackTraceFromException(this Exception exception,
-                                                            bool escapeStackTrace = false,
-                                                            bool unityApproach = true)
+        private readonly string _projectFolder;
+        private readonly bool _needFileInfo;
+        private readonly int _maximumInnerExceptionDepth;
+        private readonly int _skipFrames;
+        private bool _utf16ValueStringBuilder;
+        private FilterOutStackTraceLineEntry[] _filteringOut;
+        private bool _enabled;
+
+        public StackTraceFormatter(string projectFolder,
+                                   StackTraceFormatterConfiguration formatterConfiguration)
         {
-            string stackTrace;
-            if (unityApproach)
+            _utf16ValueStringBuilder = formatterConfiguration.Utf16ValueStringBuilder;
+            _projectFolder = projectFolder;
+            _needFileInfo = formatterConfiguration.NeedFileInfo;
+            _maximumInnerExceptionDepth = formatterConfiguration.MaximumInnerExceptionDepth;
+            _skipFrames = formatterConfiguration.SkipFrames;
+            _filteringOut = formatterConfiguration.FilterOutLinesWhen;
+            _enabled = formatterConfiguration.Enabled;
+        }
+
+        public string Extract(Exception exception)
+        {
+            if (!_enabled)
             {
-                stackTrace = exception != null
-                                 ? ExtractStringFromException(exception)
-                                 : string.Empty;
-            }
-            else
-            {
-                stackTrace = (exception as Exception)?.StackTrace ?? string.Empty;
+                return exception?.StackTrace ?? "empty";
             }
 
-            if (escapeStackTrace)
+            var stackTrace = string.Empty;
+
+            var size = exception?.StackTrace == null
+                           ? 512
+                           : exception.StackTrace.Length * 2;
+
+            var sb = StringOperations.CreateStringBuilder(size);
+
+            try
             {
-                stackTrace = EscapeStackTrace2(stackTrace);
+                var deepCount = -1;
+                var str10 = string.Empty;
+
+                for (; exception != null; exception = exception.InnerException)
+                {
+                    if (deepCount == _maximumInnerExceptionDepth)
+                    {
+                        var str1 = StringOperations.Concat("Reached maximum inner exception depth: ", _maximumInnerExceptionDepth, "\n");
+                        sb.AppendLine(str1);
+                        break;
+                    }
+
+                    if (deepCount == -1)
+                    {
+                        str10 = exception.StackTrace;
+                    }
+                    else
+                    {
+                        str10 = StringOperations.Concat(
+                            "InnerException at depth: ", deepCount, ", ", exception.GetType().Name, ": ", exception.Message ?? string.Empty, "\n",
+                            exception.StackTrace, "\n");
+                    }
+                    deepCount++;
+                    sb.AppendLine(str10);
+                }
+
+                BetterExtractFormattedStackTrace(ref sb, _skipFrames, _needFileInfo);
+
+                stackTrace = sb.ToString();
+
+                if (_needFileInfo)
+                {
+                    stackTrace = stackTrace.Replace(_projectFolder, "");
+                }
+            }
+            finally
+            {
+                // when use with `ref`, can not use `using`.
+                sb.Dispose();
             }
 
             return stackTrace;
-        }*/
-
-        //private static string _projectFolder = "";
-
-        /*[RequiredByNativeCode]
-        internal static void SetProjectFolder(string folder)
-        {
-            StackTraceUtility.projectFolder = folder;
-            if (string.IsNullOrEmpty(StackTraceUtility.projectFolder))
-                return;
-            StackTraceUtility.projectFolder = StackTraceUtility.projectFolder.Replace("\\", "/");
-        }*/
-        private static string projectFolder = "";
-
-        public static void ExtractStringFromExceptionInternal(
-            Exception exception,
-            out string exceptionMessage,
-            out string stackTrace,
-            int maximumInnerExceptionDepth,
-            int skipFrames,
-            bool needFileInfo)
-        {
-            if (exception == null)
-                throw new ArgumentException("ExtractStringFromExceptionInternal called with null exception");
-
-            var deepCount = 0;
-
-            var stringBuilder = new StringBuilder(
-                exception.StackTrace == null
-                    ? 512
-                    : exception.StackTrace.Length * 2);
-
-            exceptionMessage = string.Empty;
-            var str1 = string.Empty;
-
-            for (; exception != null; exception = exception.InnerException)
-            {
-                if (needFileInfo)
-                {
-                    str1 = str1.Length != 0
-                               ? exception.StackTrace + "\n" + str1
-                               : exception.StackTrace;
-                }
-
-                var str2 = string.Empty;
-                if (deepCount > 0)
-                {
-                    str2 = exception.GetType().Name;
-                    /*if (exception.Source != null)
-                    {
-                        str2 += ": "+exception.Source+" ";
-                    }*/
-                    
-                    var str3 = string.Empty;
-                    if (exception.Message != null)
-                        str3 = exception.Message;
-                    if (str3.Trim().Length != 0)
-                        str2 = str2 + ": " + str3;
-                    exceptionMessage = str2;
-                }
-
-                if (exception.InnerException != null)
-                    str1 = "Rethrow as " + str2 + "\n" + str1;
-
-                deepCount++;
-
-                if (deepCount == maximumInnerExceptionDepth)
-                {
-                    str1 += "Reached maximum inner exception depth\n";
-                    break;
-                }
-            }
-
-            stringBuilder.AppendLine(str1);
-
-            stringBuilder.Append(ExtractFormattedStackTrace(skipFrames, needFileInfo));
-            stackTrace = stringBuilder.ToString();
         }
 
-        public static string ExtractFormattedStackTrace(int skipFrames, bool needFileInfo)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool IsFilteringTheLine(string namespaceName, string declaringTypeName, string methodName)
+        {
+            var filter = false;
+
+            for (var index = 0; index < _filteringOut.Length; index++)
+            {
+                var item = _filteringOut[index];
+                // Skip if namespace doesn't match
+                if (namespaceName != item.DeclaringTypeNamespace)
+                    continue;
+
+                if (item.TypeNameEntries.Length < 1)
+                {
+                    filter = true;
+                    break;
+                }
+
+                for (var index2 = 0; index2 < item.TypeNameEntries.Length; index++)
+                {
+                    var item2 = item.TypeNameEntries[index];
+                    if (declaringTypeName != item2.DeclaringTypeName)
+                        continue;
+
+                    // If a specific method name is given and it matches the current method, move on
+                    if (!string.IsNullOrEmpty(item2.MethodName))
+                    {
+                        if (methodName == item2.MethodName)
+                        {
+                            filter = true;
+                            break;
+                        }
+
+                        continue;
+                    }
+
+                    filter = true;
+                    break;
+                }
+           }
+
+            return filter;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void BetterExtractFormattedStackTrace(ref
+#if THEBESTLOGGER_ZSTRING_ENABLED
+             Cysharp.Text.Utf8ValueStringBuilder
+#else
+            TheBestLogger.Core.Utilities.PooledStringBuilder
+#endif
+                                                                 sb,
+                                                             int skipFrames,
+                                                             bool needFileInfo)
         {
             var stackTrace = new StackTrace(skipFrames, needFileInfo);
 
-            var stringBuilder = new StringBuilder((int) byte.MaxValue);
-            for (int index1 = 0; index1 < stackTrace.FrameCount; ++index1)
+            for (var index1 = 0; index1 < stackTrace.FrameCount; ++index1)
             {
                 var frame = stackTrace.GetFrame(index1);
                 var method = frame.GetMethod();
-                if (method != null)
+                if (method == null)
                 {
-                    var declaringType = method.DeclaringType;
-                    if (declaringType != (Type) null)
-                    {
-                        var str1 = declaringType.Namespace;
-                        if (!string.IsNullOrEmpty(str1))
-                        {
-                            stringBuilder.Append(str1);
-                            stringBuilder.Append(".");
-                        }
-
-                        stringBuilder.Append(declaringType.Name);
-                        stringBuilder.Append(":");
-                        stringBuilder.Append(method.Name);
-                        stringBuilder.Append("(");
-                        int index2 = 0;
-                        var parameters = method.GetParameters();
-                        bool flag = true;
-                        for (; index2 < parameters.Length; ++index2)
-                        {
-                            if (!flag)
-                                stringBuilder.Append(", ");
-                            else
-                                flag = false;
-                            stringBuilder.Append(parameters[index2].ParameterType.Name);
-                        }
-
-                        stringBuilder.Append(")");
-
-                        // (at /Users/Projects/Logger/Assets/Scripts/EntryPoint.cs:48) - debug
-                        //[0x00000] in <00000000000000000000000000000000>:0  release
-                        //EntryPoint.MethodInner2 () (at Assets/Scripts/EntryPoint.cs:65) unity logmessage received
-                        if (needFileInfo)
-                        {
-                            var str2 = frame.GetFileName();
-
-                            if (str2 != null &&
-                                !((declaringType.Namespace == "UnityEngine" &&
-                                   (declaringType.Name == "Debug" ||
-                                    declaringType.Name == "Logger" ||
-                                    declaringType.Name == "DebugLogHandler" ||
-                                    declaringType.Name == "StackTraceUtility")) ||
-                                  (declaringType.Namespace == "TheBestLogger") ||
-                                  (declaringType.Namespace == "UnityEngine.Assertions" && declaringType.Name == "Assert") ||
-                                  (declaringType.Namespace == "UnityEngine" && declaringType.Name == "MonoBehaviour" && method.Name == "print")))
-                            {
-                                stringBuilder.Append(" (at ");
-                                if (!string.IsNullOrEmpty(projectFolder) && str2.Replace("\\", "/").StartsWith(projectFolder))
-                                    str2 = str2.Substring(projectFolder.Length, str2.Length - projectFolder.Length);
-
-                                stringBuilder.Append(str2);
-                                stringBuilder.Append(":");
-                                stringBuilder.Append(frame.GetFileLineNumber().ToString());
-                                stringBuilder.Append(")");
-                            }
-                        }
-
-                        stringBuilder.Append("\n");
-                    }
+                    continue;
                 }
-            }
 
-            return stringBuilder.ToString();
+                var declaringType = method.DeclaringType;
+                if (declaringType == null)
+                {
+                    continue;
+                }
+
+                var declaringTypeName = declaringType.Name;
+                var namespaceName = declaringType.Namespace;
+                var mathodName = method.Name;
+ 
+                //check filtering
+                if (IsFilteringTheLine(namespaceName, declaringTypeName, mathodName))
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrEmpty(namespaceName))
+                {
+                    sb.Append(namespaceName);
+                    sb.Append(".");
+                }
+
+                sb.Append(declaringTypeName);
+                sb.Append(":");
+                sb.Append(method.Name);
+                sb.Append("(");
+                var index2 = 0;
+                var parameters = method.GetParameters();
+                var flag = true;
+                for (; index2 < parameters.Length; ++index2)
+                {
+                    if (!flag)
+                    {
+                        sb.Append(", ");
+                    }
+                    else
+                    {
+                        flag = false;
+                    }
+
+                    sb.Append(parameters[index2].ParameterType.Name);
+                }
+
+                sb.Append(")");
+
+                if (needFileInfo)
+                {
+                    var str2 = frame.GetFileName();
+
+                        sb.Append(str2);
+                        sb.Append(":");
+                        sb.Append(frame.GetFileLineNumber().ToString());
+                        sb.Append(")");
+                }
+
+                sb.Append("\n");
+            }
         }
 
         public static unsafe string ExtractStackTrace(int bufferMax = 16384)
         {
-            //return new StackTrace(false).ToString();
-            byte* buffer = stackalloc byte[bufferMax];
+            var buffer = stackalloc byte[bufferMax];
             var stackTraceNoAlloc = UnityEngine.Debug.ExtractStackTraceNoAlloc(buffer, bufferMax, "");
 
             return stackTraceNoAlloc > 0
@@ -196,30 +222,16 @@ namespace TheBestLogger.Core.Utilities
                        : string.Empty;
         }
 
-        /*public static string ExtractStringFromException(object exception)
-        {
-           
-        }*/
-
-        /*public static string EscapeStackTrace(string stacktrace)
-        {
-            // Escape the special characters for JSON
-            return stacktrace
-                .Replace("\\", "\\\\") // Escape backslashes
-                .Replace("\"", "\\\"")  // Escape double quotes
-                .Replace("\n", "\\n")   // Escape newline characters
-                .Replace("\r", "\\r");  // Escape carriage return characters
-        }*/
-
         public static string EscapeStackTrace2(string stacktrace)
         {
             if (string.IsNullOrEmpty(stacktrace))
-                return stacktrace; // Return the original string if it's null or empty
-
-            var escapedStacktrace = new Utf16ValueStringBuilder(true);
-            try
             {
-                foreach (char c in stacktrace)
+                return stacktrace; // Return the original string if it's null or empty
+            }
+
+            using (var escapedStacktrace = StringOperations.CreateStringBuilder())
+            {
+                foreach (var c in stacktrace)
                 {
                     switch (c)
                     {
@@ -242,10 +254,6 @@ namespace TheBestLogger.Core.Utilities
                 }
 
                 return escapedStacktrace.ToString();
-            }
-            finally
-            {
-                escapedStacktrace.Dispose();
             }
         }
     }

@@ -63,7 +63,7 @@ namespace TheBestLogger
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(nameof(FileBackgroundAsyncWriter));
+               return;
             }
 
             _logQueue.Enqueue(message);

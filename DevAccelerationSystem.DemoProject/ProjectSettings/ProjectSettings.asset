@@ -786,8 +786,8 @@ PlayerSettings:
   webGLMemoryGeometricGrowthCap: 96
   webGLPowerPreference: 2
   scriptingDefineSymbols:
-    Standalone: LOGGER_AUTO_INITIALIZATION;LOGGER_DIAGNOSTICS_ENABLED
-    iPhone: LOGGER_AUTO_INITIALIZATION;LOGGER_DIAGNOSTICS_ENABLED
+    Standalone: THEBESTLOGGER_AUTO_INITIALIZATION;THEBESTLOGGER_DIAGNOSTICS_ENABLED
+    iPhone: THEBESTLOGGER_DIAGNOSTICS_ENABLED;THEBESTLOGGER_UNITASK_ENABLED
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend: {}

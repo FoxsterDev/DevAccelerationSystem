@@ -37,7 +37,7 @@ namespace TheBestLogger
       /// <param name="minLogLevel"></param>
         private Diagnostics(LogLevel minLogLevel = LogLevel.Debug)
         {
-#if LOGGER_DIAGNOSTICS_ENABLED
+#if THEBESTLOGGER_DIAGNOSTICS_ENABLED
             _minLogLevel = minLogLevel;
             _mainThreadId = Thread.CurrentThread.ManagedThreadId;
             //not thread safe
@@ -46,7 +46,7 @@ namespace TheBestLogger
 #endif
         }
 
-        [Conditional(LoggerScriptingDefineSymbols.LOGGER_DIAGNOSTICS_ENABLED)]
+        [Conditional(LoggerScriptingDefineSymbols.THEBESTLOGGER_DIAGNOSTICS_ENABLED)]
         public static void Cancel()
         {
             Instance.Dispose();
@@ -66,7 +66,7 @@ namespace TheBestLogger
             }
         }
 
-        [Conditional(LoggerScriptingDefineSymbols.LOGGER_DIAGNOSTICS_ENABLED)]
+        [Conditional(LoggerScriptingDefineSymbols.THEBESTLOGGER_DIAGNOSTICS_ENABLED)]
         public static void Write(string message,
                                  LogLevel level = LogLevel.Debug,
                                  Exception ex = null,

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Cysharp.Text;
+using TheBestLogger.Core.Utilities;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -28,7 +28,7 @@ namespace TheBestLogger
                                  Exception exception = null
         )
         {
-            message = ZString.Concat("[", category, "] ", message);
+            message = StringOperations.Concat("[", category, "] ", message);
 
             switch (level)
             {
@@ -61,12 +61,12 @@ namespace TheBestLogger
             }
 
             var str = "";
-            using (var sb = ZString.CreateStringBuilder())
+            using (var sb = StringOperations.CreateStringBuilder())
             {
                 var number = 0;
                 foreach (var log in logBatch)
                 {
-                    var message = ZString.Concat("batch[:", number, "] ", "[", log.level, "] ", "[", log.category, "] ", log.message);
+                    var message = StringOperations.Concat("batch[:", number, "] ", "[", log.level, "] ", "[", log.category, "] ", log.message);
                     number++;
                     sb.AppendLine(message);
                 }

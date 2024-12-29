@@ -2,10 +2,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using TheBestLogger.Core.Utilities;
 using NUnit.Framework;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using TheBestLogger;
 
 namespace TheBestLogger.Tests.Editor
 {

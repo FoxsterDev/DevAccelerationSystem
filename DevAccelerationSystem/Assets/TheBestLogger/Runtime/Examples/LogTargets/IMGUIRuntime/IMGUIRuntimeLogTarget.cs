@@ -1,11 +1,8 @@
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using Cysharp.Text;
 using UnityEngine;
 using UnityEngine.Scripting;
-using Object = System.Object;
 
 namespace TheBestLogger.Examples.LogTargets
 {
@@ -32,7 +29,7 @@ namespace TheBestLogger.Examples.LogTargets
         )
         {
             var messageFormatted = "";
-            messageFormatted = ZString.Concat("[", logAttributes.TimeStampFormatted, "] ", "[", category, "] ", message);
+            messageFormatted = string.Concat("[", logAttributes.TimeStampFormatted, "] ", "[", category, "] ", message);
 
             if (messageFormatted.Length > _configuration.MaxStringLengthForOneMessage)
             {

@@ -43,6 +43,7 @@ MonoBehaviour:
   UnobservedTaskExceptionLogSourceUnityEditor: 1
   SystemDiagnosticsDebugLogSourceUnityEditor: 0
   SystemDiagnosticsConsoleLogSourceUnityEditor: 1
-  UnityApplicationLogSource: 0
-  UnityApplicationLogSourceThreaded: 1
-  UnobservedTaskExceptionLogSource: 1
+  UnityDebugLogSourceForBuildRuntime: 0
+  UnityApplicationLogMessageReceivedSourceForBuildRuntime: 0
+  UnityApplicationLogMessageReceivedThreadedSourceForBuildRuntime: 1
+  SystemThreadingTaskUnobservedTaskExceptionLogSourceForBuildRuntime: 1

@@ -86,6 +86,7 @@ namespace TheBestLogger
         public virtual void ApplyConfiguration(LogTargetConfiguration configuration)
         {
             Diagnostics.Write(" begin for " + GetType().Name + " before minLogLevel: " + _minLogLevel + " , new minLogLevel: " + configuration.MinLogLevel);
+
             Configuration = configuration;
             _minLogLevel = configuration.MinLogLevel;
             _muted = configuration.Muted;

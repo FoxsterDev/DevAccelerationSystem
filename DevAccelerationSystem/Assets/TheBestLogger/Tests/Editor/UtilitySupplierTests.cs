@@ -1,6 +1,7 @@
 using System.Threading;
 using NUnit.Framework;
 using TheBestLogger.Core.Utilities;
+using UnityEngine;
 
 namespace TheBestLogger.Tests.Editor
 {
@@ -12,7 +13,7 @@ namespace TheBestLogger.Tests.Editor
         [SetUp]
         public void SetUp()
         {
-            _utilitySupplier = new UtilitySupplier(20);
+            _utilitySupplier = new UtilitySupplier(20, new StackTraceFormatter(Application.dataPath, new StackTraceFormatterConfiguration()));
         }
 
         [Test]

@@ -1,4 +1,4 @@
-#if !UNITY_EDITOR || LOGGER_PLATFORM_BUILD_SIMULATION
+#if !UNITY_EDITOR || THEBESTLOGGER_PLATFORM_BUILD_SIMULATION
 #define LOGGER_NOT_UNITY_EDITOR
 #else 
 #define LOGGER_UNITY_EDITOR
@@ -17,11 +17,11 @@ namespace TheBestLogger
     {
         private readonly string _categoryName;
         private IReadOnlyList<ILogTarget> _logTargets;
-        private IUtilitySupplier _utilitySupplier;
+        private UtilitySupplier _utilitySupplier;
 
         public CoreLogger(string categoryName,
                           IReadOnlyList<ILogTarget> logTargets,
-                          IUtilitySupplier utilitySupplier)
+                          UtilitySupplier utilitySupplier)
         {
             _logTargets = logTargets;
             _categoryName = categoryName;
@@ -31,31 +31,31 @@ namespace TheBestLogger
         [HideInCallstack]
         public void LogException(Exception ex, LogAttributes logAttributes = null)
         {
-            SendToLogTargets(LogLevel.Exception, null, ex, null, null, logAttributes, null);
+            SendToLogTargets(LogLevel.Exception, null, "direct",ex, null, null, logAttributes, null);
         }
 
         [HideInCallstack]
         public void LogError(string message, LogAttributes logAttributes = null)
         {
-            SendToLogTargets(LogLevel.Error, message, null, null, null, logAttributes, null);
+            SendToLogTargets(LogLevel.Error, message,"direct", null, null, null, logAttributes, null);
         }
 
         [HideInCallstack]
         public void LogWarning(string message, LogAttributes logAttributes = null)
         {
-            SendToLogTargets(LogLevel.Warning, message, null, null, null, logAttributes, null);
+            SendToLogTargets(LogLevel.Warning, message,"direct", null, null, null, logAttributes, null);
         }
 
         [HideInCallstack]
         public void LogInfo(string message, LogAttributes logAttributes = null)
         {
-            SendToLogTargets(LogLevel.Info, message, null, null, null, logAttributes, null);
+            SendToLogTargets(LogLevel.Info, message, "direct",null, null, null, logAttributes, null);
         }
 
         [HideInCallstack]
         public void LogDebug(string message, LogAttributes logAttributes = null)
         {
-            SendToLogTargets(LogLevel.Debug, message, null, null, null, logAttributes, null);
+            SendToLogTargets(LogLevel.Debug, message, "direct",null, null, null, logAttributes, null);
         }
 
         [HideInCallstack]
@@ -64,45 +64,13 @@ namespace TheBestLogger
                               LogAttributes logAttributes = null,
                               params object[] args)
         {
-            SendToLogTargets(logLevel, message, null, null, null, logAttributes, args);
-        }
-
-        private string ExtractStackTrace(Exception exception)
-        {
-            var needFileInfo = false;
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            needFileInfo = true;
-#endif
-
-            string stackTrace;
-            if (exception != null)
-            {
-                string exceptionMessage;
-                string stackTrace1;
-
-                StackTraceFormatter.ExtractStringFromExceptionInternal(exception, out exceptionMessage, out stackTrace1, 3, 5, needFileInfo);
-                if (needFileInfo)
-                {
-                    stackTrace = exceptionMessage + "\n" + stackTrace1;
-                }
-                else
-                {
-                    stackTrace = stackTrace1;
-                }
-                //
-            }
-            else
-            {
-                stackTrace = StackTraceFormatter.ExtractFormattedStackTrace(4, needFileInfo);
-            }
-
-            return stackTrace;
+            SendToLogTargets(logLevel, message, "direct", null, null, null, logAttributes, args);
         }
 
         [HideInCallstack]
         private void SendToLogTargets(LogLevel logLevel,
                                       string message,
+                                      string logSourceId,
                                       Exception exception = null,
                                       string stackTrace = null,
                                       UnityEngine.Object context = null,
@@ -149,13 +117,18 @@ namespace TheBestLogger
                     logAttributes.TimeUtc = timeStamp.Item1;
                     logAttributes.StackTrace = stackTrace;
                     logAttributes.Tags = _utilitySupplier.TagsRegistry.GetAllTags();
+
+#if HEBESTLOGGER_DIAGNOSTICS_ENABLED
+                    logAttributes.Add("LogSourceId", logSourceId);
+                    logAttributes.Add("StackTraceSourceId", stackTrace != null ? "direct" : "recreated");
+#endif
                 }
 
                 if (string.IsNullOrEmpty(logAttributes.StackTrace))
                 {
                     if (logTarget.IsStackTraceEnabled(logLevel, _categoryName))
                     {
-                        logAttributes.StackTrace = ExtractStackTrace(exception);
+                        logAttributes.StackTrace = _utilitySupplier.StackTraceFormatter.Extract(exception);
                     }
                 }
 
@@ -181,7 +154,7 @@ namespace TheBestLogger
                                     Object context,
                                     params object[] args)
         {
-#if LOGGER_DIAGNOSTICS_ENABLED
+#if THEBESTLOGGER_DIAGNOSTICS_ENABLED
             var message2 = message;
             if (message2 == "{0}")
             {
@@ -194,12 +167,14 @@ namespace TheBestLogger
             //temporary for debug, avoid recursive callbacks
             if (logSourceId != nameof(UnityDebugLogSource) &&
                 logSourceId != nameof(UnobservedTaskExceptionLogSource) && 
-                logSourceId != nameof(SystemDiagnosticsConsoleLogSource)) 
+                logSourceId != nameof(SystemDiagnosticsConsoleLogSource) &&
+                logSourceId != nameof(UnobservedUniTaskExceptionLogSource))
             {
+                Diagnostics.Write($"the log was filtered out in editor mode because {logSourceId}");
                 return;
             }
 #endif
-            SendToLogTargets(logLevel, message, exception, stackTrace, context, null, args);
+            SendToLogTargets(logLevel, message, logSourceId, exception, stackTrace, context, null, args);
         }
 
         public void Dispose()
