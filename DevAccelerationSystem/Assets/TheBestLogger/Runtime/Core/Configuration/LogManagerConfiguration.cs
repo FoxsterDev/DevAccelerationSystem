@@ -1,3 +1,5 @@
+#pragma warning disable 0414
+
 #if !UNITY_EDITOR || THEBESTLOGGER_PLATFORM_BUILD_SIMULATION
 #define LOGGER_NOT_UNITY_EDITOR
 #else
