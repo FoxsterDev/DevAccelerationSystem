@@ -1,4 +1,4 @@
-#if !UNITY_EDITOR || LOGGER_PLATFORM_BUILD_SIMULATION
+#if !UNITY_EDITOR || THEBESTLOGGER_PLATFORM_BUILD_SIMULATION
 #define LOGGER_NOT_UNITY_EDITOR
 #else
 #define LOGGER_UNITY_EDITOR
@@ -98,7 +98,7 @@ namespace TheBestLogger
 
                 if (configuration.UnobservedUniTaskExceptionLogSourceEnabled)
                 {
-                    logSources.Add(new UnobservedUniTaskExceptionLogSource(logger as ILogConsumer));
+                    logSources.Add(new UnobservedUniTaskExceptionLogSource(logger as ILogConsumer, configuration.UniTaskConfiguration));
                 }
 
                 if (configuration.CurrentDomainUnhandledExceptionLogSourceEnabled)

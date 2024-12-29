@@ -13,6 +13,7 @@ namespace TheBestLogger.Core.Utilities
         private readonly int _skipFrames;
         private bool _utf16ValueStringBuilder;
         private FilterOutStackTraceLineEntry[] _filteringOut;
+        private bool _enabled;
 
         public StackTraceFormatter(string projectFolder,
                                    StackTraceFormatterConfiguration formatterConfiguration)
@@ -23,10 +24,16 @@ namespace TheBestLogger.Core.Utilities
             _maximumInnerExceptionDepth = formatterConfiguration.MaximumInnerExceptionDepth;
             _skipFrames = formatterConfiguration.SkipFrames;
             _filteringOut = formatterConfiguration.FilterOutLinesWhen;
+            _enabled = formatterConfiguration.Enabled;
         }
 
         public string Extract(Exception exception)
         {
+            if (!_enabled)
+            {
+                return exception?.StackTrace ?? "empty";
+            }
+
             var stackTrace = string.Empty;
 
             var size = exception?.StackTrace == null

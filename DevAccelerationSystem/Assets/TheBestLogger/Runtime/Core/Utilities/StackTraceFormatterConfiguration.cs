@@ -3,6 +3,7 @@ namespace TheBestLogger.Core.Utilities
     [System.Serializable]
     internal class StackTraceFormatterConfiguration
     {
+        public bool Enabled = true;
         public bool NeedFileInfo = false;
         public int MaximumInnerExceptionDepth = 3;
         public bool Utf16ValueStringBuilder = false;
