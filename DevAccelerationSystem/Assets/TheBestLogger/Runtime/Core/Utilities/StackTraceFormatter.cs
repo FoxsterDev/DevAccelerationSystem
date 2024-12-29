@@ -44,12 +44,19 @@ namespace TheBestLogger.Core.Utilities
 
             try
             {
-                var deepCount = 0;
+                var deepCount = -1;
                 var str10 = string.Empty;
 
                 for (; exception != null; exception = exception.InnerException)
                 {
-                    if (deepCount == 0)
+                    if (deepCount == _maximumInnerExceptionDepth)
+                    {
+                        var str1 = StringOperations.Concat("Reached maximum inner exception depth: ", _maximumInnerExceptionDepth, "\n");
+                        sb.AppendLine(str1);
+                        break;
+                    }
+
+                    if (deepCount == -1)
                     {
                         str10 = exception.StackTrace;
                     }
@@ -59,16 +66,8 @@ namespace TheBestLogger.Core.Utilities
                             "InnerException at depth: ", deepCount, ", ", exception.GetType().Name, ": ", exception.Message ?? string.Empty, "\n",
                             exception.StackTrace, "\n");
                     }
-
-                    sb.AppendLine(str10);
-
                     deepCount++;
-                    if (deepCount == _maximumInnerExceptionDepth)
-                    {
-                        var str1 = StringOperations.Concat("Reached maximum inner exception depth: ", _maximumInnerExceptionDepth, "\n");
-                        sb.AppendLine(str1);
-                        break;
-                    }
+                    sb.AppendLine(str10);
                 }
 
                 BetterExtractFormattedStackTrace(ref sb, _skipFrames, _needFileInfo);
