@@ -160,7 +160,7 @@ namespace TheBestLogger
             {
                 Diagnostics.Write(" will create a new logger for category: " + categoryName);
 
-                logger = new CoreLogger(categoryName, _decoratedLogTargets, _utilitySupplier);
+                logger = new CoreLogger(categoryName, _decoratedLogTargets, _utilitySupplier, _configuration.MessageMaxLength);
                 _loggers.TryAdd(categoryName, logger);
             }
             else

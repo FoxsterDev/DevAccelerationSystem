@@ -18,14 +18,16 @@ namespace TheBestLogger
         private readonly string _categoryName;
         private IReadOnlyList<ILogTarget> _logTargets;
         private UtilitySupplier _utilitySupplier;
+        private readonly uint _messageMaxLength;
 
         public CoreLogger(string categoryName,
                           IReadOnlyList<ILogTarget> logTargets,
-                          UtilitySupplier utilitySupplier)
+                          UtilitySupplier utilitySupplier, uint messageMaxLength)
         {
             _logTargets = logTargets;
             _categoryName = categoryName;
             _utilitySupplier = utilitySupplier;
+            _messageMaxLength = messageMaxLength;
         }
 
         [HideInCallstack]
@@ -110,6 +112,12 @@ namespace TheBestLogger
                     logPrepared = true;
                     formattedMessage = LogMessageFormatter.TryFormat(message, exception, args) ?? string.Empty;
 
+                    if (formattedMessage.Length > _messageMaxLength)
+                    {
+                        formattedMessage = formattedMessage.Substring(0, (int)_messageMaxLength);
+                        formattedMessage = StringOperations.Concat(formattedMessage, "\n--Truncated--");
+                    }
+
                     logAttributes ??= new LogAttributes();
                     logAttributes.UnityContextObject = context;
                     var timeStamp = _utilitySupplier.GetTimeStamp();
@@ -118,7 +126,7 @@ namespace TheBestLogger
                     logAttributes.StackTrace = stackTrace;
                     logAttributes.Tags = _utilitySupplier.TagsRegistry.GetAllTags();
 
-#if HEBESTLOGGER_DIAGNOSTICS_ENABLED
+#if THEBESTLOGGER_DIAGNOSTICS_ENABLED
                     logAttributes.Add("LogSourceId", logSourceId);
                     logAttributes.Add("StackTraceSourceId", stackTrace != null ? "direct" : "recreated");
 #endif

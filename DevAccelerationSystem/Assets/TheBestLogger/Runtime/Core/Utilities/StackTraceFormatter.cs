@@ -13,8 +13,9 @@ namespace TheBestLogger.Core.Utilities
         private readonly int _skipFrames;
         private bool _utf16ValueStringBuilder;
         private FilterOutStackTraceLineEntry[] _filteringOut;
-        private bool _enabled;
-
+        private readonly bool _enabled;
+        private uint _maxLength;
+        
         public StackTraceFormatter(string projectFolder,
                                    StackTraceFormatterConfiguration formatterConfiguration)
         {
@@ -25,6 +26,7 @@ namespace TheBestLogger.Core.Utilities
             _skipFrames = formatterConfiguration.SkipFrames;
             _filteringOut = formatterConfiguration.FilterOutLinesWhen;
             _enabled = formatterConfiguration.Enabled;
+            _maxLength = formatterConfiguration.MaxLength;
         }
 
         public string Extract(Exception exception)
@@ -77,6 +79,12 @@ namespace TheBestLogger.Core.Utilities
                 if (_needFileInfo)
                 {
                     stackTrace = stackTrace.Replace(_projectFolder, "");
+                }
+
+                if (stackTrace.Length > _maxLength)
+                {
+                    stackTrace = stackTrace.Substring(0, (int)_maxLength);
+                    stackTrace = StringOperations.Concat(stackTrace, "\n--Truncated--");
                 }
             }
             finally

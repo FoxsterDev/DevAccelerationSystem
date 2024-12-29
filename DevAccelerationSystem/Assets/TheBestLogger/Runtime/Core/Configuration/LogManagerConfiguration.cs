@@ -25,6 +25,9 @@ namespace TheBestLogger
 
         public string DefaultUnityLogsCategoryName = "Uncategorized";
 
+        [Tooltip("This global settings will be applied before sending into eligible logtargets. Pay attention that logtarget might decorate message with additional parameters. ")]
+        public uint MessageMaxLength = 256;
+
         [Tooltip("This is period of creating new string formatting timestamp to reduce allocation")]
         public uint MinTimestampPeriodMs = 60;
 

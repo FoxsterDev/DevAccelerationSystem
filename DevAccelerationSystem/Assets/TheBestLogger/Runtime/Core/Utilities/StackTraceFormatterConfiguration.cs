@@ -8,6 +8,7 @@ namespace TheBestLogger.Core.Utilities
         public int MaximumInnerExceptionDepth = 3;
         public bool Utf16ValueStringBuilder = false;
         public int SkipFrames = 5;
+        public uint MaxLength = 512;
 
         public FilterOutStackTraceLineEntry[] FilterOutLinesWhen = new[]
         {
