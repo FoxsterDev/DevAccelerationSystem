@@ -6,11 +6,15 @@ namespace TheBestLogger
     {
         private ILogConsumer _logConsumer;
 
-        public UnobservedUniTaskExceptionLogSource(ILogConsumer logConsumer)
+        public UnobservedUniTaskExceptionLogSource(ILogConsumer logConsumer, UniTaskConfiguration uniTaskConfiguration)
         {
             _logConsumer = logConsumer;
 
 #if THEBESTLOGGER_UNITASK_ENABLED
+            Cysharp.Threading.Tasks.UniTaskScheduler.DispatchUnityMainThread = uniTaskConfiguration.DispatchUnityMainThread;
+            Cysharp.Threading.Tasks.UniTaskScheduler.PropagateOperationCanceledException = uniTaskConfiguration.PropagateOperationCanceledException;
+            Cysharp.Threading.Tasks.UniTaskScheduler.UnobservedExceptionWriteLogType = uniTaskConfiguration.UnobservedExceptionWriteLogType;
+            //
             Cysharp.Threading.Tasks.UniTaskScheduler.UnobservedTaskException -= OnUnobservedTaskException;
             Cysharp.Threading.Tasks.UniTaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 #else
@@ -22,13 +26,13 @@ namespace TheBestLogger
         {
             if (obj != null)
             {
-                _logConsumer.LogFormat(LogLevel.Exception, nameof(UnobservedTaskExceptionLogSource), string.Empty, obj);
+                _logConsumer.LogFormat(LogLevel.Exception, nameof(UnobservedUniTaskExceptionLogSource), string.Empty, obj);
             }
             else
             {
                 _logConsumer.LogFormat(
-                    LogLevel.Exception, nameof(UnobservedTaskExceptionLogSource),
-                    "UnobservedTaskException is null", null);
+                    LogLevel.Exception, nameof(UnobservedUniTaskExceptionLogSource),
+                    "UnobservedUniTaskException is null", null);
             }
         }
 
