@@ -15,7 +15,8 @@ namespace TheBestLogger.Core.Utilities
         private FilterOutStackTraceLineEntry[] _filteringOut;
         private readonly bool _enabled;
         private uint _maxLength;
-        
+        private int _filteringOutLength = 0;
+
         public StackTraceFormatter(string projectFolder,
                                    StackTraceFormatterConfiguration formatterConfiguration)
         {
@@ -25,6 +26,7 @@ namespace TheBestLogger.Core.Utilities
             _maximumInnerExceptionDepth = formatterConfiguration.MaximumInnerExceptionDepth;
             _skipFrames = formatterConfiguration.SkipFrames;
             _filteringOut = formatterConfiguration.FilterOutLinesWhen;
+            _filteringOutLength = _filteringOut?.Length ?? 0;
             _enabled = formatterConfiguration.Enabled;
             _maxLength = formatterConfiguration.MaxLength;
         }
@@ -68,6 +70,7 @@ namespace TheBestLogger.Core.Utilities
                             "InnerException at depth: ", deepCount, ", ", exception.GetType().Name, ": ", exception.Message ?? string.Empty, "\n",
                             exception.StackTrace, "\n");
                     }
+
                     deepCount++;
                     sb.AppendLine(str10);
                 }
@@ -83,7 +86,7 @@ namespace TheBestLogger.Core.Utilities
 
                 if (stackTrace.Length > _maxLength)
                 {
-                    stackTrace = stackTrace.Substring(0, (int)_maxLength);
+                    stackTrace = stackTrace.Substring(0, (int) _maxLength);
                     stackTrace = StringOperations.Concat(stackTrace, "\n--Truncated--");
                 }
             }
@@ -97,26 +100,41 @@ namespace TheBestLogger.Core.Utilities
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool IsFilteringTheLine(string namespaceName, string declaringTypeName, string methodName)
+        internal bool IsFilteringTheLine(string namespaceName,
+                                        string declaringTypeName,
+                                        string methodName)
         {
             var filter = false;
-
-            for (var index = 0; index < _filteringOut.Length; index++)
+            if (_filteringOutLength < 1)
             {
-                var item = _filteringOut[index];
+                return false;
+            }
+
+            for (var i = 0; i < _filteringOutLength; i++)
+            {
+                var item = _filteringOut[i];
+                if (item == null)
+                {
+                    continue;
+                }
+
                 // Skip if namespace doesn't match
                 if (namespaceName != item.DeclaringTypeNamespace)
+                {
                     continue;
+                }
 
-                if (item.TypeNameEntries.Length < 1)
+                var itemTypeNameEntriesLength = item.TypeNameEntries?.Length ?? 0;
+
+                if (itemTypeNameEntriesLength < 1)
                 {
                     filter = true;
                     break;
                 }
 
-                for (var index2 = 0; index2 < item.TypeNameEntries.Length; index++)
+                for (var j = 0; j < itemTypeNameEntriesLength; j++)
                 {
-                    var item2 = item.TypeNameEntries[index];
+                    var item2 = item.TypeNameEntries[j];
                     if (declaringTypeName != item2.DeclaringTypeName)
                         continue;
 
@@ -135,20 +153,21 @@ namespace TheBestLogger.Core.Utilities
                     filter = true;
                     break;
                 }
-           }
+            }
 
             return filter;
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void BetterExtractFormattedStackTrace(ref
 #if THEBESTLOGGER_ZSTRING_ENABLED
-             Cysharp.Text.Utf8ValueStringBuilder
+                                                          Cysharp.Text.Utf8ValueStringBuilder
 #else
             TheBestLogger.Core.Utilities.PooledStringBuilder
 #endif
-                                                                 sb,
-                                                             int skipFrames,
-                                                             bool needFileInfo)
+                                                          sb,
+                                                      int skipFrames,
+                                                      bool needFileInfo)
         {
             var stackTrace = new StackTrace(skipFrames, needFileInfo);
 
@@ -170,7 +189,7 @@ namespace TheBestLogger.Core.Utilities
                 var declaringTypeName = declaringType.Name;
                 var namespaceName = declaringType.Namespace;
                 var mathodName = method.Name;
- 
+
                 //check filtering
                 if (IsFilteringTheLine(namespaceName, declaringTypeName, mathodName))
                 {
@@ -210,10 +229,10 @@ namespace TheBestLogger.Core.Utilities
                 {
                     var str2 = frame.GetFileName();
 
-                        sb.Append(str2);
-                        sb.Append(":");
-                        sb.Append(frame.GetFileLineNumber().ToString());
-                        sb.Append(")");
+                    sb.Append(str2);
+                    sb.Append(":");
+                    sb.Append(frame.GetFileLineNumber().ToString());
+                    sb.Append(")");
                 }
 
                 sb.Append("\n");
