@@ -1,7 +1,6 @@
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEditor.iOS.Xcode;
-using System.IO;
 
 namespace TheBestLoggerSample.CrashReporting
 {
@@ -12,12 +11,12 @@ namespace TheBestLoggerSample.CrashReporting
         {
             if (target == BuildTarget.iOS)
             {
-                string projectPath = PBXProject.GetPBXProjectPath(pathToBuildProject);
-                PBXProject project = new PBXProject();
+                var projectPath = PBXProject.GetPBXProjectPath(pathToBuildProject);
+                var project = new PBXProject();
                 project.ReadFromFile(projectPath);
 
-                string targetGuid = project.GetUnityMainTargetGuid();
-                string targetGuid2 = project.GetUnityFrameworkTargetGuid();
+                var targetGuid = project.GetUnityMainTargetGuid();
+                var targetGuid2 = project.GetUnityFrameworkTargetGuid();
                 //return;
                 // Enable Objective-C exceptions
                 project.SetBuildProperty(targetGuid, "GCC_ENABLE_OBJC_EXCEPTIONS", "YES");

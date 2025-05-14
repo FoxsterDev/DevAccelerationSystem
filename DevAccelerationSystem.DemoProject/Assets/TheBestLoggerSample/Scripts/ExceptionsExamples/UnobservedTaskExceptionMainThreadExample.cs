@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 public class UnobservedTaskExceptionMainThreadExample : MonoBehaviour, IPointerClickHandler
 {
-    void Start()
+    private void Start()
     {
         var str = GetType().Name;
         gameObject.name = str + "Button";
@@ -27,7 +27,7 @@ public class UnobservedTaskExceptionMainThreadExample : MonoBehaviour, IPointerC
         _ = Task.Factory.StartNew(
             () =>
             {
-                throw new InvalidOperationException("This exception will be unobserved, running on the main thread! "+ Thread.CurrentThread.ManagedThreadId);
+                throw new InvalidOperationException("This exception will be unobserved, running on the main thread! " + Thread.CurrentThread.ManagedThreadId);
             }, CancellationToken.None,
             TaskCreationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
     }

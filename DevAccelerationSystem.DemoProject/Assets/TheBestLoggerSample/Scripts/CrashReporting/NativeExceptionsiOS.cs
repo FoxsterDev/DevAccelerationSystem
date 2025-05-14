@@ -9,6 +9,22 @@ namespace TheBestLoggerSample.CrashReporting
 {
     public class NativeExceptionsiOS
     {
+        /*public static void TriggerParseMalformedJSON()
+        {
+             var jsonString = "{ key: value ";       // Malformed JSON
+
+             ParseMalformedJSON(jsonString, NativeCallbackMethod );
+        }
+        public static void TriggerParseWellformedJSON()
+        {
+            var jsonString = "{ \"key\": \"value\" }"; // Well-formed JSON
+
+            ParseJSONOnBackgroundThread(jsonString, NativeCallbackMethod);
+        }*/
+
+        // Define the callback delegate
+        public delegate void NativeCallback(string message);
+
         [DllImport("__Internal")]
         private static extern void CauseNullPointerCrash();
 
@@ -60,48 +76,96 @@ namespace TheBestLoggerSample.CrashReporting
         [DllImport("__Internal")]
         private static extern void InvalidFileHandleException();
 
-
         [DllImport("__Internal")]
         private static extern void ParseJSONOnBackgroundThread(string jsonString, Action<string> callback);
 
         [DllImport("__Internal")]
         private static extern void ParseMalformedJSON(string jsonString, Action<string> callback);
 
-
-        public static void TriggerCauseNullVirtualCallCrash() => CauseNullVirtualCallCrash();
-        public static void TriggerNullPointerCrash() => CauseNullPointerCrash();
-        public static void TriggerArrayBoundsCrash() => CauseArrayBoundsCrash();
-        public static void TriggerDivideByZeroCrash() => CauseDivideByZeroCrash();
-        public static void TriggerUnalignedMemoryAccessCrash() => CauseUnalignedMemoryAccessCrash();
-        public static void TriggerStackOverflowCrash() => CauseStackOverflowCrash();
-        public static void TriggerDoubleFreeCrash() => CauseDoubleFreeCrash();
-        public static void TriggerUseAfterFreeCrash() => CauseUseAfterFreeCrash();
-        public static void TriggerIllegalInstructionCrash() => CauseIllegalInstructionCrash();
-        public static void TriggerInvalidMemoryAccessCrash() => CauseInvalidMemoryAccessCrash();
-        public static void TriggerUncaughtExceptionCrash() => CauseUncaughtExceptionCrash();
-        public static void TriggerInvalidFunctionPointerCrash() => CauseInvalidFunctionPointerCrash();
-        public static void TriggerBufferOverflowCrash() => CauseBufferOverflowCrash();
-        public static void TriggerMutexCrash() => CauseMutexCrash();
-        public static void TriggerAbortCrash() => CauseAbortCrash();
-        public static void TriggerNullReferenceNSException() => NullReferenceNSException();
-        public static void TriggerInvalidFileHandleException() => InvalidFileHandleException();
-
-        /*public static void TriggerParseMalformedJSON()
+        public static void TriggerCauseNullVirtualCallCrash()
         {
-             var jsonString = "{ key: value ";       // Malformed JSON
-    
-             ParseMalformedJSON(jsonString, NativeCallbackMethod );
+            CauseNullVirtualCallCrash();
         }
-        public static void TriggerParseWellformedJSON()
+
+        public static void TriggerNullPointerCrash()
         {
-            var jsonString = "{ \"key\": \"value\" }"; // Well-formed JSON
-           
-            ParseJSONOnBackgroundThread(jsonString, NativeCallbackMethod);
-        }*/
+            CauseNullPointerCrash();
+        }
 
-        // Define the callback delegate
-        public delegate void NativeCallback(string message);
+        public static void TriggerArrayBoundsCrash()
+        {
+            CauseArrayBoundsCrash();
+        }
 
+        public static void TriggerDivideByZeroCrash()
+        {
+            CauseDivideByZeroCrash();
+        }
+
+        public static void TriggerUnalignedMemoryAccessCrash()
+        {
+            CauseUnalignedMemoryAccessCrash();
+        }
+
+        public static void TriggerStackOverflowCrash()
+        {
+            CauseStackOverflowCrash();
+        }
+
+        public static void TriggerDoubleFreeCrash()
+        {
+            CauseDoubleFreeCrash();
+        }
+
+        public static void TriggerUseAfterFreeCrash()
+        {
+            CauseUseAfterFreeCrash();
+        }
+
+        public static void TriggerIllegalInstructionCrash()
+        {
+            CauseIllegalInstructionCrash();
+        }
+
+        public static void TriggerInvalidMemoryAccessCrash()
+        {
+            CauseInvalidMemoryAccessCrash();
+        }
+
+        public static void TriggerUncaughtExceptionCrash()
+        {
+            CauseUncaughtExceptionCrash();
+        }
+
+        public static void TriggerInvalidFunctionPointerCrash()
+        {
+            CauseInvalidFunctionPointerCrash();
+        }
+
+        public static void TriggerBufferOverflowCrash()
+        {
+            CauseBufferOverflowCrash();
+        }
+
+        public static void TriggerMutexCrash()
+        {
+            CauseMutexCrash();
+        }
+
+        public static void TriggerAbortCrash()
+        {
+            CauseAbortCrash();
+        }
+
+        public static void TriggerNullReferenceNSException()
+        {
+            NullReferenceNSException();
+        }
+
+        public static void TriggerInvalidFileHandleException()
+        {
+            InvalidFileHandleException();
+        }
 
         [MonoPInvokeCallback(typeof(NativeCallback))]
         private static void NativeCallbackMethod(string result)
@@ -109,9 +173,7 @@ namespace TheBestLoggerSample.CrashReporting
             Debug.Log($"Native Callback: {result}" + Thread.CurrentThread.Name);
         }
 
-
-
-        public static void RunCrashInBackground(System.Action nativeCrashMethod)
+        public static void RunCrashInBackground(Action nativeCrashMethod)
         {
             Task.Run(
                 () =>
@@ -120,7 +182,7 @@ namespace TheBestLoggerSample.CrashReporting
                     {
                         nativeCrashMethod?.Invoke();
                     }
-                    catch (System.Exception ex)
+                    catch (Exception ex)
                     {
                         Debug.LogError($"RunCrashInBackground Caught exception in Task: {ex.Message}");
                     }
