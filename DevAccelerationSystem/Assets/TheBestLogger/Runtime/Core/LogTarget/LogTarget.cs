@@ -81,7 +81,7 @@ namespace TheBestLogger
                                  Exception exception = null);
 
         public abstract void LogBatch(
-            IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> logBatch);
+            IReadOnlyList<LogEntry> logBatch);
 
         public virtual void ApplyConfiguration(LogTargetConfiguration configuration)
         {

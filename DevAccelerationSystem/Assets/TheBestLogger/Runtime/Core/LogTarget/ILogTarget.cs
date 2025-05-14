@@ -13,8 +13,7 @@ namespace TheBestLogger
         void Log(LogLevel level, string category, string message,   LogAttributes logAttributes, Exception exception = null);
 
         void LogBatch(
-            IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception
-                exception)> logBatch);
+            IReadOnlyList<LogEntry> logBatch);
         void ApplyConfiguration(LogTargetConfiguration configuration);
 
         bool DebugModeEnabled { get; internal set; }

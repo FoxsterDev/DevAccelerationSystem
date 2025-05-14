@@ -55,12 +55,11 @@ namespace TheBestLogger
                                                    Exception exception = null);
 
         public override void LogBatch(
-            IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception
-                exception)> logBatch)
+            IReadOnlyList<LogEntry> logBatch)
         {
             foreach (var logEntry in logBatch)
             {
-                Log(logEntry.level, logEntry.category, logEntry.message, logEntry.logAttributes, logEntry.exception);
+                Log(logEntry.Level, logEntry.Category, logEntry.Message, logEntry.Attributes, logEntry.Exception);
             }
         }
 

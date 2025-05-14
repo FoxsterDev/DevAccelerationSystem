@@ -1,30 +1,31 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-//using Cysharp.Text;
+using System.Text;
 using TheBestLogger.Core.Utilities;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.Scripting;
+//using Cysharp.Text;
 
 namespace TheBestLogger.Examples.LogTargets
 {
     public class OpenSearchLogTarget : LogTarget
     {
-        private string _openSearchUrl;
-        private string _indexName;
-        private string _apiKey;
-
-        private readonly string _gameVersion;
-        private readonly string _uuid;
         private readonly string _deviceModel;
-        private readonly string _os;
-        private readonly string _platform;
 
         private readonly Func<OpenSearchLogDTO> _dtoFactory;
 
+        private readonly string _gameVersion;
+        private readonly string _os;
+        private readonly string _platform;
+        private readonly string _uuid;
+        private string _apiKey;
+        private string _indexName;
+        private string _openSearchUrl;
+
         [Preserve]
-        public OpenSearchLogTarget(Func<OpenSearchLogDTO> dtoFactory = null) : base()
+        public OpenSearchLogTarget(Func<OpenSearchLogDTO> dtoFactory = null)
         {
             _dtoFactory = dtoFactory;
             _gameVersion = Application.version;
@@ -33,6 +34,8 @@ namespace TheBestLogger.Examples.LogTargets
             _os = SystemInfo.operatingSystem;
             _platform = Application.platform.ToString();
         }
+
+        public override string LogTargetConfigurationName => nameof(OpenSearchLogTargetConfiguration);
 
         public override void ApplyConfiguration(LogTargetConfiguration configuration)
         {
@@ -50,8 +53,7 @@ namespace TheBestLogger.Examples.LogTargets
         }
 
         public override void LogBatch(
-            IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception
-                exception)> logBatch)
+            IReadOnlyList<LogEntry> logBatch)
         {
             var send = "";
             var sb = StringOperations.CreateStringBuilder();
@@ -59,10 +61,11 @@ namespace TheBestLogger.Examples.LogTargets
             {
                 foreach (var log in logBatch)
                 {
-                    var logLevel = LogLevelToString(log.level);
-                    var logDataJson = LogDataToJson(logLevel, log.category, log.message, log.logAttributes.StackTrace,
-                                                    log.logAttributes.TimeStampFormatted,
-                                                    log.logAttributes.Props.ToSimpleNotEscapedJson(), log.logAttributes.Tags);
+                    var logLevel = LogLevelToString(log.Level);
+                    var logDataJson = LogDataToJson(
+                        logLevel, log.Category, log.Message, log.Attributes.StackTrace,
+                        log.Attributes.TimeStampFormatted,
+                        log.Attributes.Props.ToSimpleNotEscapedJson(), log.Attributes.Tags);
 
                     sb.AppendLine(StringOperations.Format("{{ \"index\" : {{ \"_index\" : \"{0}\" }} }}", _indexName));
                     sb.AppendLine(logDataJson);
@@ -75,21 +78,21 @@ namespace TheBestLogger.Examples.LogTargets
                 // when use with `ref`, can not use `using`.
                 sb.Dispose();
             }
-            
-            PostLog(_openSearchUrl, send);
 
-          
+            PostLog(_openSearchUrl, send);
         }
 
-        public override string LogTargetConfigurationName => nameof(OpenSearchLogTargetConfiguration);
-
-        public override void Log(LogLevel level, string category, string message, LogAttributes logAttributes,
+        public override void Log(LogLevel level,
+                                 string category,
+                                 string message,
+                                 LogAttributes logAttributes,
                                  Exception exception = null)
         {
             var logLevel = LogLevelToString(level);
-            var json = LogDataToJson(logLevel, category, message, logAttributes.StackTrace,
-                                     logAttributes.TimeStampFormatted,
-                                     logAttributes.Props.ToSimpleNotEscapedJson(), logAttributes.Tags);
+            var json = LogDataToJson(
+                logLevel, category, message, logAttributes.StackTrace,
+                logAttributes.TimeStampFormatted,
+                logAttributes.Props.ToSimpleNotEscapedJson(), logAttributes.Tags);
             var send = "";
             using (var sb = StringOperations.CreateStringBuilder())
             {
@@ -102,10 +105,17 @@ namespace TheBestLogger.Examples.LogTargets
             PostLog(_openSearchUrl, send);
         }
 
-        private OpenSearchLogDTO CreateDto(string logLevel, string category, string message, string stackTrace,
-            string timestamp, string attributes, string[] tags)
+        private OpenSearchLogDTO CreateDto(string logLevel,
+                                           string category,
+                                           string message,
+                                           string stackTrace,
+                                           string timestamp,
+                                           string attributes,
+                                           string[] tags)
         {
-            var dto = _dtoFactory != null ? _dtoFactory.Invoke() : new OpenSearchLogDTO();
+            var dto = _dtoFactory != null
+                          ? _dtoFactory.Invoke()
+                          : new OpenSearchLogDTO();
             dto.GameVersion = _gameVersion;
             dto.UUID = _uuid;
             dto.DeviceModel = _deviceModel;
@@ -122,12 +132,17 @@ namespace TheBestLogger.Examples.LogTargets
             return dto;
         }
 
-        private string LogDataToJson(string logLevel, string category, string message, string stackTrace,
-            string timestamp, string attributes, string[] tags)
+        private string LogDataToJson(string logLevel,
+                                     string category,
+                                     string message,
+                                     string stackTrace,
+                                     string timestamp,
+                                     string attributes,
+                                     string[] tags)
         {
             var dto = CreateDto(logLevel, category, message, stackTrace, timestamp, attributes, tags);
             var jsonString = JsonUtility.ToJson(dto);
-       
+
             return jsonString;
         }
 
@@ -136,7 +151,7 @@ namespace TheBestLogger.Examples.LogTargets
             var request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST);
 
             request.SetRequestHeader("x-api-key", _apiKey);
-            var jsonToSend = new System.Text.UTF8Encoding().GetBytes(jsonData);
+            var jsonToSend = new UTF8Encoding().GetBytes(jsonData);
 
             request.uploadHandler = new UploadHandlerRaw(jsonToSend);
 
@@ -150,7 +165,6 @@ namespace TheBestLogger.Examples.LogTargets
             var async = request.SendWebRequest();
             async.completed += operation =>
             {
-
 #if THEBESTLOGGER_DIAGNOSTICS_ENABLED
                 if (request.result != UnityWebRequest.Result.Success)
                 {

@@ -8,10 +8,10 @@ namespace TheBestLogger.Examples.LogTargets
 {
     public class IMGUIRuntimeLogTarget : LogTarget
     {
-        private IMGUIRuntimeDrawer _drawer;
         private IMGUIRuntimeLogTargetConfiguration _configuration;
+        private readonly IMGUIRuntimeDrawer _drawer;
 
-        private ConcurrentQueue<string> _logEntries = new ConcurrentQueue<string>();
+        private readonly ConcurrentQueue<string> _logEntries = new();
 
         [Preserve]
         public IMGUIRuntimeLogTarget()
@@ -20,6 +20,8 @@ namespace TheBestLogger.Examples.LogTargets
                 .GetComponent<IMGUIRuntimeDrawer>();
             UnityEngine.Object.DontDestroyOnLoad(_drawer.gameObject);
         }
+
+        public override string LogTargetConfigurationName => nameof(IMGUIRuntimeLogTargetConfiguration);
 
         public override void Log(LogLevel level,
                                  string category,
@@ -45,7 +47,7 @@ namespace TheBestLogger.Examples.LogTargets
             }
         }
 
-        public override void LogBatch(IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> logBatch)
+        public override void LogBatch(IReadOnlyList<LogEntry> logBatch)
         {
             throw new NotImplementedException();
         }
@@ -59,8 +61,6 @@ namespace TheBestLogger.Examples.LogTargets
                 _drawer.Initialize(_configuration, _logEntries);
             }
         }
-
-        public override string LogTargetConfigurationName => nameof(IMGUIRuntimeLogTargetConfiguration);
 
         public override void Mute(bool mute)
         {

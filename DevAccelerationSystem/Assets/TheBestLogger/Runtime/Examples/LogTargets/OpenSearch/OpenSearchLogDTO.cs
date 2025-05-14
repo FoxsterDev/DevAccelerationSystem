@@ -1,6 +1,8 @@
+using System;
+
 namespace TheBestLogger.Examples.LogTargets
 {
-    [System.Serializable]
+    [Serializable]
     public class OpenSearchLogDTO
     {
         public string GameVersion;
@@ -11,7 +13,9 @@ namespace TheBestLogger.Examples.LogTargets
         public string LogLevel;
         public string Category;
         public string Message;
+
         public string Stacktrace;
+
         //default key used as @timestamp, but you can reconfigure it in index dashboards of ipensearch
         public string TimeUTC;
         public string Attributes;

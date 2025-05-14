@@ -70,7 +70,7 @@ namespace TheBestLogger
             _original.Log(level, category, message, logAttributes, exception);
         }
 
-        void ILogTarget.LogBatch(IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> logBatch)
+        void ILogTarget.LogBatch(IReadOnlyList<LogEntry> logBatch)
         {
             if (_config.Enabled && _config.BatchLogsDispatchEnabled)
             {
@@ -86,7 +86,7 @@ namespace TheBestLogger
                     Diagnostics.Write("_unityContext.Post: logBatch.Count" + logBatch.Count);
                     _unityContext.Post(
                         stateObj => _original.LogBatch(
-                            (IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)>) stateObj),
+                            (IReadOnlyList<LogEntry>) stateObj),
                         logBatch);
                     return;
                 }

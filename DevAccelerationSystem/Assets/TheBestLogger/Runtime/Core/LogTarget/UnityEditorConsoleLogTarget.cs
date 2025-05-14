@@ -49,14 +49,14 @@ namespace TheBestLogger
         }
 
         public override void LogBatch(
-            IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> logBatch)
+            IReadOnlyList<LogEntry> logBatch)
         {
             if (logBatch == null) return;
             if (logBatch.Count == 1)
             {
                 Log(
-                    logBatch[0].level, logBatch[0].category, logBatch[0].message, logBatch[0].logAttributes,
-                    logBatch[0].exception);
+                    logBatch[0].Level, logBatch[0].Category, logBatch[0].Message, logBatch[0].Attributes,
+                    logBatch[0].Exception);
                 return;
             }
 
@@ -66,7 +66,7 @@ namespace TheBestLogger
                 var number = 0;
                 foreach (var log in logBatch)
                 {
-                    var message = StringOperations.Concat("batch[:", number, "] ", "[", log.level, "] ", "[", log.category, "] ", log.message);
+                    var message = StringOperations.Concat("batch[:", number, "] ", "[", log.Level, "] ", "[", log.Category, "] ", log.Message);
                     number++;
                     sb.AppendLine(message);
                 }

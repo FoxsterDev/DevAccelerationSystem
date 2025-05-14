@@ -31,7 +31,7 @@ namespace TheBestLogger.Tests.Editor
 
             // Assert
             Assert.AreEqual(1, _mockLogTarget.LoggedBatches.Count);
-            Assert.AreEqual("Critical message", _mockLogTarget.LoggedBatches[0][0].message);
+            Assert.AreEqual("Critical message", _mockLogTarget.LoggedBatches[0][0].Message);
         }
 
         [Test]
@@ -59,7 +59,7 @@ namespace TheBestLogger.Tests.Editor
 
             // Assert
             Assert.AreEqual(1, _mockLogTarget.LoggedBatches.Count);
-            Assert.AreEqual("Important message", _mockLogTarget.LoggedBatches[0][0].message);
+            Assert.AreEqual("Important message", _mockLogTarget.LoggedBatches[0][0].Message);
         }
     }
 }

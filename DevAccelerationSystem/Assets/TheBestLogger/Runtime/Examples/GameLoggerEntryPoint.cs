@@ -1,5 +1,4 @@
 #if THEBESTLOGGER_AUTO_INITIALIZATION
-
 using System.Collections.Generic;
 using System.Threading;
 using StabilityHub;
@@ -34,6 +33,5 @@ public class GameLoggerEntryPoint
         StabilityHubService.RetrieveAndLogPreviousSessionIssues();
     }
 }
-
 
 #endif

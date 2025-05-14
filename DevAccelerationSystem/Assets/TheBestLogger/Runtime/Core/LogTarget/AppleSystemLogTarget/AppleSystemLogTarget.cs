@@ -74,11 +74,11 @@ namespace TheBestLogger
         }
 
         public override void LogBatch(
-            IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> logBatch)
+            IReadOnlyList<LogEntry> logBatch)
         {
             foreach (var b in logBatch)
             {
-                Log(b.level, b.category, b.message, b.logAttributes, b.exception);
+                Log(b.Level, b.Category, b.Message, b.Attributes, b.Exception);
             }
         }
 

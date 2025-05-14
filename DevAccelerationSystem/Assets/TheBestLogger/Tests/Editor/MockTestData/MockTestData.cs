@@ -37,7 +37,7 @@ namespace TheBestLogger.Tests.Editor
 
     internal class MockLogTarget : LogTarget
     {
-        public List<List<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)>> LoggedBatches { get; } = new();
+        public List<List<LogEntry>> LoggedBatches { get; } = new();
 
         public void SetDebugMode(bool mode)
         {
@@ -53,14 +53,14 @@ namespace TheBestLogger.Tests.Editor
                                  Exception exception)
         {
             LogBatch(
-                new List<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)>
-                    { (level, category, message, logAttributes, exception) });
+                new List<LogEntry>
+                    { new LogEntry(level, category, message, logAttributes, exception) });
         }
 
         public override void LogBatch(
-            IReadOnlyList<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)> logBatch)
+            IReadOnlyList<LogEntry> logBatch)
         {
-            LoggedBatches.Add(new List<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)>(logBatch));
+            LoggedBatches.Add(new List<LogEntry>(logBatch));
         }
     }
 }
