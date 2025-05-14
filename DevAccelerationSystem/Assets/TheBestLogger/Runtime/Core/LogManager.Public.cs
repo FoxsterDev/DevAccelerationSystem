@@ -140,8 +140,9 @@ namespace TheBestLogger
         /// If the LogManager is not properly configured, returns the fallback logger.
         /// </summary>
         /// <param name="categoryName">Name of the category for the logger.</param>
+        /// <param name="subCategoryName">Optionally to add some prefix to message</param>
         /// <returns>An ILogger instance for the specified category.</returns>
-        public static ILogger CreateLogger(string categoryName)
+        public static ILogger CreateLogger(string categoryName, string subCategoryName = "")
         {
             Diagnostics.Write("begin for category: " + categoryName);
 
@@ -156,12 +157,13 @@ namespace TheBestLogger
                 return FallbackLogger;
             }
 
-            if (!_loggers.TryGetValue(categoryName, out var logger))
+            var key = string.Concat(categoryName, subCategoryName);
+            if (!_loggers.TryGetValue(key, out var logger))
             {
                 Diagnostics.Write(" will create a new logger for category: " + categoryName);
 
-                logger = new CoreLogger(categoryName, _decoratedLogTargets, _utilitySupplier, _configuration.MessageMaxLength);
-                _loggers.TryAdd(categoryName, logger);
+                logger = new CoreLogger(categoryName, subCategoryName, _decoratedLogTargets, _utilitySupplier, _configuration.MessageMaxLength);
+                _loggers.TryAdd(key, logger);
             }
             else
             {
