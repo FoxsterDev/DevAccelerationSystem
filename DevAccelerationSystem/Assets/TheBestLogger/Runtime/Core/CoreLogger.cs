@@ -4,6 +4,9 @@
 #define LOGGER_UNITY_EDITOR
 #endif
 
+#if THEBESTLOGGER_ENABLE_PROFILER
+using Unity.Profiling;
+#endif
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,12 +18,15 @@ namespace TheBestLogger
 {
     internal class CoreLogger : ILogger, ILogConsumer
     {
+#if THEBESTLOGGER_ENABLE_PROFILER
+        private static readonly ProfilerMarker _logTargetsUpdatesMarker = new(ProfilerCategory.Scripts, "TheBestLogger.LogTargetUpdates");
+#endif
         private readonly string _categoryName;
-        private readonly string _subCategoryName;
-        private readonly uint _messageMaxLength;
-        private IReadOnlyList<ILogTarget> _logTargets;
-        private readonly UtilitySupplier _utilitySupplier;
         private readonly bool _hasSubCategory;
+        private readonly uint _messageMaxLength;
+        private readonly string _subCategoryName;
+        private readonly UtilitySupplier _utilitySupplier;
+        private IReadOnlyList<ILogTarget> _logTargets;
 
         public CoreLogger(string categoryName,
                           string subCategoryName,
@@ -115,7 +121,7 @@ namespace TheBestLogger
         {
             SendToLogTargets(logLevel, message, "direct", null, null, null, logAttributes, args);
         }
- 
+
         [HideInCallstack]
         public void LogTrace(string message, LogAttributes logAttributes = null)
         {
@@ -151,68 +157,76 @@ namespace TheBestLogger
             {
                 return;
             }
-
-            var isMainThread = _utilitySupplier.IsMainThread;
-            var logTargetsCount = _logTargets.Count;
-            for (var index = 0; index < logTargetsCount; index++)
+#if THEBESTLOGGER_ENABLE_PROFILER
+            using (_logTargetsUpdatesMarker.Auto())
             {
-                var logTarget = _logTargets[index];
-                if (logTarget == null)
+#endif
+                var isMainThread = _utilitySupplier.IsMainThread;
+                var logTargetsCount = _logTargets.Count;
+                for (var index = 0; index < logTargetsCount; index++)
                 {
-                    continue;
-                }
-
-                if (!logTarget.Configuration.IsThreadSafe && !isMainThread)
-                {
-                    if (!logTarget.Configuration.DispatchingLogsToMainThread.Enabled)
+                    var logTarget = _logTargets[index];
+                    if (logTarget == null)
                     {
-                        Diagnostics.Write(
-                            "Message:{" + message + "} was skipped because " + logTarget.Configuration.GetType() +
-                            " is not thread safe and called outside of unity main thread", LogLevel.Warning);
                         continue;
                     }
-                }
 
-                if (!logTarget.IsLogLevelAllowed(logLevel, _categoryName))
-                {
-                    continue;
-                }
-
-                if (!logPrepared)
-                {
-                    logPrepared = true;
-                    formattedMessage = (_hasSubCategory ? LogMessageFormatter.TryFormat(_subCategoryName, message, exception, args) : LogMessageFormatter.TryFormat(message, exception, args))  ?? string.Empty;
-
-                    if (formattedMessage.Length > _messageMaxLength)
+                    if (!logTarget.Configuration.IsThreadSafe && !isMainThread)
                     {
-                        formattedMessage = formattedMessage.Substring(0, (int) _messageMaxLength);
-                        formattedMessage = StringOperations.Concat(formattedMessage, "\n--Truncated--");
+                        if (!logTarget.Configuration.DispatchingLogsToMainThread.Enabled)
+                        {
+                            Diagnostics.Write(
+                                "Message:{" + message + "} was skipped because " + logTarget.Configuration.GetType() +
+                                " is not thread safe and called outside of unity main thread", LogLevel.Warning);
+                            continue;
+                        }
                     }
 
-                    logAttributes ??= new LogAttributes();
-                    logAttributes.UnityContextObject = context;
-                    var timeStamp = _utilitySupplier.GetTimeStamp();
-                    logAttributes.TimeStampFormatted = timeStamp.Item2;
-                    logAttributes.TimeUtc = timeStamp.Item1;
-                    logAttributes.StackTrace = stackTrace;
-                    logAttributes.Tags = _utilitySupplier.TagsRegistry.GetAllTags();
+                    if (!logTarget.IsLogLevelAllowed(logLevel, _categoryName))
+                    {
+                        continue;
+                    }
+
+                    if (!logPrepared)
+                    {
+                        logPrepared = true;
+                        formattedMessage = (_hasSubCategory
+                                                ? LogMessageFormatter.TryFormat(_subCategoryName, message, exception, args)
+                                                : LogMessageFormatter.TryFormat(message, exception, args)) ?? string.Empty;
+
+                        if (formattedMessage.Length > _messageMaxLength)
+                        {
+                            formattedMessage = formattedMessage.Substring(0, (int) _messageMaxLength);
+                            formattedMessage = StringOperations.Concat(formattedMessage, "\n--Truncated--");
+                        }
+
+                        logAttributes ??= new LogAttributes();
+                        logAttributes.UnityContextObject = context;
+                        var timeStamp = _utilitySupplier.GetTimeStamp();
+                        logAttributes.TimeStampFormatted = timeStamp.Item2;
+                        logAttributes.TimeUtc = timeStamp.Item1;
+                        logAttributes.StackTrace = stackTrace;
+                        logAttributes.Tags = _utilitySupplier.TagsRegistry.GetAllTags();
 
 #if THEBESTLOGGER_DIAGNOSTICS_ENABLED
                     logAttributes.Add("LogSourceId", logSourceId);
                     logAttributes.Add("StackTraceSourceId", stackTrace != null ? "direct" : "recreated");
 #endif
-                }
-
-                if (string.IsNullOrEmpty(logAttributes.StackTrace))
-                {
-                    if (logTarget.IsStackTraceEnabled(logLevel, _categoryName))
-                    {
-                        logAttributes.StackTrace = _utilitySupplier.StackTraceFormatter.Extract(exception);
                     }
-                }
 
-                logTarget.Log(logLevel, _categoryName, formattedMessage, logAttributes, exception);
+                    if (string.IsNullOrEmpty(logAttributes.StackTrace))
+                    {
+                        if (logTarget.IsStackTraceEnabled(logLevel, _categoryName))
+                        {
+                            logAttributes.StackTrace = _utilitySupplier.StackTraceFormatter.Extract(exception);
+                        }
+                    }
+
+                    logTarget.Log(logLevel, _categoryName, formattedMessage, logAttributes, exception);
+                }
+#if THEBESTLOGGER_ENABLE_PROFILER
             }
+#endif
         }
     }
 }

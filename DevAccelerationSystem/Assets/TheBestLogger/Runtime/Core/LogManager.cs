@@ -4,6 +4,11 @@
 #define LOGGER_UNITY_EDITOR
 #endif
 
+#if  THEBESTLOGGER_ENABLE_PROFILER  
+using Unity.Profiling;
+using UnityEngine.Profiling;
+#endif
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,6 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheBestLogger.Core.Utilities;
 using UnityEngine;
+
 
 namespace TheBestLogger
 {
@@ -38,6 +44,10 @@ namespace TheBestLogger
         private static bool _isInitialized = false;
         private static readonly ILogger FallbackLogger = new FallbackLogger();
 
+#if THEBESTLOGGER_ENABLE_PROFILER
+        static readonly ProfilerMarker _scheduledUpdatesMarker =
+            new ProfilerMarker(ProfilerCategory.Scripts, "TheBestLogger.ScheduledUpdates");
+#endif
 
         private static bool IsNotProperlyConfigured()
         {
@@ -297,16 +307,22 @@ namespace TheBestLogger
                     Diagnostics.Write("isCancellationRequested");
                     return;
                 }
-
-                var currentTimeStamp = _utilitySupplier.GetTimeStamp();
-                var deltaMs = (uint) (currentTimeStamp.currentTimeUtc - previousTimeStamp).TotalMilliseconds;
-                previousTimeStamp = currentTimeStamp.currentTimeUtc;
-
-                //_defaultLogger?.LogDebug("Update: "+deltaMs+", "+currentTimeStamp.timeStampCached);
-                foreach (var target in targetUpdates)
+#if THEBESTLOGGER_ENABLE_PROFILER
+                using (_scheduledUpdatesMarker.Auto())
                 {
-                    target.Update(currentTimeStamp.currentTimeUtc, deltaMs);
+#endif
+                    var currentTimeStamp = _utilitySupplier.GetTimeStamp();
+                    var deltaMs = (uint) (currentTimeStamp.currentTimeUtc - previousTimeStamp).TotalMilliseconds;
+                    previousTimeStamp = currentTimeStamp.currentTimeUtc;
+
+                    //_defaultLogger?.LogDebug("Update: "+deltaMs+", "+currentTimeStamp.timeStampCached);
+                    foreach (var target in targetUpdates)
+                    {
+                        target.Update(currentTimeStamp.currentTimeUtc, deltaMs);
+                    }
+#if THEBESTLOGGER_ENABLE_PROFILER
                 }
+#endif
             }
 
             Diagnostics.Write(" finished");
