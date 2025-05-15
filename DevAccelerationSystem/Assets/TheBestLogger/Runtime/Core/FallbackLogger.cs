@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using UnityEngine;
 
 namespace TheBestLogger
@@ -13,34 +14,34 @@ namespace TheBestLogger
         void ILogger.LogException(Exception ex, LogAttributes logAttributes)
         {
             Diagnostics.Write(ex.Message + "\n" + ex.StackTrace, LogLevel.Exception);
-            Debug.LogException(ex);
+            UnityEngine.Debug.LogException(ex);
         }
 
         [HideInCallstack]
         void ILogger.LogError(string message, LogAttributes logAttributes)
         {
             Diagnostics.Write(message, LogLevel.Error);
-            Debug.LogError("[FallbackLogger] " + message);
+            UnityEngine.Debug.LogError("[FallbackLogger] " + message);
         }
 
         [HideInCallstack]
         void ILogger.LogWarning(string message, LogAttributes logAttributes)
         {
             Diagnostics.Write(message, LogLevel.Warning);
-            Debug.LogWarning("[FallbackLogger] " + message);
+            UnityEngine.Debug.LogWarning("[FallbackLogger] " + message);
         }
 
         [HideInCallstack]
         void ILogger.LogInfo(string message, LogAttributes logAttributes)
         {
             Diagnostics.Write(message, LogLevel.Info);
-            Debug.Log("[FallbackLogger] " + message);
+            UnityEngine.Debug.Log("[FallbackLogger] " + message);
         }
 
         [HideInCallstack]
         void ILogger.LogDebug(string message, LogAttributes logAttributes)
         {
-            Debug.Log("[FallbackLogger] " + message);
+            UnityEngine.Debug.Log("[FallbackLogger] " + message);
         }
 
         [HideInCallstack]
@@ -77,6 +78,19 @@ namespace TheBestLogger
                     break;
                 }
             }
+        }
+
+        [HideInCallstack]
+        public void LogTrace(string message, LogAttributes logAttributes = null)
+        {
+            TraceIfDebug(message, logAttributes);
+        }
+
+        [Conditional("UNITY_EDITOR")]
+        [Conditional("DEVELOPMENT_BUILD")]
+        private void TraceIfDebug(string message, LogAttributes logAttributes = null)
+        {
+            ((ILogger)this).LogDebug(message, logAttributes);
         }
     }
 }

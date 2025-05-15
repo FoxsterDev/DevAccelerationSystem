@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace TheBestLogger.Examples
 {
-    public class InnerExceptionExample 
+    public class InnerExceptionExample
     {
         public void ThrowHandledException()
         {
@@ -17,19 +17,19 @@ namespace TheBestLogger.Examples
                 GameLogger.Main.LogException(ex, new LogAttributes(LogImportance.Critical));
             }
         }
-    
+
         private void LoadConfiguration()
         {
             try
             {
                 // Attempt to read configuration from disk
-                string configFilePath = Application.dataPath + "/config.json";
+                var configFilePath = Application.dataPath + "/config.json";
                 if (!File.Exists(configFilePath))
                 {
                     throw new FileNotFoundException("Configuration file not found on disk.");
                 }
-    
-                string configContent = File.ReadAllText(configFilePath);
+
+                var configContent = File.ReadAllText(configFilePath);
                 Debug.Log("Configuration loaded from disk.");
             }
             catch (Exception fileException)
@@ -49,7 +49,7 @@ namespace TheBestLogger.Examples
                 }
             }
         }
-    
+
         private static void DownloadConfiguration()
         {
             // Simulate a failure in downloading the configuration

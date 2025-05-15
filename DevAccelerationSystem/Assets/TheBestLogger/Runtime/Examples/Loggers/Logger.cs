@@ -1,12 +1,10 @@
 using System;
-using System.Collections;
 using System.Diagnostics;
 using UnityEngine;
-using UnityEngine.Scripting;
 
 namespace TheBestLogger
 {
-    public class Logger 
+    public class Logger
     {
         private static ILogger DefaultGameLogger => LogManager.CreateLogger(nameof(DefaultGameLogger));
 
@@ -15,19 +13,19 @@ namespace TheBestLogger
         {
             DefaultGameLogger.LogException(ex, attributes);
         }
-        
+
         [HideInCallstack]
         public static void LogError(string message, LogAttributes attributes)
         {
             DefaultGameLogger.LogError(message, attributes);
         }
-        
+
         [HideInCallstack]
         public static void LogWarning(string message, LogAttributes attributes)
         {
             DefaultGameLogger.LogWarning(message, attributes);
         }
-        
+
         [HideInCallstack]
         public static void LogInfo(string message, LogAttributes attributes)
         {
@@ -40,8 +38,5 @@ namespace TheBestLogger
         {
             DefaultGameLogger.LogDebug(message, attributes);
         }
-     
     }
 }
-
-

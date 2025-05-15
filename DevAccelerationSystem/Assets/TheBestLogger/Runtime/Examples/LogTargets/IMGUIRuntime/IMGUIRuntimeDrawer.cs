@@ -5,22 +5,60 @@ namespace TheBestLogger.Examples.LogTargets
 {
     public class IMGUIRuntimeDrawer : MonoBehaviour
     {
+        private IMGUIRuntimeLogTargetConfiguration _configuration;
+
         // List to store log messages
         private IReadOnlyCollection<string> _logEntries;
-        
-        private Vector2 _scrollPosition;
-        private bool _showLogWindow = false;
-        private IMGUIRuntimeLogTargetConfiguration _configuration;
-        private Rect _windowRect = new Rect(20, 20, 500, 300);
         private GUIStyle _logStyle; // Custom GUIStyle for the log text
 
-        public void Initialize(IMGUIRuntimeLogTargetConfiguration configuration,  IReadOnlyCollection<string> logEntries)
+        private Vector2 _scrollPosition;
+        private bool _showLogWindow = false;
+        private Rect _windowRect = new(20, 20, 500, 300);
+
+        private void Update()
+        {
+            if (_configuration == null)
+            {
+                return;
+            }
+
+            if (Input.GetKeyDown(_configuration.KeyboardKeyDownToActivateConsole))
+            {
+                _showLogWindow = !_showLogWindow;
+            }
+
+            if (Input.touchCount == _configuration.CountOfScreenTouchesToActivateConsole)
+            {
+                _showLogWindow = !_showLogWindow;
+            }
+        }
+
+        private void OnGUI()
+        {
+            if (_showLogWindow)
+            {
+                if (_logStyle == null)
+                {
+                    // Initialize the GUIStyle with a larger font size
+                    _logStyle = new GUIStyle(GUI.skin.label)
+                    {
+                        fontSize = CalculateFontSize(), // Set the desired font size here
+                        wordWrap = true,
+                        richText = true // Optional: Wrap text within the label
+                    };
+                }
+
+                GUI.Window(0, _windowRect, DrawLogWindow, "Runtime Log");
+            }
+        }
+
+        public void Initialize(IMGUIRuntimeLogTargetConfiguration configuration, IReadOnlyCollection<string> logEntries)
         {
             _configuration = configuration;
             _logEntries = logEntries;
-             _windowRect = new Rect(0, 20, Screen.width, Screen.height*0.33f); 
+            _windowRect = new Rect(0, 20, Screen.width, Screen.height * 0.33f);
         }
-        
+
         private int CalculateFontSize()
         {
             // Base font size for reference resolution (e.g., 1920x1080)
@@ -38,42 +76,8 @@ namespace TheBestLogger.Examples.LogTargets
             // Calculate and return the scaled font size
             return Mathf.RoundToInt(baseFontSize * scalingFactor);
         }
-        
-        void Update()
-        {
-            if(_configuration == null) return;
-            
-            if (Input.GetKeyDown(_configuration.KeyboardKeyDownToActivateConsole))
-            {
-                _showLogWindow = !_showLogWindow;
-            }
 
-            if (Input.touchCount == _configuration.CountOfScreenTouchesToActivateConsole)
-            {
-                _showLogWindow = !_showLogWindow;
-            }
-        }
-
-        void OnGUI()
-        {
-            if (_showLogWindow)
-            {
-                if (_logStyle == null)
-                {
-                    // Initialize the GUIStyle with a larger font size
-                    _logStyle = new GUIStyle(GUI.skin.label)
-                    {
-                        fontSize = CalculateFontSize(), // Set the desired font size here
-                        wordWrap = true,
-                        richText = true// Optional: Wrap text within the label
-                    };
-                }
-
-                GUI.Window(0, _windowRect, DrawLogWindow, "Runtime Log");
-            }
-        }
-        
-        void DrawLogWindow(int windowID)
+        private void DrawLogWindow(int windowID)
         {
             _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
 

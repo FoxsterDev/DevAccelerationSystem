@@ -39,7 +39,7 @@ namespace TheBestLogger.Tests.Editor
 
             // Assert
             Assert.AreEqual(1, _mockLogTarget.LoggedBatches.Count);
-            Assert.AreEqual("Message to be dispatched", _mockLogTarget.LoggedBatches[0][0].message);
+            Assert.AreEqual("Message to be dispatched", _mockLogTarget.LoggedBatches[0][0].Message);
         }
 
         [Test]
@@ -54,7 +54,7 @@ namespace TheBestLogger.Tests.Editor
 
             // Assert
             Assert.AreEqual(1, _mockLogTarget.LoggedBatches.Count);
-            Assert.AreEqual("Message without dispatch", _mockLogTarget.LoggedBatches[0][0].message);
+            Assert.AreEqual("Message without dispatch", _mockLogTarget.LoggedBatches[0][0].Message);
         }
 
         [Test]
@@ -62,10 +62,10 @@ namespace TheBestLogger.Tests.Editor
         {
             // Arrange
             _utilitySupplier.IsMainThread = false;
-            var logBatch = new List<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)>
+            var logBatch = new List<LogEntry>
             {
-                (LogLevel.Info, "TestCategory", "Batch message 1", new LogAttributes(LogImportance.Important), null),
-                (LogLevel.Info, "TestCategory", "Batch message 2", new LogAttributes(LogImportance.Important), null)
+                new LogEntry(LogLevel.Info, "TestCategory", "Batch message 1", new LogAttributes(LogImportance.Important), null),
+                new LogEntry(LogLevel.Info, "TestCategory", "Batch message 2", new LogAttributes(LogImportance.Important), null)
             };
 
             // Act
@@ -74,8 +74,8 @@ namespace TheBestLogger.Tests.Editor
             // Assert
             Assert.AreEqual(1, _mockLogTarget.LoggedBatches.Count);
             Assert.AreEqual(2, _mockLogTarget.LoggedBatches[0].Count);
-            Assert.AreEqual("Batch message 1", _mockLogTarget.LoggedBatches[0][0].message);
-            Assert.AreEqual("Batch message 2", _mockLogTarget.LoggedBatches[0][1].message);
+            Assert.AreEqual("Batch message 1", _mockLogTarget.LoggedBatches[0][0].Message);
+            Assert.AreEqual("Batch message 2", _mockLogTarget.LoggedBatches[0][1].Message);
         }
 
         [Test]
@@ -83,9 +83,9 @@ namespace TheBestLogger.Tests.Editor
         {
             // Arrange
             _utilitySupplier.IsMainThread = true;
-            var logBatch = new List<(LogLevel level, string category, string message, LogAttributes logAttributes, Exception exception)>
+            var logBatch = new List<LogEntry>
             {
-                (LogLevel.Info, "TestCategory", "Batch message on main thread", new LogAttributes(LogImportance.Important), null)
+                new LogEntry(LogLevel.Info, "TestCategory", "Batch message on main thread", new LogAttributes(LogImportance.Important), null)
             };
 
             // Act
@@ -93,7 +93,7 @@ namespace TheBestLogger.Tests.Editor
 
             // Assert
             Assert.AreEqual(1, _mockLogTarget.LoggedBatches.Count);
-            Assert.AreEqual("Batch message on main thread", _mockLogTarget.LoggedBatches[0][0].message);
+            Assert.AreEqual("Batch message on main thread", _mockLogTarget.LoggedBatches[0][0].Message);
         }
 
         [Test]

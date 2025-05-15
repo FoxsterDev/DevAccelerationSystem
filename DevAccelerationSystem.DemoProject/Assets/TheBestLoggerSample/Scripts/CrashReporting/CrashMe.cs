@@ -38,7 +38,7 @@ namespace TheBestLoggerSample.CrashReporting
         public void Start()
         {
             _context = SynchronizationContext.Current;
-            
+
             /*Application.logMessageReceivedThreaded += (string condition,
                                                        string stacktrace,
                                                        LogType type) =>
@@ -122,10 +122,10 @@ namespace TheBestLoggerSample.CrashReporting
             }
 
             // Create a delegate that wraps the action
-            UnityCallback callback = new UnityCallback(() => action());
+            var callback = new UnityCallback(() => action());
 
             // Marshal the delegate to a function pointer
-            IntPtr callbackPtr = Marshal.GetFunctionPointerForDelegate(callback);
+            var callbackPtr = Marshal.GetFunctionPointerForDelegate(callback);
 
             // Call the native method
             RunOnBackgroundThread(callbackPtr);

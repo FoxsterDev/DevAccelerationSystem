@@ -30,11 +30,11 @@ namespace TheBestLogger.Core.Utilities
             if (formatError)
             {
                 //build str from args ?
-                message = StringOperations.Concat("[", category, "] ", message, " =>can not be formatted");
+                message = StringOperations.Concat("<", category, "> ", message, " =>can not be formatted");
             }
             else
             {
-                message = StringOperations.Concat("[", category, "] ", formattedMessage);
+                message = StringOperations.Concat("<", category, "> ", formattedMessage);
             }
 
             return message;

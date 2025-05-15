@@ -1,5 +1,4 @@
 #if THEBESTLOGGER_UNITASK_ENABLED
-
 using System;
 using Cysharp.Threading.Tasks;
 

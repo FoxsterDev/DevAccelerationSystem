@@ -8,7 +8,7 @@ namespace TheBestLogger.Examples
         public void ThrowHandledException()
         {
             // Create an array of tasks that may result in exceptions
-            Task[] tasks = new Task[3]
+            var tasks = new Task[3]
             {
                 Task.Run(() => throw new InvalidOperationException("InvalidOperationException: Some invalid operation!")),
                 Task.Run(() => throw new ArgumentNullException("ArgumentNullException: Some argument null error")),

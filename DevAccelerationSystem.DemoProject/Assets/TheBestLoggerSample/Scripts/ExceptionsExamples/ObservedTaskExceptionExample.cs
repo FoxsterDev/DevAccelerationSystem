@@ -6,32 +6,29 @@ using UnityEngine.UI;
 
 public class ObservedTaskExceptionExample : MonoBehaviour, IPointerClickHandler
 {
-    void Start()
+    private void Start()
     {
         var str = GetType().Name;
         gameObject.name = str + "Button";
         GetComponentInChildren<Text>().text = str.Substring(0, str.Length - "Example".Length);
     }
 
-    async void RunTaskWithAwait()
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        RunTaskWithAwait();
+    }
+
+    private async void RunTaskWithAwait()
     {
         try
         {
             // Run a task that throws an exception
-            await Task.Run(() =>
-            {
-                throw new InvalidOperationException("This exception is observed using await!");
-            });
+            await Task.Run(() => { throw new InvalidOperationException("This exception is observed using await!"); });
         }
         catch (Exception ex)
         {
             // The exception is observed here
             Debug.LogException(ex);
         }
-    }
-
-    public void OnPointerClick(PointerEventData eventData)
-    {
-        RunTaskWithAwait();
     }
 }
