@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
+using Cysharp.Text;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace TheBestLogger
 {
@@ -90,7 +92,105 @@ namespace TheBestLogger
         [Conditional("DEVELOPMENT_BUILD")]
         private void TraceIfDebug(string message, LogAttributes logAttributes = null)
         {
-            ((ILogger)this).LogDebug(message, logAttributes);
+            ((ILogger) this).LogDebug(message, logAttributes);
+        }
+    }
+}
+
+namespace TheBestLogger.Core.Logger
+{
+    public class FallbackLogger : ILogger
+    {
+        private readonly string _category;
+
+        [Preserve]
+        public FallbackLogger(string category)
+        {
+            _category = category;
+        }
+        
+        public void Dispose()
+        {
+            
+        }
+
+        [HideInCallstack]
+        void ILogger.LogException(Exception ex, LogAttributes logAttributes)
+        {
+            UnityEngine.Debug.LogException(ex);
+        }
+
+        [HideInCallstack]
+        void ILogger.LogError(string message, LogAttributes logAttributes)
+        {
+            UnityEngine.Debug.LogError(ZString.Concat(_category, message));
+        }
+
+        [HideInCallstack]
+        void ILogger.LogWarning(string message, LogAttributes logAttributes)
+        {
+            UnityEngine.Debug.LogWarning(ZString.Concat(_category, message));
+        }
+
+        [HideInCallstack]
+        void ILogger.LogInfo(string message, LogAttributes logAttributes)
+        {
+            UnityEngine.Debug.Log(ZString.Concat(_category, message));
+        }
+
+        [HideInCallstack]
+        void ILogger.LogDebug(string message, LogAttributes logAttributes)
+        {
+            UnityEngine.Debug.Log(ZString.Concat(_category, message));
+        }
+
+        [HideInCallstack]
+        void ILogger.LogFormat(LogLevel logLevel,
+                               string message,
+                               LogAttributes logAttributes,
+                               params object[] args)
+        {
+            switch (logLevel)
+            {
+                case LogLevel.Debug:
+                {
+                    ((ILogger) this).LogDebug(message);
+                    break;
+                }
+                case LogLevel.Info:
+                {
+                    ((ILogger) this).LogDebug(message);
+                    break;
+                }
+                case LogLevel.Warning:
+                {
+                    ((ILogger) this).LogWarning(message);
+                    break;
+                }
+                case LogLevel.Error:
+                {
+                    ((ILogger) this).LogError(message);
+                    break;
+                }
+                case LogLevel.Exception:
+                {
+                    ((ILogger) this).LogError(message);
+                    break;
+                }
+            }
+        }
+
+    
+        void ILogger.LogTrace(string message, LogAttributes logAttributes)
+        {
+            LogTraceInternal(message, logAttributes);
+        }
+
+        [Conditional("UNITY_EDITOR")]
+        [Conditional("DEVELOPMENT_BUILD")]
+        private void LogTraceInternal(string message, LogAttributes logAttributes = null)
+        {
+            UnityEngine.Debug.Log(ZString.Concat(_category, message));
         }
     }
 }
