@@ -1,4 +1,7 @@
 using System;
+#if THEBESTLOGGER_NEWTONSOFT_ENABLED
+using Newtonsoft.Json;
+#endif
 
 namespace TheBestLogger.Examples.LogTargets
 {
@@ -8,6 +11,9 @@ namespace TheBestLogger.Examples.LogTargets
         public string OpenSearchHostUrl;
         public string OpenSearchSingleLogMethod;
         public string IndexPrefix;
+#if THEBESTLOGGER_NEWTONSOFT_ENABLED
+        [JsonIgnore]
+#endif
         public string ApiKey;
 
         public override void Merge(LogTargetConfiguration newConfig)

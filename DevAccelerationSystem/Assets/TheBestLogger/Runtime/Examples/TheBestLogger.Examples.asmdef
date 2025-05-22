@@ -25,6 +25,11 @@
             "name": "com.cysharp.unitask",
             "expression": "1.0.0",
             "define": "THEBESTLOGGER_UNITASK_ENABLED"
+        },
+        {
+            "name": "com.unity.nuget.newtonsoft-json",
+            "expression": "1.0.0",
+            "define": "THEBESTLOGGER_NEWTONSOFT_ENABLED"
         }
     ],
     "noEngineReferences": false

@@ -1,5 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using TheBestLogger;
 using UnityEditor;
 using UnityEngine;
@@ -16,10 +16,10 @@ namespace TheBestLoggerSample
             foreach (var l in list)
             {
                 Debug.Log(l.Configuration.GetType().Name);
-                Debug.Log(JsonUtility.ToJson(l.Configuration));
+                Debug.Log(JsonConvert.SerializeObject(l.Configuration));
             }
         }
-      
+
         private static List<T> LoadAllBaseScriptableObjects<T>(string folderPath = "") where T : ScriptableObject
         {
             var searchPath = string.IsNullOrEmpty(folderPath) ? "Assets" : $"Assets/{folderPath}";
