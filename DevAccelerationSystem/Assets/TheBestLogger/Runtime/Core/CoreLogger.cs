@@ -190,9 +190,7 @@ namespace TheBestLogger
                     if (!logPrepared)
                     {
                         logPrepared = true;
-                        formattedMessage = (_hasSubCategory
-                                                ? LogMessageFormatter.TryFormat(_subCategoryName, message, exception, args)
-                                                : LogMessageFormatter.TryFormat(message, exception, args)) ?? string.Empty;
+                        formattedMessage = LogMessageFormatter.TryFormat(_subCategoryName, message, exception, args) ?? string.Empty;
 
                         if (formattedMessage.Length > _messageMaxLength)
                         {

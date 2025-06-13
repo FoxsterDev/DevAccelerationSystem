@@ -5,73 +5,50 @@ namespace TheBestLogger.Core.Utilities
 {
     public static class LogMessageFormatter
     {
-        public static string TryFormat(string category,
-                                       string message,
-                                       params object[] args)
+        public static string TryFormat(string category, string message, Exception ex, params object[] args)
         {
-            var formatError = false;
-            var formattedMessage = message;
-
-            if (args != null && args.Length > 0 && !string.IsNullOrEmpty(message))
+            // Append exception info if present
+            if (ex != null)
             {
-                formattedMessage = args.Length switch
-                {
-                    1 => StringOperations.Format(message, args[0]),
-                    2 => StringOperations.Format(message, args[0], args[1]),
-                    3 => StringOperations.Format(message, args[0], args[1], args[2]),
-                    4 => StringOperations.Format(message, args[0], args[1], args[2], args[3]),
-                    5 => StringOperations.Format(message, args[0], args[1], args[2], args[3], args[4]),
-                    _ => string.Format(message, args)
-                };
+                var exceptionMessage = ex.Message ?? string.Empty;
+                message = StringOperations.Concat(ex.GetType().Name, ": ", exceptionMessage, message);
+            }
 
-                formatError = string.IsNullOrEmpty(formattedMessage);
+            string formattedMessage = message;
+            bool formatError = false;
+
+            if (!string.IsNullOrEmpty(message) && args != null && args.Length > 0)
+            {
+                try
+                {
+                    formattedMessage = args.Length switch
+                    {
+                        1 => StringOperations.Format(message, args[0]),
+                        2 => StringOperations.Format(message, args[0], args[1]),
+                        3 => StringOperations.Format(message, args[0], args[1], args[2]),
+                        4 => StringOperations.Format(message, args[0], args[1], args[2], args[3]),
+                        5 => StringOperations.Format(message, args[0], args[1], args[2], args[3], args[4]),
+                        _ => string.Format(message, args)
+                    };
+                }
+                catch (FormatException)
+                {
+                    formatError = true;
+                }
             }
 
             if (formatError)
             {
-                //build str from args ?
-                message = StringOperations.Concat("<", category, "> ", message, " =>can not be formatted");
+                return string.IsNullOrEmpty(category)
+                           ? StringOperations.Concat(message, " => cannot be formatted")
+                           : StringOperations.Concat("<", category, "> ", message, " => cannot be formatted");
             }
             else
             {
-                message = StringOperations.Concat("<", category, "> ", formattedMessage);
+                return string.IsNullOrEmpty(category)
+                           ? formattedMessage
+                           : StringOperations.Concat("<", category, "> ", formattedMessage);
             }
-
-            return message;
-        }
-
-        public static string TryFormat(string message,
-                                       Exception ex,
-                                       params object[] args)
-        {
-            var formatError = false;
-
-            if (ex != null)
-            {
-                message = StringOperations.Concat(
-                    ex.GetType().Name, ": ", ex.Message != null
-                                                 ? ex.Message
-                                                 : string.Empty, message);
-            }
-
-            var formattedMessage = message;
-
-            if (args != null && args.Length > 0 && !string.IsNullOrEmpty(message))
-            {
-                formattedMessage = args.Length switch
-                {
-                    1 => StringOperations.Format(message, args[0]),
-                    2 => StringOperations.Format(message, args[0], args[1]),
-                    3 => StringOperations.Format(message, args[0], args[1], args[2]),
-                    4 => StringOperations.Format(message, args[0], args[1], args[2], args[3]),
-                    5 => StringOperations.Format(message, args[0], args[1], args[2], args[3], args[4]),
-                    _ => string.Format(message, args)
-                };
-
-                formatError = string.IsNullOrEmpty(formattedMessage);
-            }
-
-            return formattedMessage;
         }
 
         public static string ToSimpleNotEscapedJson(this List<KeyValuePair<string, object>> keyValuePairs)
