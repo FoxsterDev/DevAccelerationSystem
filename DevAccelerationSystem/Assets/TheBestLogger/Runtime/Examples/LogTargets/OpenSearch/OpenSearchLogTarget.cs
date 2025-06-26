@@ -6,7 +6,6 @@ using TheBestLogger.Core.Utilities;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.Scripting;
-//using Cysharp.Text;
 
 namespace TheBestLogger.Examples.LogTargets
 {
@@ -155,7 +154,7 @@ namespace TheBestLogger.Examples.LogTargets
 
             request.uploadHandler = new UploadHandlerRaw(jsonToSend);
 
-#if THEBESTLOGGER_DIAGNOSTICS_ENABLED
+#if UNITY_EDITOR || THEBESTLOGGER_DIAGNOSTICS_ENABLED
             request.downloadHandler = new DownloadHandlerBuffer();
 #else
             request.downloadHandler = null; // Do not process the response body
@@ -165,12 +164,15 @@ namespace TheBestLogger.Examples.LogTargets
             var async = request.SendWebRequest();
             async.completed += operation =>
             {
-#if THEBESTLOGGER_DIAGNOSTICS_ENABLED
                 if (request.result != UnityWebRequest.Result.Success)
                 {
-                    Diagnostics.Write($" has error result: {request.result}, error: {request.error}, response: {request.downloadHandler?.text}\nsent:{jsonData}");
-                }
+#if UNITY_EDITOR || THEBESTLOGGER_DIAGNOSTICS_ENABLED
+                    var messageError = $" has error result: {request.result}, error: {request.error}, response: {request.downloadHandler?.text}\nsent:{jsonData}";
+                    ReflectiveUnityEditorConsoleLogger.LogToConsoleDirectly(messageError, LogType.Error);
+                    Diagnostics.Write(messageError);
 #endif
+                }
+
                 request.Dispose();
             };
         }
