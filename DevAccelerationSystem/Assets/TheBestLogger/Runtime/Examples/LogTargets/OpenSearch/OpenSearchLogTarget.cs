@@ -167,7 +167,7 @@ namespace TheBestLogger.Examples.LogTargets
                 if (request.result != UnityWebRequest.Result.Success)
                 {
 #if UNITY_EDITOR || THEBESTLOGGER_DIAGNOSTICS_ENABLED
-                    var messageError = $" has error result: {request.result}, error: {request.error}, response: {request.downloadHandler?.text}\nsent:{jsonData}";
+                    var messageError = $"Can not write log into opensearchtarget because error result: {request.result}, error: {request.error}, response: {request.downloadHandler?.text}\nsent:{jsonData}";
                     ReflectiveUnityEditorConsoleLogger.LogToConsoleDirectly(messageError, LogType.Error);
                     Diagnostics.Write(messageError);
 #endif

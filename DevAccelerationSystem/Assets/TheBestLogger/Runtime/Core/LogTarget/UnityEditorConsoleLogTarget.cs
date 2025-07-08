@@ -12,7 +12,6 @@ namespace TheBestLogger
 
         [Preserve]
         public UnityEditorConsoleLogTarget()
-            : base()
         {
             _defaultUnityLogHandler = Debug.unityLogger.logHandler;
             Diagnostics.Write("cached default UnityLogHandler");
@@ -28,7 +27,10 @@ namespace TheBestLogger
                                  Exception exception = null
         )
         {
-            message = StringOperations.Concat("[", category, "] ", message);
+            if (level != LogLevel.Exception)
+            {
+                message = StringOperations.Concat("[", category, "] ", message, logAttributes.ToString());
+            }
 
             switch (level)
             {
@@ -51,7 +53,11 @@ namespace TheBestLogger
         public override void LogBatch(
             IReadOnlyList<LogEntry> logBatch)
         {
-            if (logBatch == null) return;
+            if (logBatch == null)
+            {
+                return;
+            }
+
             if (logBatch.Count == 1)
             {
                 Log(
