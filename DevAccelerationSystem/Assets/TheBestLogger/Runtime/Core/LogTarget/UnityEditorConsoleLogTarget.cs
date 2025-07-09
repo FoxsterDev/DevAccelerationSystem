@@ -29,7 +29,7 @@ namespace TheBestLogger
         {
             if (level != LogLevel.Exception)
             {
-                message = StringOperations.Concat("[", category, "] ", message, logAttributes.ToString());
+                message = StringOperations.Concat("[", category, "] ", message, logAttributes.ToRegularString(true, false));
             }
 
             switch (level)
