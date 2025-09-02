@@ -7,6 +7,7 @@ namespace TheBestLogger
     {
         [Conditional("UNITY_EDITOR")]
         [Conditional("DEVELOPMENT_BUILD")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void LogTrace(this ILogger logger, string message, LogAttributes logAttributes = null)
         {
             logger.LogDebug(message, logAttributes);
