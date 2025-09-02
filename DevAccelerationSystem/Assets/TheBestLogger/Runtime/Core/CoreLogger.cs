@@ -10,6 +10,7 @@ using Unity.Profiling;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using TheBestLogger.Core.Utilities;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -80,52 +81,197 @@ namespace TheBestLogger
                 return;
             }
 #endif
-            SendToLogTargets(logLevel, message, logSourceId, exception, stackTrace, context, null, args);
+            SendToLogTargets(logLevel, message, logSourceId, exception, stackTrace, context, null, true, args);
         }
 
-        [HideInCallstack]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void LogException(Exception ex, LogAttributes logAttributes = null)
         {
-            SendToLogTargets(LogLevel.Exception, null, "direct", ex, null, null, logAttributes, null);
+            if (!AnyTargetWillLog(LogLevel.Exception))
+                return;
+
+            var formatted = LogMessageFormatter.TryFormat(_subCategoryName, null, ex);
+            SendToLogTargets(LogLevel.Exception, formatted, "direct", ex, null, null, logAttributes);
         }
 
-        [HideInCallstack]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void LogError(string message, LogAttributes logAttributes = null)
         {
-            SendToLogTargets(LogLevel.Error, message, "direct", null, null, null, logAttributes, null);
+            if (!AnyTargetWillLog(LogLevel.Error))
+                return;
+
+            var formatted = LogMessageFormatter.TryFormat(_subCategoryName, message,null);
+            SendToLogTargets(LogLevel.Error, formatted, "direct", null, null, null, logAttributes);
         }
 
-        [HideInCallstack]
+        public void LogError(string message,
+                             Exception exception,
+                             LogAttributes logAttributes = null)
+        {
+            if (!AnyTargetWillLog(LogLevel.Error))
+                return;
+
+            var formatted = LogMessageFormatter.TryFormat(_subCategoryName, message, exception);
+
+            SendToLogTargets(LogLevel.Error,
+                                          formatted,
+                                          logSourceId: "direct",
+                                          exception: exception,
+                                          stackTrace: null,
+                                          context: null,
+                                          logAttributes: logAttributes);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void LogWarning(string message, LogAttributes logAttributes = null)
         {
-            SendToLogTargets(LogLevel.Warning, message, "direct", null, null, null, logAttributes, null);
+            if (!AnyTargetWillLog(LogLevel.Warning))
+            {
+                return;
+            }
+
+            var formatted = LogMessageFormatter.TryFormat(_subCategoryName, message, null);
+            SendToLogTargets(LogLevel.Warning, formatted, "direct", null, null, null, logAttributes);
         }
 
-        [HideInCallstack]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void LogInfo(string message, LogAttributes logAttributes = null)
         {
-            SendToLogTargets(LogLevel.Info, message, "direct", null, null, null, logAttributes, null);
+            if (!AnyTargetWillLog(LogLevel.Info))
+            {
+                return;
+            }
+
+            var formatted = LogMessageFormatter.TryFormat(_subCategoryName, message, null);
+            SendToLogTargets(LogLevel.Info, formatted, "direct", null, null, null, logAttributes);
         }
 
-        [HideInCallstack]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void LogDebug(string message, LogAttributes logAttributes = null)
         {
-            SendToLogTargets(LogLevel.Debug, message, "direct", null, null, null, logAttributes, null);
+            if (!AnyTargetWillLog(LogLevel.Debug))
+                return;
+
+            var formatted = LogMessageFormatter.TryFormat(_subCategoryName, message, null);
+            SendToLogTargets(LogLevel.Debug, formatted, "direct", null, null, null, logAttributes);
         }
 
-        [HideInCallstack]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void LogFormat(LogLevel logLevel,
                               string message,
                               LogAttributes logAttributes = null,
                               params object[] args)
         {
-            SendToLogTargets(logLevel, message, "direct", null, null, null, logAttributes, args);
+            if (!AnyTargetWillLog(logLevel))
+                return;
+
+            var formatted = LogMessageFormatter.TryFormat(_subCategoryName, message, null, args);
+            SendToLogTargets(logLevel, formatted, "direct", null, null, null, logAttributes, true, args);
         }
 
-        [HideInCallstack]
-        public void LogTrace(string message, LogAttributes logAttributes = null)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void LogFormat<T1>(LogLevel level,
+                                  string message,
+                                  LogAttributes attrs,
+                                  in T1 arg1)
         {
-            TraceIfDebug(message, logAttributes);
+            if (!AnyTargetWillLog(level))
+            {
+                return;
+            }
+
+            var formatted = LogMessageFormatter.TryFormat(_subCategoryName, message, null, arg1) ?? string.Empty;
+            SendToLogTargets(level, formatted, "direct", null, null, null, attrs);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void LogFormat<T1, T2>(LogLevel level,
+                                      string message,
+                                      LogAttributes attrs,
+                                      in T1 arg1,
+                                      in T2 arg2)
+        {
+            if (!AnyTargetWillLog(level))
+            {
+                return;
+            }
+
+            var formatted = LogMessageFormatter.TryFormat(_subCategoryName, message, null, arg1, arg2) ?? string.Empty;
+            SendToLogTargets(level, formatted, "direct", null, null, null, attrs);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void LogFormat<T1, T2, T3>(LogLevel level,
+                                          string message,
+                                          LogAttributes attrs,
+                                          in T1 arg1,
+                                          in T2 arg2,
+                                          in T3 arg3)
+        {
+            if (!AnyTargetWillLog(level))
+            {
+                return;
+            }
+
+            var formatted = LogMessageFormatter.TryFormat(_subCategoryName, message, null, arg1, arg2, arg3) ?? string.Empty;
+            SendToLogTargets(level, formatted, "direct", null, null, null, attrs);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void LogFormat<T1>(LogLevel level,
+                                  string message,
+                                  in T1 arg1)
+        {
+            LogFormat(level, message, null, arg1);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void LogFormat<T1, T2>(LogLevel level,
+                                      string message,
+                                      in T1 arg1,
+                                      in T2 arg2)
+        {
+            LogFormat(level, message, null, arg1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void LogFormat<T1, T2, T3>(LogLevel level,
+                                          string message,
+                                          in T1 arg1,
+                                          in T2 arg2,
+                                          in T3 arg3)
+        {
+            LogFormat(level, message, null, arg1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool AnyTargetWillLog(LogLevel level)
+        {
+            if (_logTargets == null)
+            {
+                return false;
+            }
+
+            var isMainThread = _utilitySupplier.IsMainThread;
+            for (int i = 0, n = _logTargets.Count; i < n; i++)
+            {
+                var logTarget = _logTargets[i];
+                if (logTarget == null)
+                {
+                    continue;
+                }
+
+                if (!logTarget.Configuration.IsThreadSafe && !isMainThread &&
+                    !logTarget.Configuration.DispatchingLogsToMainThread.Enabled)
+                {
+                    continue;
+                }
+
+                if (logTarget.IsLogLevelAllowed(level, _categoryName))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public void Dispose()
@@ -133,24 +279,16 @@ namespace TheBestLogger
             _logTargets = null;
         }
 
-        [Conditional("UNITY_EDITOR")]
-        [Conditional("DEVELOPMENT_BUILD")]
-        private void TraceIfDebug(string message, LogAttributes logAttributes = null)
-        {
-            LogDebug(message, logAttributes);
-        }
-
         [HideInCallstack]
         private void SendToLogTargets(LogLevel logLevel,
-                                      string message,
+                                      string formattedMessage,
                                       string logSourceId,
                                       Exception exception = null,
                                       string stackTrace = null,
                                       Object context = null,
-                                      LogAttributes logAttributes = null,
+                                      LogAttributes logAttributes = null, bool argsConcat = false,
                                       params object[] args)
         {
-            string formattedMessage = null;
             var logPrepared = false;
 
             if (_logTargets == null)
@@ -161,67 +299,73 @@ namespace TheBestLogger
             using (_logTargetsUpdatesMarker.Auto())
             {
 #endif
-                var isMainThread = _utilitySupplier.IsMainThread;
-                var logTargetsCount = _logTargets.Count;
-                for (var index = 0; index < logTargetsCount; index++)
+            if (formattedMessage == null) formattedMessage = string.Empty;
+
+            var isMainThread = _utilitySupplier.IsMainThread;
+            var logTargetsCount = _logTargets.Count;
+            for (var index = 0; index < logTargetsCount; index++)
+            {
+                var logTarget = _logTargets[index];
+                if (logTarget == null)
                 {
-                    var logTarget = _logTargets[index];
-                    if (logTarget == null)
+                    continue;
+                }
+
+                if (!logTarget.Configuration.IsThreadSafe && !isMainThread)
+                {
+                    if (!logTarget.Configuration.DispatchingLogsToMainThread.Enabled)
                     {
+                        Diagnostics.Write(
+                            "Message:{" + formattedMessage + "} was skipped because " + logTarget.Configuration.GetType() +
+                            " is not thread safe and called outside of unity main thread", LogLevel.Warning);
                         continue;
                     }
+                }
 
-                    if (!logTarget.Configuration.IsThreadSafe && !isMainThread)
+                if (!logTarget.IsLogLevelAllowed(logLevel, _categoryName))
+                {
+                    continue;
+                }
+
+                if (!logPrepared)
+                {
+                    logPrepared = true;
+
+                    if (argsConcat && args != null && args.Length > 0)
                     {
-                        if (!logTarget.Configuration.DispatchingLogsToMainThread.Enabled)
-                        {
-                            Diagnostics.Write(
-                                "Message:{" + message + "} was skipped because " + logTarget.Configuration.GetType() +
-                                " is not thread safe and called outside of unity main thread", LogLevel.Warning);
-                            continue;
-                        }
+                        formattedMessage = LogMessageFormatter.TryFormat(_subCategoryName, formattedMessage, exception, args) ?? string.Empty;
                     }
 
-                    if (!logTarget.IsLogLevelAllowed(logLevel, _categoryName))
+                    if (formattedMessage.Length > _messageMaxLength)
                     {
-                        continue;
+                        formattedMessage = formattedMessage.Substring(0, (int) _messageMaxLength);
+                        formattedMessage = StringOperations.Concat(formattedMessage, "\n--Truncated--");
                     }
 
-                    if (!logPrepared)
-                    {
-                        logPrepared = true;
-                        formattedMessage = LogMessageFormatter.TryFormat(_subCategoryName, message, exception, args) ?? string.Empty;
-
-                        if (formattedMessage.Length > _messageMaxLength)
-                        {
-                            formattedMessage = formattedMessage.Substring(0, (int) _messageMaxLength);
-                            formattedMessage = StringOperations.Concat(formattedMessage, "\n--Truncated--");
-                        }
-
-                        logAttributes ??= new LogAttributes();
-                        logAttributes.UnityContextObject = context;
-                        var timeStamp = _utilitySupplier.GetTimeStamp();
-                        logAttributes.TimeStampFormatted = timeStamp.Item2;
-                        logAttributes.TimeUtc = timeStamp.Item1;
-                        logAttributes.StackTrace = stackTrace;
-                        logAttributes.Tags = _utilitySupplier.TagsRegistry.GetAllTags();
+                    logAttributes ??= new LogAttributes();
+                    logAttributes.UnityContextObject = context;
+                    var timeStamp = _utilitySupplier.GetTimeStamp();
+                    logAttributes.TimeStampFormatted = timeStamp.Item2;
+                    logAttributes.TimeUtc = timeStamp.Item1;
+                    logAttributes.StackTrace = stackTrace;
+                    logAttributes.Tags = _utilitySupplier.TagsRegistry.GetAllTags();
 
 #if THEBESTLOGGER_DIAGNOSTICS_ENABLED
                     logAttributes.Add("LogSourceId", logSourceId);
                     logAttributes.Add("StackTraceSourceId", stackTrace != null ? "direct" : "recreated");
 #endif
-                    }
-
-                    if (string.IsNullOrEmpty(logAttributes.StackTrace))
-                    {
-                        if (logTarget.IsStackTraceEnabled(logLevel, _categoryName))
-                        {
-                            logAttributes.StackTrace = _utilitySupplier.StackTraceFormatter.Extract(exception);
-                        }
-                    }
-
-                    logTarget.Log(logLevel, _categoryName, formattedMessage, logAttributes, exception);
                 }
+
+                if (string.IsNullOrEmpty(logAttributes.StackTrace))
+                {
+                    if (logTarget.IsStackTraceEnabled(logLevel, _categoryName))
+                    {
+                        logAttributes.StackTrace = _utilitySupplier.StackTraceFormatter.Extract(exception);
+                    }
+                }
+
+                logTarget.Log(logLevel, _categoryName, formattedMessage, logAttributes, exception);
+            }
 #if THEBESTLOGGER_ENABLE_PROFILER
             }
 #endif

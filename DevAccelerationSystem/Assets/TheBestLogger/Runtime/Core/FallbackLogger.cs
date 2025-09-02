@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using Cysharp.Text;
+using TheBestLogger.Core.Utilities;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -26,6 +27,14 @@ namespace TheBestLogger
             UnityEngine.Debug.LogError("[FallbackLogger] " + message);
         }
 
+        public void LogError(string message,
+                             Exception exception,
+                             LogAttributes logAttributes = null)
+        {
+            Diagnostics.Write(message, LogLevel.Error);
+            UnityEngine.Debug.LogError("[FallbackLogger] " + message + ", " + exception?.Message + "\n" + exception?.StackTrace);
+        }
+
         [HideInCallstack]
         void ILogger.LogWarning(string message, LogAttributes logAttributes)
         {
@@ -47,10 +56,10 @@ namespace TheBestLogger
         }
 
         [HideInCallstack]
-        void ILogger.LogFormat(LogLevel logLevel,
-                               string message,
-                               LogAttributes logAttributes,
-                               params object[] args)
+        public void LogFormat(LogLevel logLevel,
+                              string message,
+                              LogAttributes logAttributes,
+                              params object[] args)
         {
             switch (logLevel)
             {
@@ -82,17 +91,61 @@ namespace TheBestLogger
             }
         }
 
-        [HideInCallstack]
-        public void LogTrace(string message, LogAttributes logAttributes = null)
+        public void LogFormat<T1>(LogLevel level,
+                                  string message,
+                                  LogAttributes attrs,
+                                  in T1 arg1)
         {
-            TraceIfDebug(message, logAttributes);
+            var formatted = LogMessageFormatter.TryFormat("[FallbackLogger]", message, null, arg1);
+            LogFormat(level, formatted, attrs, null);
         }
 
-        [Conditional("UNITY_EDITOR")]
-        [Conditional("DEVELOPMENT_BUILD")]
-        private void TraceIfDebug(string message, LogAttributes logAttributes = null)
+        public void LogFormat<T1, T2>(LogLevel level,
+                                      string message,
+                                      LogAttributes attrs,
+                                      in T1 arg1,
+                                      in T2 arg2)
         {
-            ((ILogger) this).LogDebug(message, logAttributes);
+            var formatted = LogMessageFormatter.TryFormat("[FallbackLogger]", message, null, arg1, arg2);
+            LogFormat(level, formatted, attrs, null);
+        }
+
+        public void LogFormat<T1, T2, T3>(LogLevel level,
+                                          string message,
+                                          LogAttributes attrs,
+                                          in T1 arg1,
+                                          in T2 arg2,
+                                          in T3 arg3)
+        {
+            var formatted = LogMessageFormatter.TryFormat("[FallbackLogger]", message, null, arg1, arg2, arg3);
+            LogFormat(level, formatted, attrs, null);
+        }
+
+        public void LogFormat<T1>(LogLevel level,
+                                  string message,
+                                  in T1 arg1)
+        {
+            var formatted = LogMessageFormatter.TryFormat("[FallbackLogger]", message, null, arg1);
+            LogFormat(level, formatted, null, null);
+        }
+
+        public void LogFormat<T1, T2>(LogLevel level,
+                                      string message,
+                                      in T1 arg1,
+                                      in T2 arg2)
+        {
+            var formatted = LogMessageFormatter.TryFormat("[FallbackLogger]", message, null, arg1, arg2);
+            LogFormat(level, formatted, null, null);
+        }
+
+        public void LogFormat<T1, T2, T3>(LogLevel level,
+                                          string message,
+                                          in T1 arg1,
+                                          in T2 arg2,
+                                          in T3 arg3)
+        {
+            var formatted = LogMessageFormatter.TryFormat("[FallbackLogger]", message, null, arg1, arg2, arg3);
+            LogFormat(level, formatted, null, null);
         }
     }
 }

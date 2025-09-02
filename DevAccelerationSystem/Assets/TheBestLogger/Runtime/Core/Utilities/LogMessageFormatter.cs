@@ -5,7 +5,63 @@ namespace TheBestLogger.Core.Utilities
 {
     public static class LogMessageFormatter
     {
-        public static string TryFormat(string category, string message, Exception ex, params object[] args)
+        public static string TryFormat<T1>(string category,
+                                           string message,
+                                           Exception ex,
+                                           in T1 a1)
+        {
+            
+            return Build(category, StringOperations.Format(message, a1), ex);
+        }
+
+        public static string TryFormat<T1, T2>(string category,
+                                               string message,
+                                               Exception ex,
+                                               in T1 a1,
+                                               in T2 a2)
+        {
+            return Build(category, StringOperations.Format(message, a1, a2), ex);
+        }
+
+        public static string TryFormat<T1, T2, T3>(string category,
+                                                   string message,
+                                                   Exception ex,
+                                                   in T1 a1,
+                                                   in T2 a2,
+                                                   in T3 a3)
+        {
+            return Build(category, StringOperations.Format(message, a1, a2, a3), ex);
+        }
+
+        public static string TryFormat(string category,
+                                       string message,
+                                       Exception ex)
+        {
+            return Build(category, message, ex);
+        }
+
+        private static string Build(string category,
+                                    string message,
+                                    Exception ex)
+        {
+            if (ex != null)
+            {
+                var em = ex.Message ?? string.Empty;
+                var formatted = !string.IsNullOrEmpty(category)
+                                ? StringOperations.Concat("<", category, "> ", message, " ", ex.GetType().Name, ": ", em)
+                                : StringOperations.Concat(message, " ", ex.GetType().Name, ": ", em);
+                return formatted;
+            }
+
+            return string.IsNullOrEmpty(category)
+                       ? message
+                       : StringOperations.Concat("<", category, "> ", message);
+        }
+
+        public static string TryFormat(string category,
+                                       string message,
+                                       Exception ex,
+                                       params object[] args)
         {
             // Append exception info if present
             if (ex != null)
@@ -14,8 +70,8 @@ namespace TheBestLogger.Core.Utilities
                 message = StringOperations.Concat(ex.GetType().Name, ": ", exceptionMessage, message);
             }
 
-            string formattedMessage = message;
-            bool formatError = false;
+            var formattedMessage = message;
+            var formatError = false;
 
             if (!string.IsNullOrEmpty(message) && args != null && args.Length > 0)
             {

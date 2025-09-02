@@ -64,10 +64,19 @@ public class GameLoggerSample : MonoBehaviour
     {
         GameLogger.GameLoading.LogInfo("StartTest", new LogAttributes(LogImportance.Critical));
         GameLogger.GameLoading.LogTrace("Example trace log");
+        GameLogger.GameLoading.LogError("Example error log");
+        GameLogger.GameLoading.LogException(new ArgumentException("the arg1 is invalid"));
+        GameLogger.GameLoading.LogFormat(LogLevel.Error,"Example trace {0} log", null, 15);
+        var logger = LogManager.CreateLogger("GameLoading", "FeatureController1");
+        logger.LogInfo("Example info log");
+        logger.LogError("Example error with exception: ", new ArgumentException("the arg1 is invalid"), null);
+       
         //
         LogManager.CreateLogger("UI", "FeatureController2").LogTrace("Test subcategory1");
+
         GameLogger.UI.LogInfo("Test subcategory2", new LogAttributes(LogImportance.Critical));
         GameLogger.UI.LogInfo("Test subcategory3", new LogAttributes(LogImportance.Critical));
+        return;
         await Task.Delay(100);
         GameLogger.GameLoading.LogDebug("debugtest1");
         await Task.Delay(100);

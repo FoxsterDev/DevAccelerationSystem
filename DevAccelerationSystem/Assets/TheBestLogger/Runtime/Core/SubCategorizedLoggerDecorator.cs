@@ -1,5 +1,6 @@
 using System;
 using Cysharp.Text;
+using TheBestLogger.Core.Utilities;
 using UnityEngine;
 
 namespace TheBestLogger
@@ -30,6 +31,15 @@ namespace TheBestLogger
             _logger.LogError(ZString.Concat(_subCategoryName, " ", message), logAttributes);
         }
 
+        public void LogError(string message,
+                             Exception exception,
+                             LogAttributes logAttributes = null)
+        {
+
+            var formatted = LogMessageFormatter.TryFormat(_subCategoryName, message, exception);
+            _logger.LogError(formatted,  logAttributes);
+        }
+
         public void LogWarning(string message, LogAttributes logAttributes = null)
         {
             _logger.LogWarning(ZString.Concat(_subCategoryName, " ", message), logAttributes);
@@ -54,9 +64,55 @@ namespace TheBestLogger
             _logger.LogFormat(logLevel,ZString.Concat(_subCategoryName, " ", message), logAttributes, args);
         }
 
-        public void LogTrace(string message, LogAttributes logAttributes = null)
+        public void LogFormat<T1>(LogLevel level,
+                                  string message,
+                                  LogAttributes attrs,
+                                  in T1 arg1)
         {
-            _logger.LogTrace(ZString.Concat(_subCategoryName, " ", message), logAttributes);
+            _logger.LogFormat(level,ZString.Concat(_subCategoryName, " ", message), attrs, arg1);
+        }
+
+        public void LogFormat<T1, T2>(LogLevel level,
+                                      string message,
+                                      LogAttributes attrs,
+                                      in T1 arg1,
+                                      in T2 arg2)
+        {
+            _logger.LogFormat(level,ZString.Concat(_subCategoryName, " ", message), attrs, arg1, arg2);
+        }
+
+        public void LogFormat<T1, T2, T3>(LogLevel level,
+                                          string message,
+                                          LogAttributes attrs,
+                                          in T1 arg1,
+                                          in T2 arg2,
+                                          in T3 arg3)
+        {
+            _logger.LogFormat(level,ZString.Concat(_subCategoryName, " ", message), attrs, arg1, arg2, arg3);
+        }
+
+        public void LogFormat<T1>(LogLevel level,
+                                  string message,
+                                  in T1 arg1)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void LogFormat<T1, T2>(LogLevel level,
+                                      string message,
+                                      in T1 arg1,
+                                      in T2 arg2)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void LogFormat<T1, T2, T3>(LogLevel level,
+                                          string message,
+                                          in T1 arg1,
+                                          in T2 arg2,
+                                          in T3 arg3)
+        {
+            throw new NotImplementedException();
         }
     }
 }
