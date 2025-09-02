@@ -2,7 +2,8 @@
     "name": "StabilityHub",
     "rootNamespace": "",
     "references": [
-        "TheBestLogger.Core"
+        "TheBestLogger.Core",
+        "UniTask"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

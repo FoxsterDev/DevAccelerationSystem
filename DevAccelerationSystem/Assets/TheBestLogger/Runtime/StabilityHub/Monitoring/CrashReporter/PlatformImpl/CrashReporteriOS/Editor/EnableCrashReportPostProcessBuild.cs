@@ -15,6 +15,11 @@ namespace StabilityHub.Monitoring.CrashReporting.Editor
             if (report.summary.platform == BuildTarget.iOS)
             {
                 var config = StabilityHub.StabilityHubService.MonitoringConfig;
+                if (config == null)
+                {
+                    Debug.LogWarning("StabilityHubService.MonitoringConfig is null");
+                    return;
+                }
                 var crashReporterModuleConfiguration = config.CrashReporterModule;
                 if (crashReporterModuleConfiguration.AutoProjectSettingsSetup)
                 {
