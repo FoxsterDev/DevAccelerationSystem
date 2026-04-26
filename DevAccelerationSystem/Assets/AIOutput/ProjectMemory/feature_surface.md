@@ -8,6 +8,12 @@ Capture the durable capability map for `DevAccelerationSystem` so product-facing
   - owns `LogManager`, logger creation, log-target configuration, log-source wiring, stack-trace formatting, and utility helpers
 - The package is a reusable runtime logging surface, not only an editor helper
 - `LogManager` should be initialized from the Unity main thread before category loggers are used
+- Runtime hardening work in current source also covers:
+  - lifecycle safety
+  - multithreaded logging stress paths
+  - batch flushing and dispatch-to-main-thread behavior
+  - guarded fault isolation for third-party targets
+  - background-writer shutdown safety
 
 ## Captured Log Sources
 - Unity debug logs
@@ -34,6 +40,10 @@ Capture the durable capability map for `DevAccelerationSystem` so product-facing
   - IMGUI runtime viewer
   - OpenSearch target
   - safe third-party target base class
+- Current remote-delivery surface for `OpenSearch` includes:
+  - partial merge-friendly config updates
+  - payload serialization with category, tags, attributes, timestamp, platform, device, and debug-mode state
+  - editor-side failure reporting when delivery fails in diagnostics-enabled environments
 
 ## Stability Surface
 - `Assets/TheBestLogger/Runtime/StabilityHub/`
@@ -51,6 +61,11 @@ Capture the durable capability map for `DevAccelerationSystem` so product-facing
 - Shared package source is authored in `DevAccelerationSystem/DevAccelerationSystem/`
 - Tracked consumer validation target is `DevAccelerationSystem.DemoProject/`
 - `DAS.LocalProject/` is useful local evidence but not tracked release proof by default
+- Package validation now spans:
+  - editor tests
+  - playmode runtime tests
+  - performance tests via Unity Performance Testing package
+  - tracked consumer validation in `DevAccelerationSystem.DemoProject/`
 
 ## Product Explanation Rules
 - When asked what this project does, describe both:
@@ -58,3 +73,4 @@ Capture the durable capability map for `DevAccelerationSystem` so product-facing
   - the `DevAccelerationSystem` editor and workflow tooling surface
 - Do not collapse the project into only a logger package or only a tooling workspace
 - For runtime-capability questions, verify source when the answer depends on exact active configuration or platform-specific behavior
+- For confidence or release-readiness questions, distinguish package-local evidence from consumer and physical-device proof.

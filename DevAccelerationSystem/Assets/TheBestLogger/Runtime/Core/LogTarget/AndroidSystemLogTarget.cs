@@ -6,18 +6,25 @@ using UnityEngine.Scripting;
 
 namespace TheBestLogger
 {
-    public class AndroidSystemLogTarget : LogTarget
+    internal interface IAndroidSystemLogBridge
     {
-        private static IntPtr AndroidLogClass; // Pointer to the android.util.Log class
-        private static IntPtr LogVMethodID; // Pointer to the 'v' (verbose) method
-        private static IntPtr LogDMethodID; // Pointer to the 'd' (debug) method
-        private static IntPtr LogIMethodID; // Pointer to the 'i' (info) method
-        private static IntPtr LogWMethodID; // Pointer to the 'w' (warning) method
-        private static IntPtr LogEMethodID; // Pointer to the 'e' (error) method
-        private static IntPtr GlobalTagJString;
+        void Initialize(string globalTag);
+        void Log(AndroidSystemLogMethod method, string message);
+    }
 
-        [Preserve]
-        public AndroidSystemLogTarget(string globalTag)
+    internal sealed class AndroidSystemNativeLogBridge : IAndroidSystemLogBridge
+    {
+#if UNITY_ANDROID
+        private static IntPtr AndroidLogClass;
+        private static IntPtr LogVMethodID;
+        private static IntPtr LogDMethodID;
+        private static IntPtr LogIMethodID;
+        private static IntPtr LogWMethodID;
+        private static IntPtr LogEMethodID;
+        private static IntPtr GlobalTagJString;
+#endif
+
+        public void Initialize(string globalTag)
         {
 #if UNITY_ANDROID
             // Find the android.util.Log class. Note the use of "/" instead of ".".
@@ -28,14 +35,9 @@ namespace TheBestLogger
                 return;
             }
 
-            // We use NewGlobalRef to prevent the class reference from being garbage collected.
             AndroidLogClass = AndroidJNI.NewGlobalRef(logClass);
-            // We can delete the local reference now that we have a global one.
             AndroidJNI.DeleteLocalRef(logClass);
 
-            // The JNI signature for all these methods is "(Ljava/lang/String;Ljava/lang/String;)I", which means:
-            // - Takes two String arguments (the tag and the message).
-            // - Returns an int.
             const string logMethodSignature = "(Ljava/lang/String;Ljava/lang/String;)I";
             LogVMethodID = AndroidJNI.GetStaticMethodID(AndroidLogClass, "v", logMethodSignature);
             LogDMethodID = AndroidJNI.GetStaticMethodID(AndroidLogClass, "d", logMethodSignature);
@@ -47,6 +49,68 @@ namespace TheBestLogger
             GlobalTagJString = AndroidJNI.NewGlobalRef(localTagString);
             AndroidJNI.DeleteLocalRef(localTagString);
 #endif
+        }
+
+        public void Log(AndroidSystemLogMethod method, string message)
+        {
+#if UNITY_ANDROID
+            if (AndroidLogClass == IntPtr.Zero)
+            {
+                Diagnostics.Write("NativeAndroidLogger: AndroidLogClass == IntPtr.Zero.");
+                return;
+            }
+
+            var jniArgs = new jvalue[2];
+            var messageJavaString = IntPtr.Zero;
+
+            try
+            {
+                messageJavaString = AndroidJNI.NewStringUTF(message);
+                jniArgs[0].l = GlobalTagJString;
+                jniArgs[1].l = messageJavaString;
+
+                var methodId = method switch
+                {
+                    AndroidSystemLogMethod.Debug => LogDMethodID,
+                    AndroidSystemLogMethod.Info => LogIMethodID,
+                    AndroidSystemLogMethod.Warning => LogWMethodID,
+                    AndroidSystemLogMethod.Error => LogEMethodID,
+                    _ => IntPtr.Zero
+                };
+
+                if (methodId != IntPtr.Zero)
+                {
+                    AndroidJNI.CallStaticIntMethod(AndroidLogClass, methodId, jniArgs);
+                }
+            }
+            finally
+            {
+                if (messageJavaString != IntPtr.Zero)
+                {
+                    AndroidJNI.DeleteLocalRef(messageJavaString);
+                }
+            }
+#endif
+        }
+    }
+
+    internal enum AndroidSystemLogMethod
+    {
+        Debug,
+        Info,
+        Warning,
+        Error
+    }
+
+    public class AndroidSystemLogTarget : LogTarget
+    {
+        private static readonly IAndroidSystemLogBridge DefaultBridge = new AndroidSystemNativeLogBridge();
+        internal static IAndroidSystemLogBridge Bridge = DefaultBridge;
+
+        [Preserve]
+        public AndroidSystemLogTarget(string globalTag)
+        {
+            Bridge?.Initialize(globalTag);
         }
 
         public override string LogTargetConfigurationName => nameof(AndroidSystemLogTargetConfiguration);
@@ -66,89 +130,57 @@ namespace TheBestLogger
                                  LogAttributes logAttributes = null,
                                  Exception exception = null)
         {
-#if UNITY_ANDROID 
-            if (AndroidLogClass == IntPtr.Zero)
+            message = BuildMessagePayload(category, message, logAttributes, exception);
+            Bridge?.Log(MapLogLevel(level), message);
+        }
+
+        public override void LogBatch(IReadOnlyList<LogEntry> logBatch)
+        {
+            if (logBatch == null)
             {
-                Diagnostics.Write("NativeAndroidLogger: AndroidLogClass == IntPtr.Zero.");
                 return;
             }
 
-            if (category == null)
+            foreach (var entry in logBatch)
             {
-                category = string.Empty;
+                Log(entry.Level, entry.Category, entry.Message, entry.Attributes, entry.Exception);
             }
+        }
 
-            if (message == null)
+        internal static AndroidSystemLogMethod MapLogLevel(LogLevel level)
+        {
+            return level switch
             {
-                message = string.Empty;
-            }
-            else
-            {
-                message = StringOperations.Concat("[", category, "] ", message, logAttributes?.ToFlatString() ?? string.Empty);
-            }
+                LogLevel.Debug => AndroidSystemLogMethod.Debug,
+                LogLevel.Info => AndroidSystemLogMethod.Info,
+                LogLevel.Warning => AndroidSystemLogMethod.Warning,
+                LogLevel.Error => AndroidSystemLogMethod.Error,
+                LogLevel.Exception => AndroidSystemLogMethod.Error,
+                _ => AndroidSystemLogMethod.Debug
+            };
+        }
+
+        internal static string BuildMessagePayload(string category,
+                                                   string message,
+                                                   LogAttributes logAttributes,
+                                                   Exception exception)
+        {
+            category ??= string.Empty;
+            message = message == null
+                          ? string.Empty
+                          : StringOperations.Concat("[", category, "] ", message, logAttributes?.ToFlatString() ?? string.Empty);
 
             if (exception != null)
             {
                 message = $"{message}\n--- Exception ---\n{exception}";
             }
 
-            var jniArgs = new jvalue[2];
-            var messageJavaString = IntPtr.Zero;
-
-            try
-            {
-                messageJavaString = AndroidJNI.NewStringUTF(message);
-                jniArgs[0].l = GlobalTagJString;
-                jniArgs[1].l = messageJavaString;
-
-                switch (level)
-                {
-                    case LogLevel.Debug:
-                        if (LogDMethodID != IntPtr.Zero)
-                        {
-                            AndroidJNI.CallStaticIntMethod(AndroidLogClass, LogDMethodID, jniArgs);
-                        }
-
-                        break;
-                    case LogLevel.Info:
-                        if (LogIMethodID != IntPtr.Zero)
-                        {
-                            AndroidJNI.CallStaticIntMethod(AndroidLogClass, LogIMethodID, jniArgs);
-                        }
-
-                        break;
-                    case LogLevel.Warning:
-                        if (LogWMethodID != IntPtr.Zero)
-                        {
-                            AndroidJNI.CallStaticIntMethod(AndroidLogClass, LogWMethodID, jniArgs);
-                        }
-
-                        break;
-                    case LogLevel.Error:
-                    case LogLevel.Exception:
-                        if (LogEMethodID != IntPtr.Zero)
-                        {
-                            AndroidJNI.CallStaticIntMethod(AndroidLogClass, LogEMethodID, jniArgs);
-                        }
-                        break;
-                }
-            }
-            finally
-            {
-                if (messageJavaString != IntPtr.Zero)
-                {
-                    AndroidJNI.DeleteLocalRef(messageJavaString);
-                }
-            }
-#endif
+            return message;
         }
 
-        public override void LogBatch(IReadOnlyList<LogEntry> logBatch)
+        internal static void ResetTestHooks()
         {
-            foreach (var entry in logBatch)
-            {
-                Log(entry.Level, entry.Category, entry.Message, entry.Attributes, entry.Exception);
-            }
+            Bridge = DefaultBridge;
         }
     }
 }

@@ -23,12 +23,12 @@ namespace TheBestLogger
             _logQueue = new ConcurrentQueue<string>();
             _logEvent = new AutoResetEvent(false);
 
-            _logTask = Task.Run(() => ProcessLogQueueAsync(rootDirectory, fileName, _cancellationTokenSource.Token));
+            _logTask = Task.Run(() => ProcessLogQueue(rootDirectory, fileName, _cancellationTokenSource.Token));
         }
 
-        private async Task ProcessLogQueueAsync(string logsDirectory,
-                                                string fileName,
-                                                CancellationToken cancellationToken)
+        private void ProcessLogQueue(string logsDirectory,
+                                     string fileName,
+                                     CancellationToken cancellationToken)
         {
             if (!Directory.Exists(logsDirectory))
             {
@@ -47,14 +47,14 @@ namespace TheBestLogger
 
                     while (_logQueue.TryDequeue(out var logEntry))
                     {
-                        await streamWriter.WriteLineAsync(logEntry);
+                        streamWriter.WriteLine(logEntry);
                     }
                 }
 
                 // Ensure all remaining log entries are flushed when stopping
                 while (_logQueue.TryDequeue(out var remainingEntry))
                 {
-                    await streamWriter.WriteLineAsync(remainingEntry);
+                    streamWriter.WriteLine(remainingEntry);
                 }
             }
         }
@@ -103,9 +103,11 @@ namespace TheBestLogger
                 _cancellationTokenSource.Cancel();
             }
 
+            _logEvent.Set();
+
             try
             {
-                await _logTask;
+                await _logTask.ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {

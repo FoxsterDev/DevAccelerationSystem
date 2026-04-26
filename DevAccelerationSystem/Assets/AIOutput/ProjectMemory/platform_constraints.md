@@ -9,6 +9,7 @@ Record durable engine and package constraints for `DevAccelerationSystem`.
   - `com.unity.mobile.android-logcat`
   - `com.unity.textmeshpro`
   - `com.unity.test-framework`
+  - `com.unity.test-framework.performance`
   - local `com.cysharp.zstring`
 
 ## Source-Surface Constraints
@@ -17,8 +18,10 @@ Record durable engine and package constraints for `DevAccelerationSystem`.
 
 ## Constraint Rules
 - Do not assume editor-test success alone proves runtime or consumer integration health.
+- Do not assume editor or playmode proof alone is equal to physical-device proof for Android or Apple native log targets.
 - When a change touches package/runtime behavior, pair source-level validation with consumer validation planning.
 - When a change touches tooling or shell-script-driven workflow, verify the owning editor/tooling surface first before widening the patch.
+- Performance claims should prefer the dedicated performance-test surface over ad-hoc stopwatch-only assertions.
 
 ## Consumer Constraints
 - `DevAccelerationSystem.DemoProject/` is the default tracked consumer validation target.

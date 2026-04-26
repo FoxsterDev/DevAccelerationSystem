@@ -13,16 +13,21 @@ Bootstrap status: seeded from `WORKSPACE.md`, repo layout, and current AI routin
 
 ## Verified Current Claims
 - Primary package identity currently present in source: `com.foxsterdev.thebestlogger`
-- Package version: `2.2.4`
+- Package version: `2.2.14`
 - Declared Unity baseline in package manifest: `2022.3`
 - Package source root currently present: `Assets/TheBestLogger/`
 - Additional source surface present under `Assets/DevAccelerationSystem/`
 - Test surface present:
   - `Assets/DevAccelerationSystem/Tests/Editor/`
   - `Assets/TheBestLogger/Tests/Editor/`
+  - `Assets/TheBestLogger/Tests/PlayMode/`
+  - `Assets/TheBestLogger/Tests/Performance/`
 - Consumer validation targets currently mapped in the hub:
   - `DevAccelerationSystem.DemoProject/`
   - `DAS.LocalProject/`
+- Public logger docs currently present:
+  - `../Docs/TheBestLogger_Integration_Best_Practices.md`
+  - `../Docs/TheBestLogger_AI_Integration_Audit_Prompt.md`
 
 ## Memory Files
 - `architecture_ownership.md`
@@ -45,4 +50,4 @@ Bootstrap status: seeded from `WORKSPACE.md`, repo layout, and current AI routin
 - Keep only durable project-specific truth here.
 - If project memory and source disagree, source wins and this memory must be refreshed.
 - Store temporary investigations and one-off reports under `Assets/AIOutput/`, not in `ProjectMemory/`.
-- Update this file first when package identity, supported Unity baseline, canonical-source ownership, or validation-target mapping changes.
+- Update this file first when package identity, supported Unity baseline, canonical-source ownership, validation-target mapping, or public logger documentation surface changes.

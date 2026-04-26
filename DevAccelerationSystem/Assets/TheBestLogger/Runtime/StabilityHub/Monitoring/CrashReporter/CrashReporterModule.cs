@@ -3,7 +3,7 @@ using UnityEngine.Scripting;
 
 namespace StabilityHub
 {
-    public class CrashReporterModule : IDisposable
+    public class CrashReporterModule : ICrashReporterModule
     {
         private CrashReporteriOS _crashReporteriOS;
 

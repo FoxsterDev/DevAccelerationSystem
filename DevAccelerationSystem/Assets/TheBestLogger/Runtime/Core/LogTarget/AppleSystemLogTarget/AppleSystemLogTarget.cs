@@ -6,6 +6,61 @@ using UnityEngine.Scripting;
 
 namespace TheBestLogger
 {
+    internal interface IAppleSystemLogBridge
+    {
+        void Initialize(string subsystem, string category);
+        void LogDefault(string category, string message);
+        void LogInfo(string category, string message);
+        void LogDebug(string category, string message);
+        void LogError(string category, string message);
+    }
+
+    internal sealed class AppleSystemNativeLogBridge : IAppleSystemLogBridge
+    {
+        public void Initialize(string subsystem, string category)
+        {
+#if (UNITY_IOS || UNITY_STANDALONE_OSX) && !UNITY_EDITOR
+            TheBestLogger_initAppleSystemLogger(subsystem, category);
+#endif
+        }
+
+        public void LogDefault(string category, string message)
+        {
+#if (UNITY_IOS || UNITY_STANDALONE_OSX) && !UNITY_EDITOR
+            TheBestLogger_AppleSystemLogDefault(category, message);
+#endif
+        }
+
+        public void LogInfo(string category, string message)
+        {
+#if (UNITY_IOS || UNITY_STANDALONE_OSX) && !UNITY_EDITOR
+            TheBestLogger_AppleSystemLogInfo(category, message);
+#endif
+        }
+
+        public void LogDebug(string category, string message)
+        {
+#if (UNITY_IOS || UNITY_STANDALONE_OSX) && !UNITY_EDITOR
+            TheBestLogger_AppleSystemLogDebug(category, message);
+#endif
+        }
+
+        public void LogError(string category, string message)
+        {
+#if (UNITY_IOS || UNITY_STANDALONE_OSX) && !UNITY_EDITOR
+            TheBestLogger_AppleSystemLogError(category, message);
+#endif
+        }
+    }
+
+    internal enum AppleSystemLogMethod
+    {
+        Default,
+        Info,
+        Debug,
+        Error
+    }
+
     /// <summary>
     /// Production-level logging, performance-sensitive applications. Integration with System: Unified Logging System, Console app, log command-line
     /// There is used os_log API that is part of Apple's unified logging system and is specifically designed for macOS, iOS, watchOS, and tvOS. View All Logs with Command Line: log show --predicate 'subsystem == "com.yourcompany.unitygame"' --info
@@ -13,13 +68,14 @@ namespace TheBestLogger
     /// </summary>
     public class AppleSystemLogTarget : LogTarget
     {
+        private static readonly IAppleSystemLogBridge DefaultBridge = new AppleSystemNativeLogBridge();
+        internal static IAppleSystemLogBridge Bridge = DefaultBridge;
+
         [Preserve]
         public AppleSystemLogTarget(string subSystem, string mainCategory)
             : base()
         {
-#if (UNITY_IOS || UNITY_STANDALONE_OSX) && !UNITY_EDITOR
-            TheBestLogger_initAppleSystemLogger(subSystem, mainCategory);
-#endif
+            Bridge?.Initialize(subSystem, mainCategory);
         }
 
         public override string LogTargetConfigurationName => nameof(AppleSystemLogTargetConfiguration);
@@ -30,56 +86,66 @@ namespace TheBestLogger
                                  LogAttributes logAttributes,
                                  Exception exception = null)
         {
-
-#if (UNITY_IOS || UNITY_STANDALONE_OSX) && !UNITY_EDITOR
-            switch (level)
+            switch (MapLogLevel(level))
             {
-                case LogLevel.Debug:
+                case AppleSystemLogMethod.Debug:
                 {
-                    TheBestLogger_AppleSystemLogDebug(category, message);
+                    Bridge?.LogDebug(category, message);
                     break;
                 }
-                case LogLevel.Info:
+                case AppleSystemLogMethod.Info:
                 {
-                    TheBestLogger_AppleSystemLogInfo(category, message);
+                    Bridge?.LogInfo(category, message);
                     break;
                 }
-                case LogLevel.Warning:
+                case AppleSystemLogMethod.Default:
                 {
-                    TheBestLogger_AppleSystemLogDefault(category, message);
+                    Bridge?.LogDefault(category, message);
                     break;
                 }
-                case LogLevel.Error:
-                {
-                    TheBestLogger_AppleSystemLogError(category, message);
-                    break;
-                }
-                case LogLevel.Exception:
+                case AppleSystemLogMethod.Error:
                 {
                     if (exception != null)
                     {
-                        TheBestLogger_AppleSystemLogError(category, BuildExceptionMessage(exception, logAttributes));
+                        Bridge?.LogError(category, BuildExceptionMessage(exception, logAttributes));
                         return;
                     }
-                    TheBestLogger_AppleSystemLogError(category, message);
+                    Bridge?.LogError(category, message);
                     break;
                 }
                 default:
                 {
-                    TheBestLogger_AppleSystemLogDefault(category, message);
+                    Bridge?.LogDefault(category, message);
                     break;
                 }
             }
-#endif
         }
 
         public override void LogBatch(
             IReadOnlyList<LogEntry> logBatch)
         {
+            if (logBatch == null)
+            {
+                return;
+            }
+
             foreach (var b in logBatch)
             {
                 Log(b.Level, b.Category, b.Message, b.Attributes, b.Exception);
             }
+        }
+
+        internal static AppleSystemLogMethod MapLogLevel(LogLevel level)
+        {
+            return level switch
+            {
+                LogLevel.Debug => AppleSystemLogMethod.Debug,
+                LogLevel.Info => AppleSystemLogMethod.Info,
+                LogLevel.Warning => AppleSystemLogMethod.Default,
+                LogLevel.Error => AppleSystemLogMethod.Error,
+                LogLevel.Exception => AppleSystemLogMethod.Error,
+                _ => AppleSystemLogMethod.Default
+            };
         }
 
         internal static string BuildExceptionMessage(Exception exception, LogAttributes logAttributes)
@@ -96,6 +162,11 @@ namespace TheBestLogger
             return string.IsNullOrEmpty(stackTrace)
                        ? exception.Message ?? string.Empty
                        : (exception.Message ?? string.Empty) + "\n" + stackTrace;
+        }
+
+        internal static void ResetTestHooks()
+        {
+            Bridge = DefaultBridge;
         }
 
 #if (UNITY_IOS || UNITY_STANDALONE_OSX)  && !UNITY_EDITOR

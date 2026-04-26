@@ -18,9 +18,7 @@ namespace TheBestLogger
     public struct LogTargetDispatchingLogsToMainThreadConfiguration
     {
         public bool Enabled;
-        [FormerlySerializedAs("SingleLogDispatch")]
         public bool SingleLogDispatchEnabled;
-        [FormerlySerializedAs("BatchLogsDispatch")]
         public bool BatchLogsDispatchEnabled;
     }
 }

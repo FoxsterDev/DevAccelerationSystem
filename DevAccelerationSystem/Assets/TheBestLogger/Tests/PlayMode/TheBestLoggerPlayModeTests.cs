@@ -2,7 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using TheBestLogger.Core.Utilities;
 using UnityEngine;
@@ -110,6 +112,173 @@ namespace TheBestLogger.Tests.PlayMode
             Assert.That(target.LoggedBatches[0][1].Message, Is.EqualTo("nice"));
         }
 
+        [UnityTest]
+        public IEnumerator CoreLogger_LongRunningSessionAcrossFrames_PreservesAllEntriesAndAttributes()
+        {
+            const int frameCount = 12;
+            const int logsPerFrame = 15;
+
+            var target = new PlayModeLogTarget();
+            var utilitySupplier = CreateUtilitySupplier(0);
+            var logger = new CoreLogger("RuntimeCategory", "HUD", new ILogTarget[] { target }, utilitySupplier, 256);
+
+            for (var frameIndex = 0; frameIndex < frameCount; frameIndex++)
+            {
+                utilitySupplier.TagsRegistry.AddTag($"frame-{frameIndex}");
+
+                for (var logIndex = 0; logIndex < logsPerFrame; logIndex++)
+                {
+                    logger.LogInfo($"log-{frameIndex}-{logIndex}");
+                }
+
+                yield return null;
+            }
+
+            var expectedCount = frameCount * logsPerFrame;
+            Assert.That(target.LoggedEntries.Count, Is.EqualTo(expectedCount));
+            Assert.That(target.LoggedEntries.Select(entry => entry.Message).Distinct().Count(), Is.EqualTo(expectedCount));
+
+            foreach (var entry in target.LoggedEntries)
+            {
+                Assert.That(entry.Attributes, Is.Not.Null);
+                Assert.That(entry.Attributes.Tags, Is.Not.Null);
+                Assert.That(entry.Attributes.TimeUtc, Is.GreaterThan(DateTime.MinValue));
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator DispatchingDecoration_BurstAcrossFrames_FlushesQueuedLogsExactlyOnce()
+        {
+            const int frameCount = 8;
+            const int workerCount = 4;
+            const int logsPerWorkerPerFrame = 10;
+
+            var target = new PlayModeLogTarget();
+            var syncContext = new PlayModeQueuedSynchronizationContext();
+            var utilitySupplier = CreateUtilitySupplier(0);
+            var decoratedTarget = new LogTargetDispatchingLogsToMainThreadDecoration(
+                new LogTargetDispatchingLogsToMainThreadConfiguration
+                {
+                    Enabled = true,
+                    SingleLogDispatchEnabled = true,
+                    BatchLogsDispatchEnabled = true
+                },
+                target,
+                syncContext,
+                utilitySupplier);
+
+            for (var frameIndex = 0; frameIndex < frameCount; frameIndex++)
+            {
+                var exceptions = RunConcurrentBurst(workerCount,
+                                                    logsPerWorkerPerFrame,
+                                                    (workerId, logIndex) =>
+                                                    {
+                                                        ((ILogTarget) decoratedTarget).Log(LogLevel.Info,
+                                                                                           "RuntimeCategory",
+                                                                                           $"queued-{frameIndex}-{workerId}-{logIndex}",
+                                                                                           new LogAttributes(LogImportance.Important)
+                                                                                           {
+                                                                                               TimeUtc = DateTime.UtcNow
+                                                                                           },
+                                                                                           null);
+                                                    });
+
+                Assert.That(exceptions, Is.Empty);
+                Assert.That(syncContext.PendingCount, Is.EqualTo(workerCount * logsPerWorkerPerFrame));
+
+                yield return null;
+
+                syncContext.FlushPostedCallbacks();
+            }
+
+            var expectedCount = frameCount * workerCount * logsPerWorkerPerFrame;
+            Assert.That(target.LoggedEntries.Count, Is.EqualTo(expectedCount));
+            Assert.That(target.LoggedEntries.Select(entry => entry.Message).Distinct().Count(), Is.EqualTo(expectedCount));
+        }
+
+        [UnityTest]
+        public IEnumerator BatchAndDispatch_LongRunningMixedImportancePressure_FlushesAllLogsExactlyOnce()
+        {
+            const int frameCount = 10;
+            const int workerCount = 4;
+            const int logsPerWorkerPerFrame = 12;
+            const int updatePeriodMs = 30;
+            const int batchSize = 16;
+
+            var target = new PlayModeLogTarget(isThreadSafe: false, dispatchToMainThread: true);
+            var syncContext = new PlayModeQueuedSynchronizationContext();
+            var utilitySupplier = CreateUtilitySupplier(0);
+            var dispatchingTarget = new LogTargetDispatchingLogsToMainThreadDecoration(
+                new LogTargetDispatchingLogsToMainThreadConfiguration
+                {
+                    Enabled = true,
+                    SingleLogDispatchEnabled = true,
+                    BatchLogsDispatchEnabled = true
+                },
+                target,
+                syncContext,
+                utilitySupplier);
+            var startTimeUtc = DateTime.UtcNow;
+            var batchingTarget = new LogTargetBatchLogsDecoration(
+                new LogTargetBatchLogsConfiguration
+                {
+                    Enabled = true,
+                    UpdatePeriodMs = updatePeriodMs,
+                    MaxCountLogs = batchSize
+                },
+                dispatchingTarget,
+                startTimeUtc);
+            var logger = new CoreLogger("RuntimeCategory",
+                                        string.Empty,
+                                        new ILogTarget[] { batchingTarget },
+                                        utilitySupplier,
+                                        512);
+
+            var expectedMessages = new HashSet<string>();
+            var currentTimeUtc = startTimeUtc;
+
+            for (var frameIndex = 0; frameIndex < frameCount; frameIndex++)
+            {
+                var frameCopy = frameIndex;
+                var exceptions = RunConcurrentBurst(workerCount,
+                                                    logsPerWorkerPerFrame,
+                                                    (workerId, logIndex) =>
+                                                    {
+                                                        var message = $"mixed-{frameCopy}-{workerId}-{logIndex}";
+                                                        var importance = logIndex % 6 == 0
+                                                                             ? LogImportance.Critical
+                                                                             : logIndex % 2 == 0
+                                                                                 ? LogImportance.Important
+                                                                                 : LogImportance.NiceToHave;
+                                                        lock (expectedMessages)
+                                                        {
+                                                            expectedMessages.Add(message);
+                                                        }
+
+                                                        logger.LogInfo(message, new LogAttributes(importance));
+                                                    });
+
+                Assert.That(exceptions, Is.Empty);
+
+                yield return null;
+
+                currentTimeUtc = currentTimeUtc.AddMilliseconds(updatePeriodMs + 5);
+                ((IScheduledUpdate) batchingTarget).Update(currentTimeUtc, updatePeriodMs + 5);
+                syncContext.FlushPostedCallbacks();
+            }
+
+            for (var flushIndex = 0; flushIndex < 6; flushIndex++)
+            {
+                yield return null;
+                currentTimeUtc = currentTimeUtc.AddMilliseconds(updatePeriodMs + 5);
+                ((IScheduledUpdate) batchingTarget).Update(currentTimeUtc, updatePeriodMs + 5);
+                syncContext.FlushPostedCallbacks();
+            }
+
+            Assert.That(target.LoggedEntries.Count, Is.EqualTo(expectedMessages.Count));
+            Assert.That(target.LoggedEntries.Select(entry => entry.Message).Distinct().Count(), Is.EqualTo(expectedMessages.Count));
+        }
+
         private static UtilitySupplier CreateUtilitySupplier(uint minTimestampPeriodMs)
         {
             return new UtilitySupplier(minTimestampPeriodMs,
@@ -144,6 +313,37 @@ namespace TheBestLogger.Tests.PlayMode
             }
         }
 
+        private static ConcurrentQueue<Exception> RunConcurrentBurst(int workerCount,
+                                                                     int logsPerWorker,
+                                                                     Action<int, int> action)
+        {
+            var exceptions = new ConcurrentQueue<Exception>();
+            using var startSignal = new ManualResetEventSlim(false);
+
+            var tasks = Enumerable.Range(0, workerCount)
+                                  .Select(workerId => Task.Run(() =>
+                                  {
+                                      startSignal.Wait();
+                                      for (var logIndex = 0; logIndex < logsPerWorker; logIndex++)
+                                      {
+                                          try
+                                          {
+                                              action(workerId, logIndex);
+                                          }
+                                          catch (Exception exception)
+                                          {
+                                              exceptions.Enqueue(exception);
+                                              break;
+                                          }
+                                      }
+                                  }))
+                                  .ToArray();
+
+            startSignal.Set();
+            Assert.That(Task.WaitAll(tasks, TimeSpan.FromSeconds(10)), Is.True, "Workers did not finish in time.");
+            return exceptions;
+        }
+
         private sealed class PlayModeQueuedSynchronizationContext : SynchronizationContext
         {
             private readonly ConcurrentQueue<(SendOrPostCallback callback, object state)> _queue = new();
@@ -169,15 +369,20 @@ namespace TheBestLogger.Tests.PlayMode
             public List<List<LogEntry>> LoggedBatches { get; } = new();
             public List<LogEntry> LoggedEntries { get; } = new();
 
-            public PlayModeLogTarget()
+            public PlayModeLogTarget(bool isThreadSafe = true, bool dispatchToMainThread = false)
             {
                 ApplyConfiguration(new PlayModeLogTargetConfiguration
                 {
                     MinLogLevel = LogLevel.Debug,
-                    IsThreadSafe = true,
+                    IsThreadSafe = isThreadSafe,
                     DebugMode = new DebugModeConfiguration(),
                     BatchLogs = new LogTargetBatchLogsConfiguration(),
-                    DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                    DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration
+                    {
+                        Enabled = dispatchToMainThread,
+                        SingleLogDispatchEnabled = dispatchToMainThread,
+                        BatchLogsDispatchEnabled = dispatchToMainThread
+                    }
                 });
             }
 

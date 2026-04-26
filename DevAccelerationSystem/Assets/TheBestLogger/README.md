@@ -8,6 +8,7 @@ Configurable logging package for Unity projects with runtime logging, structured
 - Latest tagged release: `2.2.14`
 - Declared Unity baseline: `2022.3`
 - This workspace currently resolves `com.cysharp.zstring` from `Packages/ZString.Unity.2.6.0.tgz`
+- This workspace also includes `com.unity.test-framework.performance@3.1.0` for package performance measurements
 
 ## Installation
 
@@ -54,10 +55,30 @@ https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSyst
 - Safe third-party target base class for guarded integrations
 - Background file writer utility
 
+## Validation Surface
+
+- Editor test coverage for deterministic logger logic, configuration behavior, delivery contracts, and fault isolation
+- PlayMode coverage for dispatch, batching, runtime target execution paths, and frame-based runtime behavior
+- Performance coverage via Unity Performance Testing for hot-path allocation and frame-time-sensitive regressions
+- Tracked consumer validation in `DevAccelerationSystem.DemoProject/`
+
+Important constraint:
+
+- editor, playmode, and package performance evidence are not equal to physical-device proof for Android/iOS/macOS native-target observability or device-facing performance claims
+
 ## StabilityHub
 
 - Optional `StabilityHub` integration for retrieving and logging previous-session crash data
 - Current source includes iOS crash-reporter support behind platform-specific wiring
+
+## Integration And Audit Docs
+
+- Repository-level integration guide:
+  - `DevAccelerationSystem/Docs/TheBestLogger_Integration_Best_Practices.md`
+- Repository-level audit prompt:
+  - `DevAccelerationSystem/Docs/TheBestLogger_AI_Integration_Audit_Prompt.md`
+- Current package changelog:
+  - `CHANGELOG.md`
 
 ## Release Highlights Since `2.2.4`
 
@@ -95,3 +116,11 @@ https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSyst
 4. Create category loggers through `LogManager.CreateLogger(...)`.
 
 The example entrypoint in `Runtime/Examples/GameLoggerEntryPoint.cs` shows one package-owned initialization path that wires logger targets and `StabilityHub`.
+
+## Integration Notes
+
+- Keep target sets intentional instead of enabling every sink by default.
+- Use batching for expensive or remote sinks.
+- Use main-thread dispatch only for targets that are not safe to execute from worker threads.
+- Keep stack traces mostly on `Error` and `Exception` unless you are actively diagnosing a hot issue.
+- Treat `OpenSearch` as production-sensitive if you use it in a real backend pipeline.

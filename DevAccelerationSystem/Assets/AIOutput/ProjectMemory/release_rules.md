@@ -5,7 +5,7 @@ Define the durable release-facing rules for `DevAccelerationSystem`.
 
 ## Release Identity
 - Current package identity present in source: `com.foxsterdev.thebestlogger`
-- Current package version present in source: `2.2.4`
+- Current package version present in source: `2.2.14`
 - Declared Unity baseline present in source: `2022.3`
 
 ## Release Gates
@@ -14,8 +14,13 @@ Define the durable release-facing rules for `DevAccelerationSystem`.
   - version
   - Unity baseline
   - package description when scope changes materially
-- Confirm relevant editor tests still represent the changed logic.
+- Confirm relevant package tests still represent the changed logic:
+  - editor tests for deterministic logic
+  - playmode tests for runtime behavior
+  - performance tests when performance-sensitive paths changed
 - Confirm at least one representative consumer validation target was selected for integration-sensitive changes.
+- Do not describe editor or playmode proof for native targets as equivalent to physical-device proof.
+- When runtime capability, integration guidance, or validation expectations change materially, update public logger docs alongside package docs.
 
 ## Consumer Rules
 - Prefer `DevAccelerationSystem.DemoProject/` as tracked release evidence.
@@ -27,4 +32,6 @@ Define the durable release-facing rules for `DevAccelerationSystem`.
   - `architecture_ownership.md`
   - `testing_strategy.md`
   - `platform_constraints.md`
+  - `../Docs/TheBestLogger_Integration_Best_Practices.md`
+  - `../Docs/TheBestLogger_AI_Integration_Audit_Prompt.md`
   - this file

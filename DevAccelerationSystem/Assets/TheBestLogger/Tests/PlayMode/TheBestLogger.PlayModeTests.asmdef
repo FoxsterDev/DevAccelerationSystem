@@ -3,6 +3,7 @@
     "rootNamespace": "",
     "references": [
         "UnityEngine.TestRunner",
+        "Unity.PerformanceTesting",
         "TheBestLogger.Core.Utilities",
         "TheBestLogger.Core"
     ],

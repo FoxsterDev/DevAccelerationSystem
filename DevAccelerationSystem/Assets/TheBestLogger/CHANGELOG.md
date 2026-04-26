@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+- Added broad hardening coverage across editor, playmode, performance, and tracked consumer-validation surfaces.
+- Added production-oriented regression coverage for logger lifecycle, concurrency, batching, main-thread dispatch, target fault isolation, `OpenSearch` config compatibility, delivery behavior, and `StabilityHub`.
+- Added performance measurements through Unity Performance Testing.
+- Added repository-level logger integration and audit docs for public use.
+- Fixed generic `LogFormat` forwarding for multi-argument overloads.
+- Fixed batch snapshot and duplicate-delivery risks in concurrent batch-drain paths.
+- Fixed Apple exception-message handling and safer crash-path intake behavior.
+- Fixed async-disposal deadlock risk in `FileBackgroundAsyncWriter`.
+- Fixed `UnityDebugLogSource` handler replacement to be instance-safe under repeated test or runtime setup.
+
 ## [2.2.14] - 2025-11-19
 - Added `[HideInCallstack]` to the `LogTrace` extension method to improve click-through behavior in the Unity Console.
 

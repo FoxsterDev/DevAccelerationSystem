@@ -36,6 +36,8 @@ Purpose:
 - Package path: `DevAccelerationSystem/Assets/TheBestLogger`
 - Latest tagged release: `2.2.14`
 - Declared Unity baseline in package manifest: `2022.3`
+- Package README: [DevAccelerationSystem/Assets/TheBestLogger/README.md](./DevAccelerationSystem/Assets/TheBestLogger/README.md)
+- Package changelog: [DevAccelerationSystem/Assets/TheBestLogger/CHANGELOG.md](./DevAccelerationSystem/Assets/TheBestLogger/CHANGELOG.md)
 
 Purpose:
 
@@ -43,6 +45,12 @@ Purpose:
 - multiple log sources and targets
 - platform targets and example integrations
 - `StabilityHub` integration for stability-oriented flows
+- current repository state also includes editor, playmode, performance, and tracked consumer-validation coverage around the logger package
+
+Additional public docs:
+
+- [TheBestLogger Integration Best Practices](./Docs/TheBestLogger_Integration_Best_Practices.md)
+- [TheBestLogger AI Integration Audit Prompt](./Docs/TheBestLogger_AI_Integration_Audit_Prompt.md)
 
 ## DevAccelerationSystem Overview
 
@@ -198,6 +206,12 @@ The repository includes `DevAccelerationSystem.DemoProject/` as a consumer valid
 ## Related Package
 
 If you need runtime logging rather than compilation tooling, use `TheBestLogger`.
+
+Useful entry points for `TheBestLogger`:
+
+- [Package README](./DevAccelerationSystem/Assets/TheBestLogger/README.md)
+- [Integration Best Practices](./Docs/TheBestLogger_Integration_Best_Practices.md)
+- [AI Integration Audit Prompt](./Docs/TheBestLogger_AI_Integration_Audit_Prompt.md)
 
 Recent `TheBestLogger` highlights:
 

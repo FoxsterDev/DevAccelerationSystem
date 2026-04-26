@@ -16,9 +16,10 @@ namespace TheBestLogger
 
             Diagnostics.Write(" created with logConsumer:" + logConsumer.GetType());
 
-            if (Debug.unityLogger.logHandler.GetType() != typeof(UnityDebugLogSource))
+            var currentHandler = Debug.unityLogger.logHandler;
+            if (!ReferenceEquals(currentHandler, this))
             {
-                _defaultUnityLogHandler = Debug.unityLogger.logHandler;
+                _defaultUnityLogHandler = currentHandler;
                 _defaultUnityFilterLogType = Debug.unityLogger.filterLogType;
                 Debug.unityLogger.logEnabled = true;
                 Debug.unityLogger.logHandler = this;

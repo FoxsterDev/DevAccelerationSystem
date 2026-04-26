@@ -127,51 +127,11 @@ namespace TheBestLogger
                 batch.Capacity = batchSize;
             }
 
-            var count1 = _bagRegularImportance.Count;
-            if (count1 > 0)
+            DrainBagEntries(_bagRegularImportance, batch, batchSize);
+
+            if (batch.Count < batchSize)
             {
-                if (count1 <= batchSize)
-                {
-                    batchSize -= count1;
-                    AddEntriesInChronologicalOrder(batch, _bagRegularImportance.ToArray());
-                    _bagRegularImportance.Clear();
-                }
-                else
-                {
-                    var regularEntries = new List<LogEntry>(batchSize);
-                    while (batchSize-- > 0 && _bagRegularImportance.TryTake(out var item))
-                    {
-                        regularEntries.Add(item);
-                    }
-
-                    regularEntries.Reverse();
-                    batch.AddRange(regularEntries);
-                }
-            }
-
-            if (batchSize > 0)
-            {
-                var count2 = _bagNiceToHaveImportance.Count;
-                if (count2 > 0)
-                {
-                    if (count2 <= batchSize)
-                    {
-                        batchSize -= count2;
-                        AddEntriesInChronologicalOrder(batch, _bagNiceToHaveImportance.ToArray());
-                        _bagNiceToHaveImportance.Clear();
-                    }
-                    else
-                    {
-                        var niceToHaveEntries = new List<LogEntry>(batchSize);
-                        while (batchSize-- > 0 && _bagNiceToHaveImportance.TryTake(out var item))
-                        {
-                            niceToHaveEntries.Add(item);
-                        }
-
-                        niceToHaveEntries.Reverse();
-                        batch.AddRange(niceToHaveEntries);
-                    }
-                }
+                DrainBagEntries(_bagNiceToHaveImportance, batch, batchSize - batch.Count);
             }
 
             return batch;
@@ -182,10 +142,23 @@ namespace TheBestLogger
             return batch.ToArray();
         }
 
-        private static void AddEntriesInChronologicalOrder(List<LogEntry> batch, LogEntry[] entries)
+        private static void DrainBagEntries(ConcurrentBag<LogEntry> source,
+                                            List<LogEntry> destination,
+                                            int maxCount)
         {
-            Array.Reverse(entries);
-            batch.AddRange(entries);
+            if (maxCount <= 0)
+            {
+                return;
+            }
+
+            var entries = new List<LogEntry>(maxCount);
+            while (entries.Count < maxCount && source.TryTake(out var item))
+            {
+                entries.Add(item);
+            }
+
+            entries.Reverse();
+            destination.AddRange(entries);
         }
     }
 }

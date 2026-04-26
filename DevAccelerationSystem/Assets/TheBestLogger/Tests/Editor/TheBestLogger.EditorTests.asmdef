@@ -6,7 +6,8 @@
         "UnityEditor.TestRunner",
         "TheBestLogger.Core.Utilities",
         "TheBestLogger.Core",
-        "TheBestLogger.Examples"
+        "TheBestLogger.Examples",
+        "StabilityHub"
     ],
     "includePlatforms": [
         "Editor"
