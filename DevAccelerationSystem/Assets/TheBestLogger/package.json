@@ -1,7 +1,7 @@
 {
   "name": "com.foxsterdev.thebestlogger",
   "displayName": "TheBestLogger",
-  "version": "2.2.4",
+  "version": "2.2.14",
   "unity": "2022.3",
   "keywords": [
     "unity",
@@ -11,5 +11,5 @@
   "documentationUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/tree/master",
   "changelogUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/releases",
   "licensesUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/blob/master/LICENSE.md",
-  "description": "The best logger for Unity project with focus on high performance and flexibilty"
+  "description": "Configurable logging package for Unity projects with runtime targets, exception capture, and stability-oriented integrations."
 }

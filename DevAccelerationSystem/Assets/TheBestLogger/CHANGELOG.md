@@ -1,16 +1,54 @@
 # Changelog
 
-## [2.2.4] - 2024-12-06
-Fix
-UnityException: get_isDebugBuild can only be called from the main thread.
-Constructors and field initializers will be executed from the loading thread when loading a scene.
-Don't use this function in the constructor or field initializers, instead move initialization code to the Awake or Start function.
+## [2.2.14] - 2025-11-19
+- Added `[HideInCallstack]` to the `LogTrace` extension method to improve click-through behavior in the Unity Console.
+
+## [2.2.13] - 2025-09-02
+- Deprecated the older `LogFormat(LogLevel logLevel, string message, LogAttributes logAttributes = null, params object[] args)` path in favor of the current `LogFormat` usage.
+- Added the `LogTrace` extension method for Unity Editor and development-build-only trace logging.
+- Improved message formatting and added allocation-aware `LogFormat` overload support.
+- Added aggressive inlining so Unity Console navigation opens closer to the caller site.
+
+## [2.2.11] - 2025-07-09
+- Added `AndroidSystemLogTarget`.
+- Added log-attribute rendering in the Unity Editor console target.
+- Added direct Unity Console notification when the OpenSearch target fails because of a network issue.
+
+## [2.2.10] - 2025-06-13
+- Fixed `System.FormatException` in `LogMessageFormatter` when subcategory formatting is used.
+
+## [2.2.9] - 2025-05-22
+- Hid the API key in the OpenSearch example target serialization path.
+- Added a fallback logger for initialization or configuration failure paths.
+
+## [2.2.8] - 2025-05-15
+- Added subcategory support when creating loggers.
+- Added `ProfilerMarker` instrumentation for log-target update profiling.
+- Reduced batch-processing allocations.
+- Performed general cleanup around target update flow.
+
+## [2.2.7] - 2025-01-08
+- Fixed an exception in `StackTraceFormatter` that could surface as `IndexOutOfRangeException` while formatting nested exception traces.
+
+## [2.2.6] - 2024-12-29
+- Added max-length truncation for log messages and log stack traces.
+
+## [2.2.5] - 2024-12-29
+- Made `ZString` optional and used it for stack-trace construction when the package is present.
+- Added `UniTask` unobserved-exception log source support.
+- Added `SafeThirdPartyLogTarget`.
+- Added unit tests and stack-trace fixes for nested exceptions.
+
+## [2.2.4] - 2024-12-08
+- Removed `Debug.isDebugBuild` from a path that could execute off the Unity main thread.
+- Fixed `UnityException: get_isDebugBuild can only be called from the main thread`.
+- Moved unsafe initialization expectations away from constructor and field-initializer paths.
 
 ## [1.0.0] - 2024-10-06
-Added stacktraces configuration for Unity Application Log Types and for a specific LogTarget. You can remove your custom Application.SetStackTrace if any
-Added option to inherit Unity Editor Console Log Target and customize print messages.
-Added a property to LogTarget about getting in explicit way a right name for log target configuration
-Fixed issues with applying remote configs. Added a clear method to merge new config into existed one. It will apply only known properties.
+- Added stack-trace configuration for Unity application log types and specific log targets.
+- Added the option to inherit Unity Editor Console log target behavior and customize print messages.
+- Added explicit configuration-name access for log targets.
+- Fixed remote-config application behavior by clearing stale values before merging known properties.
 
 ## [0.0.9] - 2024-09-22
 This is the first release of TheBestLogger as a package.
