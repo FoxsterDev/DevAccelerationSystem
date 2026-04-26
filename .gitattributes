@@ -1,61 +1,115 @@
-## Unity ##
+# UnityYAMLMerge requires local Git merge-tool setup; see Unity Smart Merge docs.
 
-*.cs diff=csharp text
-*.cginc text
-*.shader text
-*.html eol=lf
-*.js   eol=lf
-*.json eol=lf
-*.less eol=lf
-*.md   eol=lf
-*.svg  eol=lf
-*.xml  eol=lf
-*.mat merge=unityyamlmerge eol=lf
-*.anim merge=unityyamlmerge eol=lf
-*.unity merge=unityyamlmerge eol=lf
-*.prefab merge=unityyamlmerge eol=lf
-*.physicsMaterial2D merge=unityyamlmerge eol=lf
-*.physicMaterial merge=unityyamlmerge eol=lf
-*.asset merge=unityyamlmerge eol=lf
-*.meta merge=unityyamlmerge eol=lf
-*.controller merge=unityyamlmerge eol=lf
+## Text / source / config ##
+*.cs text eol=lf diff=csharp
+*.asmdef text eol=lf
+*.asmref text eol=lf
+*.cginc text eol=lf
+*.compute text eol=lf
+*.hlsl text eol=lf
+*.shader text eol=lf
+*.shadergraph text eol=lf
+*.shadersubgraph text eol=lf
+*.uxml text eol=lf
+*.uss text eol=lf
+*.html text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.less text eol=lf
+*.md text eol=lf
+*.xml text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.txt text eol=lf
+*.rsp text eol=lf
+*.editorconfig text eol=lf
+*.gitignore text eol=lf
+*.gitattributes text eol=lf
+*.gradle text eol=lf
+*.properties text eol=lf
+*.java text eol=lf
+*.kt text eol=lf
+*.m text eol=lf
+*.mm text eol=lf
+*.swift text eol=lf
+*.c text eol=lf
+*.cc text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf
+*.pro text eol=lf
+*.pbxproj text eol=lf
+*.xcprivacy text eol=lf
 
+## Unity YAML assets ##
+*.anim text eol=lf merge=unityyamlmerge
+*.asset text eol=lf merge=unityyamlmerge
+*.controller text eol=lf merge=unityyamlmerge
+*.flare text eol=lf merge=unityyamlmerge
+*.fontsettings text eol=lf merge=unityyamlmerge
+*.guiskin text eol=lf merge=unityyamlmerge
+*.lighting text eol=lf merge=unityyamlmerge
+*.mask text eol=lf merge=unityyamlmerge
+*.mat text eol=lf merge=unityyamlmerge
+*.meta text eol=lf merge=unityyamlmerge
+*.mixer text eol=lf merge=unityyamlmerge
+*.overrideController text eol=lf merge=unityyamlmerge
+*.physicsMaterial2D text eol=lf merge=unityyamlmerge
+*.physicMaterial text eol=lf merge=unityyamlmerge
+*.playable text eol=lf merge=unityyamlmerge
+*.prefab text eol=lf merge=unityyamlmerge
+*.preset text eol=lf merge=unityyamlmerge
+*.renderTexture text eol=lf merge=unityyamlmerge
+*.spriteatlas text eol=lf merge=unityyamlmerge
+*.spriteatlasv2 text eol=lf merge=unityyamlmerge
+*.terrainlayer text eol=lf merge=unityyamlmerge
+*.unity text eol=lf merge=unityyamlmerge
 
-## git-lfs ##
-
-#Image
-*.jpg filter=lfs diff=lfs merge=lfs -text
-*.jpeg filter=lfs diff=lfs merge=lfs -text
-*.png filter=lfs diff=lfs merge=lfs -text
-*.gif filter=lfs diff=lfs merge=lfs -text
+## Git LFS: common large source assets and plugin binaries ##
 *.psd filter=lfs diff=lfs merge=lfs -text
 *.ai filter=lfs diff=lfs merge=lfs -text
 *.tif filter=lfs diff=lfs merge=lfs -text
-
-#Audio
-*.mp3 filter=lfs diff=lfs merge=lfs -text
-*.wav filter=lfs diff=lfs merge=lfs -text
-*.ogg filter=lfs diff=lfs merge=lfs -text
-
-#Video
-*.mp4 filter=lfs diff=lfs merge=lfs -text
-*.mov filter=lfs diff=lfs merge=lfs -text
-
-#3D Object
-*.FBX filter=lfs diff=lfs merge=lfs -text
+*.tiff filter=lfs diff=lfs merge=lfs -text
+*.exr filter=lfs diff=lfs merge=lfs -text
+*.tga filter=lfs diff=lfs merge=lfs -text
 *.fbx filter=lfs diff=lfs merge=lfs -text
 *.blend filter=lfs diff=lfs merge=lfs -text
 *.obj filter=lfs diff=lfs merge=lfs -text
-
-*.a filter=lfs diff=lfs merge=lfs -text
-*.exr filter=lfs diff=lfs merge=lfs -text
-*.tga filter=lfs diff=lfs merge=lfs -text
+*.mp3 filter=lfs diff=lfs merge=lfs -text
+*.wav filter=lfs diff=lfs merge=lfs -text
+*.ogg filter=lfs diff=lfs merge=lfs -text
+*.mp4 filter=lfs diff=lfs merge=lfs -text
+*.mov filter=lfs diff=lfs merge=lfs -text
 *.tgz filter=lfs diff=lfs merge=lfs -text
-*.pdf filter=lfs diff=lfs merge=lfs -text
 *.zip filter=lfs diff=lfs merge=lfs -text
 *.unitypackage filter=lfs diff=lfs merge=lfs -text
-*.aif filter=lfs diff=lfs merge=lfs -text
-*.ttf filter=lfs diff=lfs merge=lfs -text
-*.rns filter=lfs diff=lfs merge=lfs -text
-*.reason filter=lfs diff=lfs merge=lfs -text
-*.lxo filter=lfs diff=lfs merge=lfs -text
+*.a filter=lfs diff=lfs merge=lfs -text
+*.aar filter=lfs diff=lfs merge=lfs -text
+*.jar filter=lfs diff=lfs merge=lfs -text
+*.so filter=lfs diff=lfs merge=lfs -text
+*.dylib filter=lfs diff=lfs merge=lfs -text
+*.bundle filter=lfs diff=lfs merge=lfs -text
+*.framework/** filter=lfs diff=lfs merge=lfs -text
+*.xcframework/** filter=lfs diff=lfs merge=lfs -text
+
+## Git LFS: owned docs / images / fonts ##
+DevAccelerationSystem/Assets/DevAccelerationSystem/**/*.png filter=lfs diff=lfs merge=lfs -text
+DevAccelerationSystem/Assets/DevAccelerationSystem/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+DevAccelerationSystem/Assets/DevAccelerationSystem/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
+DevAccelerationSystem/Assets/DevAccelerationSystem/**/*.gif filter=lfs diff=lfs merge=lfs -text
+DevAccelerationSystem/Assets/DevAccelerationSystem/**/*.pdf filter=lfs diff=lfs merge=lfs -text
+DevAccelerationSystem/Assets/DevAccelerationSystem/**/*.ttf filter=lfs diff=lfs merge=lfs -text
+DevAccelerationSystem/Assets/DevAccelerationSystem/**/*.otf filter=lfs diff=lfs merge=lfs -text
+DevAccelerationSystem/Assets/TheBestLogger/**/*.png filter=lfs diff=lfs merge=lfs -text
+DevAccelerationSystem/Assets/TheBestLogger/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+DevAccelerationSystem/Assets/TheBestLogger/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
+DevAccelerationSystem/Assets/TheBestLogger/**/*.gif filter=lfs diff=lfs merge=lfs -text
+DevAccelerationSystem/Assets/TheBestLogger/**/*.pdf filter=lfs diff=lfs merge=lfs -text
+DevAccelerationSystem/Assets/TheBestLogger/**/*.ttf filter=lfs diff=lfs merge=lfs -text
+DevAccelerationSystem/Assets/TheBestLogger/**/*.otf filter=lfs diff=lfs merge=lfs -text
+DevAccelerationSystem/Packages/*.tgz filter=lfs diff=lfs merge=lfs -text
+Docs/**/*.png filter=lfs diff=lfs merge=lfs -text
+Docs/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+Docs/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
+Docs/**/*.gif filter=lfs diff=lfs merge=lfs -text
+Docs/**/*.pdf filter=lfs diff=lfs merge=lfs -text
