@@ -61,5 +61,29 @@ namespace TheBestLogger.Tests.Editor
             Assert.AreEqual(1, _mockLogTarget.LoggedBatches.Count);
             Assert.AreEqual("Important message", _mockLogTarget.LoggedBatches[0][0].Message);
         }
+
+        [Test]
+        public void Update_WhenDifferentImportanceLevelsExist_PrioritizesImportantLogsBeforeNiceToHave()
+        {
+            var startTimeUtc = DateTime.UtcNow;
+
+            ((ILogTarget) _logTargetDecoration).Log(LogLevel.Info,
+                                                    "TestCategory",
+                                                    "Nice to have message",
+                                                    new LogAttributes(LogImportance.NiceToHave) { TimeUtc = startTimeUtc },
+                                                    null);
+            ((ILogTarget) _logTargetDecoration).Log(LogLevel.Info,
+                                                    "TestCategory",
+                                                    "Important message",
+                                                    new LogAttributes(LogImportance.Important) { TimeUtc = startTimeUtc.AddMilliseconds(1) },
+                                                    null);
+
+            ((IScheduledUpdate) _logTargetDecoration).Update(startTimeUtc.AddMilliseconds(_config.UpdatePeriodMs + 1),
+                                                             _config.UpdatePeriodMs + 1);
+
+            Assert.AreEqual(1, _mockLogTarget.LoggedBatches.Count);
+            Assert.AreEqual("Important message", _mockLogTarget.LoggedBatches[0][0].Message);
+            Assert.AreEqual("Nice to have message", _mockLogTarget.LoggedBatches[0][1].Message);
+        }
     }
 }

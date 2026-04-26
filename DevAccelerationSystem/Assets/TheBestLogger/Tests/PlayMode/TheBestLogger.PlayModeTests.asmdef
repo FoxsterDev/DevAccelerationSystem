@@ -1,16 +1,12 @@
 {
-    "name": "TheBestLogger.EditorTests",
+    "name": "TheBestLogger.PlayModeTests",
     "rootNamespace": "",
     "references": [
         "UnityEngine.TestRunner",
-        "UnityEditor.TestRunner",
         "TheBestLogger.Core.Utilities",
-        "TheBestLogger.Core",
-        "TheBestLogger.Examples"
+        "TheBestLogger.Core"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,

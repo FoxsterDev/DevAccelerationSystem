@@ -70,7 +70,7 @@ namespace TheBestLogger
                 //send existing bucket immediately or send just logs
                 var batch = GetLogsBatch((int) _config.MaxCountLogs - 1);
                 batch.Add(new LogEntry(level, category, message, logAttributes, exception));
-                LogBatch(batch.AsReadOnly());
+                LogBatch(CreateSnapshot(batch));
                 return;
             }
 
@@ -113,7 +113,7 @@ namespace TheBestLogger
                 var batch = GetLogsBatch((int) _config.MaxCountLogs);
                 if (batch.Count > 0)
                 {
-                    LogBatch(batch.AsReadOnly());
+                    LogBatch(CreateSnapshot(batch));
                 }
             }
         }
@@ -133,15 +133,19 @@ namespace TheBestLogger
                 if (count1 <= batchSize)
                 {
                     batchSize -= count1;
-                    batch.AddRange(_bagRegularImportance.ToArray());
+                    AddEntriesInChronologicalOrder(batch, _bagRegularImportance.ToArray());
                     _bagRegularImportance.Clear();
                 }
                 else
                 {
+                    var regularEntries = new List<LogEntry>(batchSize);
                     while (batchSize-- > 0 && _bagRegularImportance.TryTake(out var item))
                     {
-                        batch.Add(item);
+                        regularEntries.Add(item);
                     }
+
+                    regularEntries.Reverse();
+                    batch.AddRange(regularEntries);
                 }
             }
 
@@ -153,21 +157,35 @@ namespace TheBestLogger
                     if (count2 <= batchSize)
                     {
                         batchSize -= count2;
-                        batch.AddRange(_bagNiceToHaveImportance.ToArray());
+                        AddEntriesInChronologicalOrder(batch, _bagNiceToHaveImportance.ToArray());
                         _bagNiceToHaveImportance.Clear();
                     }
                     else
                     {
+                        var niceToHaveEntries = new List<LogEntry>(batchSize);
                         while (batchSize-- > 0 && _bagNiceToHaveImportance.TryTake(out var item))
                         {
-                            batch.Add(item);
+                            niceToHaveEntries.Add(item);
                         }
+
+                        niceToHaveEntries.Reverse();
+                        batch.AddRange(niceToHaveEntries);
                     }
                 }
             }
 
-            batch.Reverse();
             return batch;
+        }
+
+        private static IReadOnlyList<LogEntry> CreateSnapshot(List<LogEntry> batch)
+        {
+            return batch.ToArray();
+        }
+
+        private static void AddEntriesInChronologicalOrder(List<LogEntry> batch, LogEntry[] entries)
+        {
+            Array.Reverse(entries);
+            batch.AddRange(entries);
         }
     }
 }

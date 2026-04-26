@@ -412,16 +412,6 @@ namespace TheBestLogger
                 _loggers = null;
             }
 
-            if (_originalLogTargets != null)
-            {
-                foreach (var logTarget in _originalLogTargets)
-                {
-                    logTarget.Dispose();
-                }
-
-                _originalLogTargets = null;
-            }
-
             if (_decoratedLogTargets != null)
             {
                 foreach (var logTarget in _decoratedLogTargets)
@@ -431,6 +421,15 @@ namespace TheBestLogger
 
                 _decoratedLogTargets = null;
             }
+            else if (_originalLogTargets != null)
+            {
+                foreach (var logTarget in _originalLogTargets)
+                {
+                    logTarget.Dispose();
+                }
+            }
+
+            _originalLogTargets = null;
 
             Diagnostics.Write("has disposed!");
             Diagnostics.Cancel();

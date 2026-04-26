@@ -1,11 +1,32 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Threading;
 using TheBestLogger.Core.Utilities;
 using UnityEngine;
 
 namespace TheBestLogger.Tests.Editor
 {
+    internal sealed class QueuedSynchronizationContext : SynchronizationContext
+    {
+        private readonly ConcurrentQueue<(SendOrPostCallback callback, object state)> _queue = new();
+
+        public int PendingCount => _queue.Count;
+
+        public override void Post(SendOrPostCallback d, object state)
+        {
+            _queue.Enqueue((d, state));
+        }
+
+        public void FlushPostedCallbacks()
+        {
+            while (_queue.TryDequeue(out var item))
+            {
+                item.callback(item.state);
+            }
+        }
+    }
+
     internal class MakeSynchronizationContext : SynchronizationContext
     {
         public override void Post(SendOrPostCallback d, object state)
@@ -38,6 +59,20 @@ namespace TheBestLogger.Tests.Editor
     internal class MockLogTarget : LogTarget
     {
         public List<List<LogEntry>> LoggedBatches { get; } = new();
+        public int DisposeCallCount { get; private set; }
+        public List<LogEntry> LoggedEntries { get; } = new();
+
+        public MockLogTarget()
+        {
+            ApplyConfiguration(new MockLogTargetConfiguration
+            {
+                MinLogLevel = LogLevel.Debug,
+                IsThreadSafe = true,
+                DebugMode = new DebugModeConfiguration(),
+                BatchLogs = new LogTargetBatchLogsConfiguration(),
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            });
+        }
 
         public void SetDebugMode(bool mode)
         {
@@ -60,7 +95,18 @@ namespace TheBestLogger.Tests.Editor
         public override void LogBatch(
             IReadOnlyList<LogEntry> logBatch)
         {
-            LoggedBatches.Add(new List<LogEntry>(logBatch));
+            var batchCopy = new List<LogEntry>(logBatch);
+            LoggedBatches.Add(batchCopy);
+            LoggedEntries.AddRange(batchCopy);
         }
+
+        public override void Dispose()
+        {
+            DisposeCallCount++;
+        }
+    }
+
+    internal sealed class CountingLogTarget : MockLogTarget
+    {
     }
 }

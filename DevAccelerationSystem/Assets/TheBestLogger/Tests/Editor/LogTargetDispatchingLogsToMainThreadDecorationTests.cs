@@ -13,101 +13,131 @@ namespace TheBestLogger.Tests.Editor
         private ILogTarget _logDecoratedTarget;
         private MockLogTarget _mockLogTarget;
         private LogTargetDispatchingLogsToMainThreadConfiguration _config;
-        private SynchronizationContext _synchronizationContext;
-        private MockUtilitySupplier _utilitySupplier;
+        private QueuedSynchronizationContext _synchronizationContext;
+        private UtilitySupplier _utilitySupplier;
 
         [SetUp]
         public void SetUp()
         {
             _config = new LogTargetDispatchingLogsToMainThreadConfiguration
-                { Enabled = true, SingleLogDispatchEnabled = true, BatchLogsDispatchEnabled = true };
+            {
+                Enabled = true,
+                SingleLogDispatchEnabled = true,
+                BatchLogsDispatchEnabled = true
+            };
             _mockLogTarget = new MockLogTarget();
-            _synchronizationContext = new MakeSynchronizationContext();
-            _utilitySupplier = new MockUtilitySupplier() { IsMainThread = false };
-            _logDecoratedTarget = new LogTargetDispatchingLogsToMainThreadDecoration(_config, _mockLogTarget, _synchronizationContext, _utilitySupplier);
+            _synchronizationContext = new QueuedSynchronizationContext();
+            _utilitySupplier = new UtilitySupplier(0,
+                                                   new StackTraceFormatter(Application.dataPath, new StackTraceFormatterConfiguration()));
+            _logDecoratedTarget = new LogTargetDispatchingLogsToMainThreadDecoration(_config,
+                                                                                      _mockLogTarget,
+                                                                                      _synchronizationContext,
+                                                                                      _utilitySupplier);
         }
 
         [Test]
-        public void Log_DispatchesToMainThread_WhenNotOnMainThread()
+        public void Log_QueuesSingleLogUntilMainThreadFlush_WhenCalledOffMainThread()
         {
-            // Arrange
-            _utilitySupplier.IsMainThread = false;
-            var logAttributes = new LogAttributes(LogImportance.Critical) { TimeUtc = DateTime.UtcNow };
+            RunOnWorkerThread(() =>
+            {
+                var logAttributes = new LogAttributes(LogImportance.Critical) { TimeUtc = DateTime.UtcNow };
+                _logDecoratedTarget.Log(LogLevel.Error, "TestCategory", "Message to be dispatched", logAttributes, null);
+            });
 
-            // Act
-            _logDecoratedTarget.Log(LogLevel.Error, "TestCategory", "Message to be dispatched", logAttributes, null);
+            Assert.That(_synchronizationContext.PendingCount, Is.EqualTo(1));
+            Assert.That(_mockLogTarget.LoggedBatches.Count, Is.EqualTo(0));
 
-            // Assert
-            Assert.AreEqual(1, _mockLogTarget.LoggedBatches.Count);
-            Assert.AreEqual("Message to be dispatched", _mockLogTarget.LoggedBatches[0][0].Message);
+            _synchronizationContext.FlushPostedCallbacks();
+
+            Assert.That(_mockLogTarget.LoggedBatches.Count, Is.EqualTo(1));
+            Assert.That(_mockLogTarget.LoggedBatches[0][0].Message, Is.EqualTo("Message to be dispatched"));
         }
 
         [Test]
-        public void Log_DoesNotDispatch_WhenOnMainThread()
+        public void Log_DoesNotQueue_WhenCalledOnMainThread()
         {
-            // Arrange
-            _utilitySupplier.IsMainThread = true;
             var logAttributes = new LogAttributes(LogImportance.Critical) { TimeUtc = DateTime.UtcNow };
 
-            // Act
             _logDecoratedTarget.Log(LogLevel.Error, "TestCategory", "Message without dispatch", logAttributes, null);
 
-            // Assert
-            Assert.AreEqual(1, _mockLogTarget.LoggedBatches.Count);
-            Assert.AreEqual("Message without dispatch", _mockLogTarget.LoggedBatches[0][0].Message);
+            Assert.That(_synchronizationContext.PendingCount, Is.EqualTo(0));
+            Assert.That(_mockLogTarget.LoggedBatches.Count, Is.EqualTo(1));
+            Assert.That(_mockLogTarget.LoggedBatches[0][0].Message, Is.EqualTo("Message without dispatch"));
         }
 
         [Test]
-        public void LogBatch_DispatchesToMainThread_WhenNotOnMainThread()
+        public void LogBatch_QueuesBatchUntilMainThreadFlush_WhenCalledOffMainThread()
         {
-            // Arrange
-            _utilitySupplier.IsMainThread = false;
-            var logBatch = new List<LogEntry>
+            RunOnWorkerThread(() =>
             {
-                new LogEntry(LogLevel.Info, "TestCategory", "Batch message 1", new LogAttributes(LogImportance.Important), null),
-                new LogEntry(LogLevel.Info, "TestCategory", "Batch message 2", new LogAttributes(LogImportance.Important), null)
-            };
+                var logBatch = new List<LogEntry>
+                {
+                    new(LogLevel.Info, "TestCategory", "Batch message 1", new LogAttributes(LogImportance.Important), null),
+                    new(LogLevel.Info, "TestCategory", "Batch message 2", new LogAttributes(LogImportance.Important), null)
+                };
 
-            // Act
-            _logDecoratedTarget.LogBatch(logBatch);
+                _logDecoratedTarget.LogBatch(logBatch);
+            });
 
-            // Assert
-            Assert.AreEqual(1, _mockLogTarget.LoggedBatches.Count);
-            Assert.AreEqual(2, _mockLogTarget.LoggedBatches[0].Count);
-            Assert.AreEqual("Batch message 1", _mockLogTarget.LoggedBatches[0][0].Message);
-            Assert.AreEqual("Batch message 2", _mockLogTarget.LoggedBatches[0][1].Message);
+            Assert.That(_synchronizationContext.PendingCount, Is.EqualTo(1));
+            Assert.That(_mockLogTarget.LoggedBatches.Count, Is.EqualTo(0));
+
+            _synchronizationContext.FlushPostedCallbacks();
+
+            Assert.That(_mockLogTarget.LoggedBatches.Count, Is.EqualTo(1));
+            Assert.That(_mockLogTarget.LoggedBatches[0].Count, Is.EqualTo(2));
+            Assert.That(_mockLogTarget.LoggedBatches[0][0].Message, Is.EqualTo("Batch message 1"));
+            Assert.That(_mockLogTarget.LoggedBatches[0][1].Message, Is.EqualTo("Batch message 2"));
         }
 
         [Test]
-        public void LogBatch_DoesNotDispatch_WhenOnMainThread()
+        public void LogBatch_DoesNotQueueEmptyPayload_WhenCalledOffMainThread()
         {
-            // Arrange
-            _utilitySupplier.IsMainThread = true;
-            var logBatch = new List<LogEntry>
-            {
-                new LogEntry(LogLevel.Info, "TestCategory", "Batch message on main thread", new LogAttributes(LogImportance.Important), null)
-            };
+            RunOnWorkerThread(() => { _logDecoratedTarget.LogBatch(Array.Empty<LogEntry>()); });
 
-            // Act
-            _logDecoratedTarget.LogBatch(logBatch);
-
-            // Assert
-            Assert.AreEqual(1, _mockLogTarget.LoggedBatches.Count);
-            Assert.AreEqual("Batch message on main thread", _mockLogTarget.LoggedBatches[0][0].Message);
+            Assert.That(_synchronizationContext.PendingCount, Is.EqualTo(0));
+            Assert.That(_mockLogTarget.LoggedBatches.Count, Is.EqualTo(0));
         }
 
         [Test]
         public void ApplyConfiguration_UpdatesConfiguration()
         {
-            // Arrange
             var newConfig = new MockLogTargetConfiguration
-                { DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration { Enabled = false } };
+            {
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration { Enabled = false }
+            };
 
-            // Act
             _logDecoratedTarget.ApplyConfiguration(newConfig);
 
-            // Assert
             Assert.IsFalse(_logDecoratedTarget.Configuration.DispatchingLogsToMainThread.Enabled);
+        }
+
+        private static void RunOnWorkerThread(ThreadStart action)
+        {
+            Exception exception = null;
+            using var completed = new ManualResetEventSlim(false);
+            var worker = new Thread(() =>
+            {
+                try
+                {
+                    action.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    exception = ex;
+                }
+                finally
+                {
+                    completed.Set();
+                }
+            });
+
+            worker.Start();
+            Assert.That(completed.Wait(TimeSpan.FromSeconds(5)), Is.True, "Worker thread timed out.");
+            if (exception != null)
+            {
+                throw exception;
+            }
         }
     }
 }

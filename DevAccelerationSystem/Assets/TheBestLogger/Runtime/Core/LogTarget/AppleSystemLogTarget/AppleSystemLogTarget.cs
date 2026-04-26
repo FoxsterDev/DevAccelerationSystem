@@ -58,7 +58,7 @@ namespace TheBestLogger
                 {
                     if (exception != null)
                     {
-                        TheBestLogger_AppleSystemLogError(category, exception.Message + "\n" + logAttributes.StackTrace ?? exception.StackTrace);
+                        TheBestLogger_AppleSystemLogError(category, BuildExceptionMessage(exception, logAttributes));
                         return;
                     }
                     TheBestLogger_AppleSystemLogError(category, message);
@@ -80,6 +80,22 @@ namespace TheBestLogger
             {
                 Log(b.Level, b.Category, b.Message, b.Attributes, b.Exception);
             }
+        }
+
+        internal static string BuildExceptionMessage(Exception exception, LogAttributes logAttributes)
+        {
+            if (exception == null)
+            {
+                return string.Empty;
+            }
+
+            var stackTrace = !string.IsNullOrEmpty(logAttributes?.StackTrace)
+                                 ? logAttributes.StackTrace
+                                 : exception.StackTrace;
+
+            return string.IsNullOrEmpty(stackTrace)
+                       ? exception.Message ?? string.Empty
+                       : (exception.Message ?? string.Empty) + "\n" + stackTrace;
         }
 
 #if (UNITY_IOS || UNITY_STANDALONE_OSX)  && !UNITY_EDITOR

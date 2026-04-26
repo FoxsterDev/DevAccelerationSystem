@@ -229,7 +229,7 @@ namespace TheBestLogger
                                       in T1 arg1,
                                       in T2 arg2)
         {
-            LogFormat(level, message, null, arg1);
+            LogFormat(level, message, null, arg1, arg2);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -239,7 +239,7 @@ namespace TheBestLogger
                                           in T2 arg2,
                                           in T3 arg3)
         {
-            LogFormat(level, message, null, arg1);
+            LogFormat(level, message, null, arg1, arg2, arg3);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
