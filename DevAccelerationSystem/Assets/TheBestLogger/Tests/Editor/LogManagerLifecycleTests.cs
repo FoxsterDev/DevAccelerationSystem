@@ -27,8 +27,7 @@ namespace TheBestLogger.Tests.Editor
         {
             ResetLogManagerState();
             LogManager.ResetConfigCacheTestState();
-            LogTargetConfigurationCacheStore.UsePlayerPrefsStorageOverride = null;
-            LogTargetConfigurationCacheStore.ClearCache();
+            ClearAllConfigCacheBackends();
 
             _trackingTarget = new TrackingLogTarget();
             _tempRootAssetPath = $"Assets/TheBestLogger/Tests/Editor/Generated/{Guid.NewGuid():N}";
@@ -54,8 +53,7 @@ namespace TheBestLogger.Tests.Editor
         {
             ResetLogManagerState();
             LogManager.ResetConfigCacheTestState();
-            LogTargetConfigurationCacheStore.UsePlayerPrefsStorageOverride = null;
-            LogTargetConfigurationCacheStore.ClearCache();
+            ClearAllConfigCacheBackends();
 
             if (!string.IsNullOrEmpty(_tempRootAssetPath))
             {
@@ -423,6 +421,7 @@ namespace TheBestLogger.Tests.Editor
         public void Initialize_WithCorruptCachedConfiguration_IgnoresOnlyCorruptTarget()
         {
             var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_CorruptCache");
+            LogTargetConfigurationCacheStore.UsePlayerPrefsStorageOverride = true;
             var unityEditorConsoleTarget = new UnityEditorConsoleLogTarget();
 
             CreateConfigurationAssets(_tempRootAssetPath,
@@ -469,11 +468,7 @@ namespace TheBestLogger.Tests.Editor
                 }
             });
 
-            Directory.CreateDirectory(LogTargetConfigurationCacheStore.CacheDirectoryPath);
-            File.WriteAllText(LogTargetConfigurationCacheStore.CacheDocumentFilePath,
-                              BuildCacheDocumentJson(
-                                  (nameof(TrackingLogTargetConfiguration), "{ not-valid-json"),
-                                  (nameof(UnityEditorConsoleLogTargetConfiguration), "{\"MinLogLevel\":2}")));
+            CorruptRawPatchInExistingCacheDocumentForTests(nameof(TrackingLogTargetConfiguration), "{ not-valid-json");
 
             LogManager.Dispose();
             ResetLogManagerState();
@@ -1056,6 +1051,72 @@ namespace TheBestLogger.Tests.Editor
             return $"{baseName}_{Guid.NewGuid():N}";
         }
 
+        private static void ClearAllConfigCacheBackends()
+        {
+            LogTargetConfigurationCacheStore.UsePlayerPrefsStorageOverride = false;
+            LogTargetConfigurationCacheStore.ClearCache();
+
+            LogTargetConfigurationCacheStore.UsePlayerPrefsStorageOverride = true;
+            LogTargetConfigurationCacheStore.ClearCache();
+
+            LogTargetConfigurationCacheStore.UsePlayerPrefsStorageOverride = null;
+        }
+
+        private static void WriteRawCacheDocumentForTests(string cacheDocumentJson)
+        {
+            if (LogTargetConfigurationCacheStore.UsePlayerPrefsStorageOverride == true)
+            {
+                var playerPrefsKey = GetPrivateConstantString(typeof(LogTargetConfigurationCacheStore), "CacheDocumentPlayerPrefsKey");
+                PlayerPrefs.SetString(playerPrefsKey, cacheDocumentJson);
+                PlayerPrefs.Save();
+                return;
+            }
+
+            Directory.CreateDirectory(LogTargetConfigurationCacheStore.CacheDirectoryPath);
+            File.WriteAllText(LogTargetConfigurationCacheStore.CacheDocumentFilePath, cacheDocumentJson);
+        }
+
+        private static void CorruptRawPatchInExistingCacheDocumentForTests(string targetName, string corruptedRawJsonPatch)
+        {
+            string cacheDocumentJson;
+            if (LogTargetConfigurationCacheStore.UsePlayerPrefsStorageOverride == true)
+            {
+                var playerPrefsKey = GetPrivateConstantString(typeof(LogTargetConfigurationCacheStore), "CacheDocumentPlayerPrefsKey");
+                cacheDocumentJson = PlayerPrefs.GetString(playerPrefsKey, string.Empty);
+            }
+            else
+            {
+                cacheDocumentJson = File.ReadAllText(LogTargetConfigurationCacheStore.CacheDocumentFilePath);
+            }
+
+            var cacheDocument = JsonUtility.FromJson<TestCacheDocument>(cacheDocumentJson);
+            Assert.That(cacheDocument, Is.Not.Null);
+            Assert.That(cacheDocument.Entries, Is.Not.Null.And.Length.GreaterThan(0));
+
+            var wasUpdated = false;
+            foreach (var entry in cacheDocument.Entries)
+            {
+                if (!string.Equals(entry.TargetName, targetName, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                entry.RawJsonPatch = corruptedRawJsonPatch;
+                wasUpdated = true;
+                break;
+            }
+
+            Assert.That(wasUpdated, Is.True, $"Missing cache document entry for {targetName}");
+            WriteRawCacheDocumentForTests(JsonUtility.ToJson(cacheDocument));
+        }
+
+        private static string GetPrivateConstantString(Type type, string fieldName)
+        {
+            var field = type.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(field, Is.Not.Null, $"Missing field {fieldName}");
+            return field.GetRawConstantValue() as string;
+        }
+
         private static string BuildCacheDocumentJson(params (string targetName, string rawJsonPatch)[] entries)
         {
             var serializedEntries = new List<string>(entries.Length);
@@ -1066,6 +1127,20 @@ namespace TheBestLogger.Tests.Editor
             }
 
             return $"{{\"Version\":1,\"Entries\":[{string.Join(",", serializedEntries)}]}}";
+        }
+
+        [Serializable]
+        private sealed class TestCacheDocument
+        {
+            public int Version;
+            public TestCacheDocumentEntry[] Entries;
+        }
+
+        [Serializable]
+        private sealed class TestCacheDocumentEntry
+        {
+            public string TargetName;
+            public string RawJsonPatch;
         }
 
         private static void ResetWasDisposedFlagOnly()
