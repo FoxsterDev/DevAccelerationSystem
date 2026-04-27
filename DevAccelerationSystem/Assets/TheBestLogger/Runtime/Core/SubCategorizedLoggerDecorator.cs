@@ -56,6 +56,11 @@ namespace TheBestLogger
             _logger.LogDebug(ZString.Concat(_subCategoryName, " ", message), logAttributes);
         }
 
+        public void LogFormat(LogLevel logLevel, string message)
+        {
+            _logger.LogFormat(logLevel, ZString.Concat(_subCategoryName, " ", message));
+        }
+
         public void LogFormat(LogLevel logLevel,
                               string message,
                               LogAttributes logAttributes = null,

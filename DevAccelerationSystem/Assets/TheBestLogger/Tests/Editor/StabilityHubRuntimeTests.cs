@@ -190,6 +190,10 @@ namespace TheBestLogger.Tests.Editor
                 DebugMessages.Add(message);
             }
 
+            public void LogFormat(LogLevel logLevel, string message)
+            {
+            }
+
             public void LogFormat(LogLevel logLevel, string message, LogAttributes logAttributes = null, params object[] args)
             {
             }

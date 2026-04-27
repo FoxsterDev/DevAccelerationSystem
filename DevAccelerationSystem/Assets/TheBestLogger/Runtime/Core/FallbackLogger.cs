@@ -56,6 +56,12 @@ namespace TheBestLogger
         }
 
         [HideInCallstack]
+        public void LogFormat(LogLevel logLevel, string message)
+        {
+            LogFormat(logLevel, message, null, null);
+        }
+
+        [HideInCallstack]
         public void LogFormat(LogLevel logLevel,
                               string message,
                               LogAttributes logAttributes,

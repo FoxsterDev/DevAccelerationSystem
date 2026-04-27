@@ -32,6 +32,18 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
+        public void LogFormat_ThroughILogger_WithLogLevelAndMessage_ForwardsMessage()
+        {
+            ILogger logger = _logger;
+
+            logger.LogFormat(LogLevel.Info, "plain-message");
+
+            Assert.That(_logTarget.LoggedEntries.Count, Is.EqualTo(1));
+            Assert.That(_logTarget.LoggedEntries[0].Category, Is.EqualTo("Gameplay"));
+            Assert.That(_logTarget.LoggedEntries[0].Message, Is.EqualTo("<Session> plain-message"));
+        }
+
+        [Test]
         public void LogFormat_WithThreeGenericArguments_ForwardsAllArguments()
         {
             _logger.LogFormat(LogLevel.Warning, "{0}-{1}-{2}", 7, "alpha", true);

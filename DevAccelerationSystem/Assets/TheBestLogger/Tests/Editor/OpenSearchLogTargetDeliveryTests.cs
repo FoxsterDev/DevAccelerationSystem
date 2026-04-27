@@ -172,14 +172,15 @@ namespace TheBestLogger.Tests.Editor
         public void LogManager_RawJsonPartialUpdate_UpdatesOpenSearchTargetEndToEnd()
         {
             using var server = new LocalHttpRequestCaptureServer();
-            CreateOpenSearchConfigurationAssets("OpenSearchLogManagerRawJson",
+            var resourceSubFolderName = CreateUniqueResourceSubFolderName("OpenSearchLogManagerRawJson");
+            CreateOpenSearchConfigurationAssets(resourceSubFolderName,
                                                 CreateConfiguration(server, "old-key"));
 
             var target = new OpenSearchLogTarget();
-            LogManager.Initialize(new LogTarget[] { target }, "OpenSearchLogManagerRawJson/", CancellationToken.None, "debug-user");
+            LogManager.Initialize(new LogTarget[] { target }, resourceSubFolderName + "/", CancellationToken.None, "debug-user");
 
             LogManager.UpdateLogTargetConfiguration(nameof(OpenSearchLogTargetConfiguration), "{\"ApiKey\":\"new-key\"}");
-            LogManager.CreateLogger("Gameplay").LogInfo("after-raw-json-update");
+            LogManager.CreateLogger("Gameplay").LogWarning("after-raw-json-update");
 
             var request = server.WaitForRequestOrThrow();
             Assert.That(request.Path, Is.EqualTo("/logs"));
@@ -290,11 +291,17 @@ namespace TheBestLogger.Tests.Editor
                 DebugMode = new DebugModeConfiguration
                 {
                     Enabled = true,
-                    IDs = new[] { "debug-user" }
+                    IDs = new[] { "debug-user" },
+                    MinLogLevel = LogLevel.Debug
                 },
                 BatchLogs = new LogTargetBatchLogsConfiguration(),
                 DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
             };
+        }
+
+        private static string CreateUniqueResourceSubFolderName(string baseName)
+        {
+            return $"{baseName}_{Guid.NewGuid():N}";
         }
 
         private void CreateOpenSearchConfigurationAssets(string resourceSubFolderName,

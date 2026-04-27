@@ -157,6 +157,18 @@ namespace TheBestLogger
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void LogFormat(LogLevel logLevel, string message)
+        {
+            if (!AnyTargetWillLog(logLevel))
+            {
+                return;
+            }
+
+            var formatted = LogMessageFormatter.TryFormat(_subCategoryName, message, null);
+            SendToLogTargets(logLevel, formatted, "direct", null, null, null, null);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void LogFormat(LogLevel logLevel,
                               string message,
                               LogAttributes logAttributes = null,

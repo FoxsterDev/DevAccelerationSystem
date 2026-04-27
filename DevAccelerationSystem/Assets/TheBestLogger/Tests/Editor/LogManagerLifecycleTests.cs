@@ -126,6 +126,19 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
+        public void PublicLogger_LogFormat_WithLogLevelAndMessage_UsesDefaultGameLoggerCategory()
+        {
+            InitializeForTests("debug-user");
+
+            Logger.LogFormat(LogLevel.Warning, "hello");
+
+            Assert.That(_trackingTarget.LoggedEntries.Count, Is.EqualTo(1));
+            Assert.That(_trackingTarget.LoggedEntries[0].Level, Is.EqualTo(LogLevel.Warning));
+            Assert.That(_trackingTarget.LoggedEntries[0].Category, Is.EqualTo("DefaultGameLogger"));
+            Assert.That(_trackingTarget.LoggedEntries[0].Message, Is.EqualTo("hello"));
+        }
+
+        [Test]
         public void CreateLogger_WithEmptyCategoryAfterInitialize_ReturnsFallbackLogger()
         {
             InitializeForTests("debug-user");
@@ -409,7 +422,7 @@ namespace TheBestLogger.Tests.Editor
         [Test]
         public void Initialize_WithCorruptCachedConfiguration_IgnoresOnlyCorruptTarget()
         {
-            const string resourceSubFolderName = "LogManagerLifecycleTests_CorruptCache";
+            var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_CorruptCache");
             var unityEditorConsoleTarget = new UnityEditorConsoleLogTarget();
 
             CreateConfigurationAssets(_tempRootAssetPath,
@@ -1036,6 +1049,11 @@ namespace TheBestLogger.Tests.Editor
             }
 
             return rawJsonPatches;
+        }
+
+        private static string CreateUniqueResourceSubFolderName(string baseName)
+        {
+            return $"{baseName}_{Guid.NewGuid():N}";
         }
 
         private static string BuildCacheDocumentJson(params (string targetName, string rawJsonPatch)[] entries)

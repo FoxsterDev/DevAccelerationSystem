@@ -33,6 +33,12 @@ namespace TheBestLogger
         }
 
         [HideInCallstack]
+        public static void LogFormat(LogLevel logLevel, string message)
+        {
+            DefaultGameLogger.LogFormat(logLevel, message);
+        }
+
+        [HideInCallstack]
         [Conditional("DEVELOPMENT_BUILD")]
         public static void Debug(string message, LogAttributes attributes)
         {

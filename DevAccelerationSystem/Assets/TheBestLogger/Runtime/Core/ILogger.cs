@@ -18,6 +18,8 @@ namespace TheBestLogger
         void LogInfo(string message, LogAttributes logAttributes = null);
         void LogDebug(string message, LogAttributes logAttributes = null);
 
+        void LogFormat(LogLevel logLevel, string message);
+
         [Obsolete("Use LogFormat<T1,T2,T3..> generics instead")]
         void LogFormat(LogLevel logLevel,
                        string message,
