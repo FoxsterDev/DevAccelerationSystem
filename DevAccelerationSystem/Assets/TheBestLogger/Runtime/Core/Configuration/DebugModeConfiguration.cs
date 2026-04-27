@@ -7,7 +7,13 @@ namespace TheBestLogger
     {
         public bool Enabled;
         public LogLevel MinLogLevel = LogLevel.Warning;
-        public string[] IDs = Array.Empty<string>();
-        public LogTargetCategory[] OverrideCategories = new LogTargetCategory[0];
+        public string[] IDs;
+        public LogTargetCategory[] OverrideCategories;
+
+        public void ApplyRuntimeDefaults()
+        {
+            IDs ??= Array.Empty<string>();
+            OverrideCategories ??= Array.Empty<LogTargetCategory>();
+        }
     }
 }

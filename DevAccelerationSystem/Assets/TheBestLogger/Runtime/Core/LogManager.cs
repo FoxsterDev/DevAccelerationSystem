@@ -36,6 +36,8 @@ namespace TheBestLogger
         private static uint _minUpdatesPeriodMs;
         private static DateTime _timeStampPrevious;
         private static string _timeStampPreviousString;
+        private static string _currentDebugId;
+        private static bool _debugModeRequestedState;
 
         private static bool _isRunningUpdates = false;
         private static bool _wasDisposed = false;
@@ -81,6 +83,22 @@ namespace TheBestLogger
         }
 #endif
 
+        private static LogTargetConfiguration CloneConfiguration(LogTargetConfiguration configuration)
+        {
+            if (configuration == null)
+            {
+                return null;
+            }
+
+            var json = JsonUtility.ToJson(configuration);
+            return JsonUtility.FromJson(json, configuration.GetType()) as LogTargetConfiguration;
+        }
+
+        private static void NormalizeConfigurationForRuntime(LogTargetConfiguration configuration)
+        {
+            configuration?.ApplyRuntimeDefaults();
+        }
+
         /// <summary>
         /// Key of dict is logTargetConfigSo.Configuration.GetType().Name. Value is Speficic LogTargetConfiguration
         /// </summary>
@@ -98,10 +116,12 @@ namespace TheBestLogger
                     var key = logTargetConfigSo.Configuration.GetType().Name;
 
 #if LOGGER_NOT_UNITY_EDITOR
+                    NormalizeConfigurationForRuntime(logTargetConfigSo.Configuration);
                     logTargetConfigurationsData[key] = logTargetConfigSo.Configuration;
 #else
                     var config = logTargetConfigSo.Configuration;
                     var logTargetConfigurationNew = DeepCopyInUnityEditor(config);
+                    NormalizeConfigurationForRuntime(logTargetConfigurationNew);
                     logTargetConfigurationsData[key] = logTargetConfigurationNew;
 #endif
                 }
@@ -210,6 +230,185 @@ namespace TheBestLogger
 
             Diagnostics.Write("end");
         }
+
+        private static void ReapplyCurrentDebugModeState()
+        {
+            if (string.IsNullOrEmpty(_currentDebugId) || _decoratedLogTargets == null || _decoratedLogTargets.Count < 1)
+            {
+                return;
+            }
+
+            foreach (var logTarget in _decoratedLogTargets)
+            {
+                TryUpdateDebugModeStateForLogTarget(logTarget, _currentDebugId, _debugModeRequestedState);
+            }
+        }
+
+        private static void TryOverlayCachedConfigurationsIfSupported(Dictionary<string, LogTargetConfiguration> builtInConfigurations)
+        {
+            if (!IsConfigCacheEnabled())
+            {
+                return;
+            }
+            LogTargetConfigurationCacheStore.TryOverlayCachedConfigurations(builtInConfigurations);
+        }
+
+        private static void SaveEffectiveConfigurationsIfSupported()
+        {
+            if (!IsConfigCacheEnabled())
+            {
+                return;
+            }
+
+            LogTargetConfigurationCacheStore.SaveConfigurationPatches(_lastIncomingLogTargetConfigurationPatchesForCache);
+        }
+
+        private static bool IsConfigCacheEnabled()
+        {
+            var settings = _configuration?.EffectiveRemoteOverrideStartupCacheSettings;
+            return settings == null || settings.Enabled;
+        }
+
+        private static Dictionary<string, LogTargetConfiguration> BuildEffectiveLogTargetConfigurationsForUpdate(
+            Dictionary<string, LogTargetConfiguration> incomingLogTargetConfigurations)
+        {
+            var effectiveLogTargetConfigurations = GetCurrentLogTargetConfigurations();
+            if (incomingLogTargetConfigurations == null || incomingLogTargetConfigurations.Count < 1)
+            {
+                return effectiveLogTargetConfigurations;
+            }
+
+            foreach (var pair in incomingLogTargetConfigurations)
+            {
+                if (string.IsNullOrEmpty(pair.Key) || pair.Value == null)
+                {
+                    continue;
+                }
+
+                if (effectiveLogTargetConfigurations.TryGetValue(pair.Key, out var currentConfiguration) &&
+                    currentConfiguration != null &&
+                    currentConfiguration.GetType() == pair.Value.GetType())
+                {
+                    var mergedConfiguration = CloneConfiguration(currentConfiguration);
+                    mergedConfiguration?.Merge(pair.Value);
+                    NormalizeConfigurationForRuntime(mergedConfiguration);
+                    effectiveLogTargetConfigurations[pair.Key] = mergedConfiguration ?? pair.Value;
+                    continue;
+                }
+
+                NormalizeConfigurationForRuntime(pair.Value);
+                effectiveLogTargetConfigurations[pair.Key] = pair.Value;
+            }
+
+            return effectiveLogTargetConfigurations;
+        }
+
+        private static Dictionary<string, LogTargetConfiguration> BuildEffectiveLogTargetConfigurationsForRawJsonUpdate(
+            Dictionary<string, string> incomingRawJsonLogTargetConfigurations)
+        {
+            var effectiveLogTargetConfigurations = GetCurrentLogTargetConfigurations();
+            if (incomingRawJsonLogTargetConfigurations == null || incomingRawJsonLogTargetConfigurations.Count < 1)
+            {
+                return effectiveLogTargetConfigurations;
+            }
+
+            foreach (var pair in incomingRawJsonLogTargetConfigurations)
+            {
+                if (string.IsNullOrEmpty(pair.Key) || string.IsNullOrEmpty(pair.Value))
+                {
+                    continue;
+                }
+
+                if (!effectiveLogTargetConfigurations.TryGetValue(pair.Key, out var currentConfiguration) || currentConfiguration == null)
+                {
+                    Diagnostics.Write($"Can not find current log target configuration for raw json patch {pair.Key}", LogLevel.Warning);
+                    continue;
+                }
+
+                var mergedConfiguration = CloneConfiguration(currentConfiguration);
+                if (mergedConfiguration == null)
+                {
+                    continue;
+                }
+
+                if (!TryApplyRawJsonPatch(mergedConfiguration, pair.Key, pair.Value))
+                {
+                    continue;
+                }
+
+                NormalizeConfigurationForRuntime(mergedConfiguration);
+                effectiveLogTargetConfigurations[pair.Key] = mergedConfiguration;
+            }
+
+            return effectiveLogTargetConfigurations;
+        }
+
+        private static bool TryApplyRawJsonPatch(LogTargetConfiguration targetConfiguration,
+                                                 string logTargetConfigurationName,
+                                                 string rawJsonPatch)
+        {
+            try
+            {
+                JsonUtility.FromJsonOverwrite(rawJsonPatch, targetConfiguration);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Write($"Failed to apply raw json logger configuration patch for {logTargetConfigurationName}: {ex.Message}", LogLevel.Warning);
+                return false;
+            }
+        }
+
+        private static Dictionary<string, string> ConvertConfigurationsToRawJsonPatches(
+            Dictionary<string, LogTargetConfiguration> logTargetConfigurations)
+        {
+            if (logTargetConfigurations == null || logTargetConfigurations.Count < 1)
+            {
+                return null;
+            }
+
+            var rawJsonPatches = new Dictionary<string, string>(logTargetConfigurations.Count);
+            foreach (var pair in logTargetConfigurations)
+            {
+                if (string.IsNullOrEmpty(pair.Key) || pair.Value == null)
+                {
+                    continue;
+                }
+
+                rawJsonPatches[pair.Key] = JsonUtility.ToJson(pair.Value);
+            }
+
+            return rawJsonPatches;
+        }
+
+        private static Dictionary<string, string> FilterValidRawJsonPatches(Dictionary<string, string> rawJsonLogTargetConfigurations)
+        {
+            if (rawJsonLogTargetConfigurations == null || rawJsonLogTargetConfigurations.Count < 1)
+            {
+                return null;
+            }
+
+            var filteredPatches = new Dictionary<string, string>(rawJsonLogTargetConfigurations.Count);
+            foreach (var pair in rawJsonLogTargetConfigurations)
+            {
+                if (string.IsNullOrEmpty(pair.Key) || string.IsNullOrEmpty(pair.Value))
+                {
+                    continue;
+                }
+
+                filteredPatches[pair.Key] = pair.Value;
+            }
+
+            return filteredPatches.Count > 0 ? filteredPatches : null;
+        }
+
+        private static Dictionary<string, string> _lastIncomingLogTargetConfigurationPatchesForCache;
+
+#if UNITY_EDITOR
+        internal static void ResetConfigCacheTestState()
+        {
+        }
+#endif
 
         private static IReadOnlyList<ILogTarget> TryDecorateLogTargets(
             IReadOnlyList<LogTarget> originalLogTargets,
@@ -385,6 +584,7 @@ namespace TheBestLogger
 
             _isRunningUpdates = false;
             _configuration = null;
+            _lastIncomingLogTargetConfigurationPatchesForCache = null;
             _utilitySupplier = null;
             if (_targetUpdates != null)
             {

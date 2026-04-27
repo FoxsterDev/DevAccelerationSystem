@@ -43,6 +43,10 @@ namespace TheBestLogger
         [Tooltip("Configure UniTask")]
         public UniTaskConfiguration UniTaskConfiguration;
 
+        [Header("REMOTE OVERRIDE STARTUP CACHE")]
+        [Tooltip("Controls whether the last remote target configuration patch is reused on the next launch before fresh remote config arrives.")]
+        public LogTargetConfigurationCacheSettings RemoteOverrideStartupCache = new();
+
         // Specifies whether log sources should be enabled or disabled for different scenarios in the Unity Editor or a non-Unity environment.
 
         /// <summary>
@@ -240,5 +244,8 @@ namespace TheBestLogger
 #endif
             }
         }
+
+        public LogTargetConfigurationCacheSettings EffectiveRemoteOverrideStartupCacheSettings =>
+            RemoteOverrideStartupCache ?? new LogTargetConfigurationCacheSettings();
     }
 }

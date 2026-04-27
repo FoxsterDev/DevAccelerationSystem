@@ -15,6 +15,7 @@ namespace TheBestLogger
         private bool _debugModeEnabled;
         public abstract string LogTargetConfigurationName { get; }
         public LogTargetConfiguration Configuration { get; private set; }
+        protected bool DebugModeEnabled => _debugModeEnabled;
 
         public virtual void Mute(bool mute)
         {
@@ -85,6 +86,7 @@ namespace TheBestLogger
 
         public virtual void ApplyConfiguration(LogTargetConfiguration configuration)
         {
+            configuration?.ApplyRuntimeDefaults();
             Diagnostics.Write(" begin for " + GetType().Name + " before minLogLevel: " + _minLogLevel + " , new minLogLevel: " + configuration.MinLogLevel);
 
             Configuration = configuration;

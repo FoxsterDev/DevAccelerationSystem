@@ -173,5 +173,85 @@ namespace TheBestLogger.Tests.Editor
             StringAssert.Contains("\"SingleLogDispatchEnabled\"", json);
             StringAssert.Contains("\"BatchLogsDispatchEnabled\"", json);
         }
+
+        [Test]
+        public void UnityJsonOverwrite_PartialPatch_PreservesAbsentOpenSearchAndPrimitiveFields()
+        {
+            var config = new OpenSearchLogTargetConfiguration
+            {
+                OpenSearchHostUrl = "https://local.example",
+                OpenSearchSingleLogMethod = "/bulk",
+                IndexPrefix = "local-",
+                ApiKey = "local-key",
+                Muted = false,
+                MinLogLevel = LogLevel.Error,
+                BatchLogs = new LogTargetBatchLogsConfiguration
+                {
+                    Enabled = false,
+                    UpdatePeriodMs = 500,
+                    MaxCountLogs = 20
+                },
+                DebugMode = new DebugModeConfiguration
+                {
+                    Enabled = true,
+                    IDs = new[] { "debug-a" },
+                    MinLogLevel = LogLevel.Debug
+                },
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            };
+
+            JsonUtility.FromJsonOverwrite(@"{""OpenSearchHostUrl"":""https://remote.example"",""Muted"":true}", config);
+            config.ApplyRuntimeDefaults();
+
+            Assert.That(config.OpenSearchHostUrl, Is.EqualTo("https://remote.example"));
+            Assert.That(config.OpenSearchSingleLogMethod, Is.EqualTo("/bulk"));
+            Assert.That(config.IndexPrefix, Is.EqualTo("local-"));
+            Assert.That(config.ApiKey, Is.EqualTo("local-key"));
+            Assert.That(config.Muted, Is.True);
+            Assert.That(config.MinLogLevel, Is.EqualTo(LogLevel.Error));
+            Assert.That(config.BatchLogs.UpdatePeriodMs, Is.EqualTo(500));
+            Assert.That(config.BatchLogs.MaxCountLogs, Is.EqualTo(20));
+            Assert.That(config.DebugMode.IDs, Is.EquivalentTo(new[] { "debug-a" }));
+        }
+
+        [Test]
+        public void UnityJsonOverwrite_PartialPatch_PreservesAbsentNestedBatchLogsFields()
+        {
+            var config = new OpenSearchLogTargetConfiguration
+            {
+                BatchLogs = new LogTargetBatchLogsConfiguration
+                {
+                    Enabled = false,
+                    UpdatePeriodMs = 750,
+                    MaxCountLogs = 42
+                },
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            };
+
+            JsonUtility.FromJsonOverwrite(@"{""BatchLogs"":{""Enabled"":true}}", config);
+            config.ApplyRuntimeDefaults();
+
+            Assert.That(config.BatchLogs.Enabled, Is.True);
+            Assert.That(config.BatchLogs.UpdatePeriodMs, Is.EqualTo(750));
+            Assert.That(config.BatchLogs.MaxCountLogs, Is.EqualTo(42));
+        }
+
+        [Test]
+        public void UnityJsonOverwrite_PartialPatch_AllowsExplicitClearOfOpenSearchStrings()
+        {
+            var config = new OpenSearchLogTargetConfiguration
+            {
+                OpenSearchSingleLogMethod = "/bulk",
+                IndexPrefix = "prod-",
+                ApiKey = "secret"
+            };
+
+            JsonUtility.FromJsonOverwrite(@"{""OpenSearchSingleLogMethod"":"""",""IndexPrefix"":"""",""ApiKey"":""""}", config);
+            config.ApplyRuntimeDefaults();
+
+            Assert.That(config.OpenSearchSingleLogMethod, Is.EqualTo(string.Empty));
+            Assert.That(config.IndexPrefix, Is.EqualTo(string.Empty));
+            Assert.That(config.ApiKey, Is.EqualTo(string.Empty));
+        }
     }
 }

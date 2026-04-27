@@ -1,9 +1,7 @@
-using UnityEngine.Serialization;
-
 namespace TheBestLogger
 {
     [System.Serializable]
-    public struct LogTargetBatchLogsConfiguration
+    public sealed class LogTargetBatchLogsConfiguration
     {
         public bool Enabled;
         /// <summary>
@@ -15,7 +13,7 @@ namespace TheBestLogger
     }
     
     [System.Serializable]
-    public struct LogTargetDispatchingLogsToMainThreadConfiguration
+    public sealed class LogTargetDispatchingLogsToMainThreadConfiguration
     {
         public bool Enabled;
         public bool SingleLogDispatchEnabled;

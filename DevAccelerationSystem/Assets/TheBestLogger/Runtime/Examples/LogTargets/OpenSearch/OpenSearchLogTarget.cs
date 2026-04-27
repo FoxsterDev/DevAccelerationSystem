@@ -126,7 +126,7 @@ namespace TheBestLogger.Examples.LogTargets
             dto.TimeUTC = timestamp;
             dto.Attributes = attributes;
             dto.Category = category;
-            dto.DebugMode = Configuration.DebugMode.Enabled;
+            dto.DebugMode = DebugModeEnabled;
             dto.Tags = tags;
             return dto;
         }

@@ -61,6 +61,7 @@ namespace TheBestLogger
                 _minUpdatesPeriodMs = _configuration.MinUpdatesPeriodMs;
 
                 var dict = ConvertToDictionaryWithKeyNameAndValueConfigSpecificData(configuration.LogTargetConfigs);
+                TryOverlayCachedConfigurationsIfSupported(dict);
                 TryApplyConfigurations(dict, logTargets);
 
                 var currentTimeUtc = _utilitySupplier.GetTimeStamp().currentTimeUtc;
@@ -125,6 +126,8 @@ namespace TheBestLogger
                 }
 
                 var id = !string.IsNullOrEmpty(debugId) ? debugId : SystemInfo.deviceUniqueIdentifier;
+                _currentDebugId = id;
+                _debugModeRequestedState = true;
                 SetDebugMode(id, true);
 
                 Diagnostics.Write("LogManager has initialized!");
@@ -176,6 +179,8 @@ namespace TheBestLogger
 
         /// <summary>
         /// Updates configurations for existing log targets based on the provided configurations dictionary.
+        /// Prefer the raw json overload for remote partial updates because this typed overload can not preserve
+        /// "field absent" semantics for primitive fields after the remote payload was already deserialized.
         /// If LogManager is not properly configured or configurations are null/empty, logs a warning and exits.
         /// </summary>
         /// <param name="logTargetConfigurations">Dictionary of log target configurations with log target names as keys.</param>
@@ -194,9 +199,77 @@ namespace TheBestLogger
                 return;
             }
 
-            TryApplyConfigurations(logTargetConfigurations, _decoratedLogTargets);
+            var effectiveLogTargetConfigurations = BuildEffectiveLogTargetConfigurationsForUpdate(logTargetConfigurations);
+            TryApplyConfigurations(effectiveLogTargetConfigurations, _decoratedLogTargets);
+            ReapplyCurrentDebugModeState();
+            _lastIncomingLogTargetConfigurationPatchesForCache = ConvertConfigurationsToRawJsonPatches(logTargetConfigurations);
+            SaveEffectiveConfigurationsIfSupported();
 
             Diagnostics.Write("end");
+        }
+
+        /// <summary>
+        /// Updates configurations for existing log targets from raw json patches.
+        /// Prefer this overload for remote partial updates because it preserves "field absent" semantics for primitive fields.
+        /// </summary>
+        /// <param name="rawJsonLogTargetConfigurations">Dictionary of raw json patches with log target configuration names as keys.</param>
+        public static void UpdateLogTargetsConfigurations(Dictionary<string, string> rawJsonLogTargetConfigurations)
+        {
+            Diagnostics.Write("begin");
+
+            if (IsNotProperlyConfigured())
+            {
+                return;
+            }
+
+            if (rawJsonLogTargetConfigurations == null || rawJsonLogTargetConfigurations.Count < 1)
+            {
+                Diagnostics.Write("The rawJsonLogTargetConfigurations are empty or null", LogLevel.Warning);
+                return;
+            }
+
+            var effectiveLogTargetConfigurations = BuildEffectiveLogTargetConfigurationsForRawJsonUpdate(rawJsonLogTargetConfigurations);
+            TryApplyConfigurations(effectiveLogTargetConfigurations, _decoratedLogTargets);
+            ReapplyCurrentDebugModeState();
+            _lastIncomingLogTargetConfigurationPatchesForCache = FilterValidRawJsonPatches(rawJsonLogTargetConfigurations);
+            SaveEffectiveConfigurationsIfSupported();
+
+            Diagnostics.Write("end");
+        }
+
+        /// <summary>
+        /// Updates a single log target configuration.
+        /// Prefer the raw json overload for remote partial updates when the source can provide raw json.
+        /// </summary>
+        public static void UpdateLogTargetConfiguration(string logTargetConfigurationName, LogTargetConfiguration logTargetConfiguration)
+        {
+            if (string.IsNullOrEmpty(logTargetConfigurationName))
+            {
+                Diagnostics.Write("The logTargetConfigurationName is null or empty", LogLevel.Warning);
+                return;
+            }
+
+            UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>(1)
+            {
+                [logTargetConfigurationName] = logTargetConfiguration
+            });
+        }
+
+        /// <summary>
+        /// Updates a single log target configuration from raw json patch.
+        /// </summary>
+        public static void UpdateLogTargetConfiguration(string logTargetConfigurationName, string rawJsonLogTargetConfiguration)
+        {
+            if (string.IsNullOrEmpty(logTargetConfigurationName))
+            {
+                Diagnostics.Write("The logTargetConfigurationName is null or empty", LogLevel.Warning);
+                return;
+            }
+
+            UpdateLogTargetsConfigurations(new Dictionary<string, string>(1)
+            {
+                [logTargetConfigurationName] = rawJsonLogTargetConfiguration
+            });
         }
 
         /// <summary>
@@ -247,6 +320,9 @@ namespace TheBestLogger
                  FallbackLogger.LogWarning("Trying set debug mode with empty debugId");
                  return false;
             }
+
+            _currentDebugId = debugId;
+            _debugModeRequestedState = state;
 
             var debugModeStateChanged = false;
             foreach (var logTarget in _decoratedLogTargets)

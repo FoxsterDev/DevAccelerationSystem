@@ -26,6 +26,9 @@ namespace TheBestLogger.Tests.Editor
         public void SetUp()
         {
             ResetLogManagerState();
+            LogManager.ResetConfigCacheTestState();
+            LogTargetConfigurationCacheStore.UsePlayerPrefsStorageOverride = null;
+            LogTargetConfigurationCacheStore.ClearCache();
 
             _trackingTarget = new TrackingLogTarget();
             _tempRootAssetPath = $"Assets/TheBestLogger/Tests/Editor/Generated/{Guid.NewGuid():N}";
@@ -50,6 +53,9 @@ namespace TheBestLogger.Tests.Editor
         public void TearDown()
         {
             ResetLogManagerState();
+            LogManager.ResetConfigCacheTestState();
+            LogTargetConfigurationCacheStore.UsePlayerPrefsStorageOverride = null;
+            LogTargetConfigurationCacheStore.ClearCache();
 
             if (!string.IsNullOrEmpty(_tempRootAssetPath))
             {
@@ -186,6 +192,521 @@ namespace TheBestLogger.Tests.Editor
 
             Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Error));
             Assert.That(_trackingTarget.Configuration.Muted, Is.True);
+        }
+
+        [Test]
+        public void UpdateLogTargetsConfigurations_WithPartialTargetDictionary_PreservesOmittedTargetsAndPersistsThem()
+        {
+            var unityEditorConsoleTarget = new UnityEditorConsoleLogTarget();
+            LogManager.Initialize(new LogTarget[] { _trackingTarget, unityEditorConsoleTarget },
+                                  DefaultResourceSubFolder,
+                                  CancellationToken.None,
+                                  "debug-user");
+
+            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
+            {
+                [nameof(TrackingLogTargetConfiguration)] = new TrackingLogTargetConfiguration
+                {
+                    MinLogLevel = LogLevel.Error,
+                    IsThreadSafe = true,
+                    DebugMode = new DebugModeConfiguration(),
+                    BatchLogs = new LogTargetBatchLogsConfiguration(),
+                    DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                }
+            });
+
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Error));
+            Assert.That(unityEditorConsoleTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Debug));
+
+            LogManager.Dispose();
+            ResetLogManagerState();
+
+            _trackingTarget = new TrackingLogTarget();
+            unityEditorConsoleTarget = new UnityEditorConsoleLogTarget();
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget, unityEditorConsoleTarget },
+                                  DefaultResourceSubFolder,
+                                  CancellationToken.None,
+                                  "debug-user");
+
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Error));
+            Assert.That(unityEditorConsoleTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Debug));
+        }
+
+        [Test]
+        public void UpdateLogTargetsConfigurations_ReappliesDebugModeStateUsingCurrentDebugId()
+        {
+            InitializeForTests("other-user");
+
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.False);
+
+            var updatedConfig = new TrackingLogTargetConfiguration
+            {
+                MinLogLevel = LogLevel.Warning,
+                IsThreadSafe = true,
+                DebugMode = new DebugModeConfiguration
+                {
+                    Enabled = true,
+                    IDs = new[] { "other-user" },
+                    MinLogLevel = LogLevel.Debug
+                },
+                BatchLogs = new LogTargetBatchLogsConfiguration(),
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            };
+
+            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
+
+            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
+            {
+                [nameof(TrackingLogTargetConfiguration)] = updatedConfig,
+                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
+            });
+
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.True);
+        }
+
+        [Test]
+        public void UpdateLogTargetConfiguration_WithRawJsonPatch_PreservesAbsentPrimitiveFieldsAndPersistsAcrossRestart()
+        {
+            InitializeForTests("debug-user");
+
+            LogManager.UpdateLogTargetConfiguration(nameof(TrackingLogTargetConfiguration), "{\"Muted\":true}");
+
+            Assert.That(_trackingTarget.Configuration.Muted, Is.True);
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Warning));
+
+            LogManager.Dispose();
+            ResetLogManagerState();
+
+            _trackingTarget = new TrackingLogTarget();
+            InitializeForTests("debug-user");
+
+            Assert.That(_trackingTarget.Configuration.Muted, Is.True);
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Warning));
+        }
+
+        [Test]
+        public void UpdateLogTargetConfiguration_WithRawJsonPatch_PreservesAbsentNestedBatchLogsFields()
+        {
+            const string resourceSubFolderName = "LogManagerLifecycleTests_RawJsonBatchLogs";
+
+            CreateConfigurationAssets(_tempRootAssetPath,
+                                      resourceSubFolderName,
+                                      new TrackingLogTargetConfiguration
+                                      {
+                                          MinLogLevel = LogLevel.Warning,
+                                          IsThreadSafe = true,
+                                          DebugMode = new DebugModeConfiguration(),
+                                          BatchLogs = new LogTargetBatchLogsConfiguration
+                                          {
+                                              Enabled = false,
+                                              UpdatePeriodMs = 333,
+                                              MaxCountLogs = 17
+                                          },
+                                          DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                                      });
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget }, resourceSubFolderName + "/", CancellationToken.None, "debug-user");
+
+            LogManager.UpdateLogTargetConfiguration(nameof(TrackingLogTargetConfiguration), "{\"BatchLogs\":{\"Enabled\":true}}");
+
+            Assert.That(_trackingTarget.Configuration.BatchLogs.Enabled, Is.True);
+            Assert.That(_trackingTarget.Configuration.BatchLogs.UpdatePeriodMs, Is.EqualTo(333));
+            Assert.That(_trackingTarget.Configuration.BatchLogs.MaxCountLogs, Is.EqualTo(17));
+        }
+
+        [Test]
+        public void Initialize_AfterPersistedRuntimeUpdate_BootstrapsFromCachedConfiguration()
+        {
+            InitializeForTests("debug-user");
+
+            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
+            var updatedConfig = new TrackingLogTargetConfiguration
+            {
+                MinLogLevel = LogLevel.Error,
+                IsThreadSafe = true,
+                DebugMode = new DebugModeConfiguration
+                {
+                    Enabled = true,
+                    IDs = new[] { "debug-user" },
+                    MinLogLevel = LogLevel.Debug
+                },
+                BatchLogs = new LogTargetBatchLogsConfiguration(),
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            };
+
+            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
+            {
+                [nameof(TrackingLogTargetConfiguration)] = updatedConfig,
+                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
+            });
+
+            LogManager.Dispose();
+            ResetLogManagerState();
+
+            _trackingTarget = new TrackingLogTarget();
+            InitializeForTests("debug-user");
+
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Error));
+        }
+
+        [Test]
+        public void Initialize_AfterPersistedRuntimeUpdate_UsesCachedEmptyOverrideCategories()
+        {
+            const string resourceSubFolderName = "LogManagerLifecycleTests_EmptyOverrides";
+
+            CreateConfigurationAssets(_tempRootAssetPath,
+                                      resourceSubFolderName,
+                                      new TrackingLogTargetConfiguration
+                                      {
+                                          MinLogLevel = LogLevel.Error,
+                                          OverrideCategories = new[]
+                                          {
+                                              new LogTargetCategory
+                                              {
+                                                  Category = "LoadingFunnel",
+                                                  MinLevel = LogLevel.Warning
+                                              }
+                                          },
+                                          IsThreadSafe = true,
+                                          DebugMode = new DebugModeConfiguration(),
+                                          BatchLogs = new LogTargetBatchLogsConfiguration(),
+                                          DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                                      });
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget }, resourceSubFolderName + "/", CancellationToken.None, "debug-user");
+
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Warning, "LoadingFunnel"), Is.True);
+
+            var updatedConfig = new TrackingLogTargetConfiguration
+            {
+                MinLogLevel = LogLevel.Error,
+                OverrideCategories = Array.Empty<LogTargetCategory>(),
+                IsThreadSafe = true,
+                DebugMode = new DebugModeConfiguration(),
+                BatchLogs = new LogTargetBatchLogsConfiguration(),
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            };
+
+            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
+
+            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
+            {
+                [nameof(TrackingLogTargetConfiguration)] = updatedConfig,
+                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
+            });
+
+            LogManager.Dispose();
+            ResetLogManagerState();
+
+            _trackingTarget = new TrackingLogTarget();
+            LogManager.Initialize(new LogTarget[] { _trackingTarget }, resourceSubFolderName + "/", CancellationToken.None, "debug-user");
+
+            Assert.That(_trackingTarget.Configuration.OverrideCategories, Is.Empty);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Warning, "LoadingFunnel"), Is.False);
+        }
+
+        [Test]
+        public void Initialize_WithCorruptCachedConfiguration_IgnoresOnlyCorruptTarget()
+        {
+            const string resourceSubFolderName = "LogManagerLifecycleTests_CorruptCache";
+            var unityEditorConsoleTarget = new UnityEditorConsoleLogTarget();
+
+            CreateConfigurationAssets(_tempRootAssetPath,
+                                      resourceSubFolderName,
+                                      new TrackingLogTargetConfiguration
+                                      {
+                                          MinLogLevel = LogLevel.Warning,
+                                          IsThreadSafe = true,
+                                          DebugMode = new DebugModeConfiguration(),
+                                          BatchLogs = new LogTargetBatchLogsConfiguration(),
+                                          DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                                      },
+                                      unityEditorConsoleConfig: new UnityEditorConsoleLogTargetConfiguration
+                                      {
+                                          MinLogLevel = LogLevel.Debug,
+                                          IsThreadSafe = true,
+                                          DebugMode = new DebugModeConfiguration(),
+                                          BatchLogs = new LogTargetBatchLogsConfiguration(),
+                                          DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                                      });
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget, unityEditorConsoleTarget },
+                                  resourceSubFolderName + "/",
+                                  CancellationToken.None,
+                                  "debug-user");
+
+            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
+            {
+                [nameof(TrackingLogTargetConfiguration)] = new TrackingLogTargetConfiguration
+                {
+                    MinLogLevel = LogLevel.Error,
+                    IsThreadSafe = true,
+                    DebugMode = new DebugModeConfiguration(),
+                    BatchLogs = new LogTargetBatchLogsConfiguration(),
+                    DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                },
+                [nameof(UnityEditorConsoleLogTargetConfiguration)] = new UnityEditorConsoleLogTargetConfiguration
+                {
+                    MinLogLevel = LogLevel.Warning,
+                    IsThreadSafe = true,
+                    DebugMode = new DebugModeConfiguration(),
+                    BatchLogs = new LogTargetBatchLogsConfiguration(),
+                    DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                }
+            });
+
+            Directory.CreateDirectory(LogTargetConfigurationCacheStore.CacheDirectoryPath);
+            File.WriteAllText(LogTargetConfigurationCacheStore.CacheDocumentFilePath,
+                              BuildCacheDocumentJson(
+                                  (nameof(TrackingLogTargetConfiguration), "{ not-valid-json"),
+                                  (nameof(UnityEditorConsoleLogTargetConfiguration), "{\"MinLogLevel\":2}")));
+
+            LogManager.Dispose();
+            ResetLogManagerState();
+
+            _trackingTarget = new TrackingLogTarget();
+            unityEditorConsoleTarget = new UnityEditorConsoleLogTarget();
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget, unityEditorConsoleTarget },
+                                  resourceSubFolderName + "/",
+                                  CancellationToken.None,
+                                  "debug-user");
+
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Warning));
+            Assert.That(unityEditorConsoleTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Warning));
+        }
+
+        [Test]
+        public void Initialize_WithCachedConfigurationDocument_BootstrapsSuccessfully()
+        {
+            var currentConfigs = new Dictionary<string, LogTargetConfiguration>
+            {
+                [nameof(TrackingLogTargetConfiguration)] = new TrackingLogTargetConfiguration
+                {
+                    MinLogLevel = LogLevel.Error,
+                    IsThreadSafe = true,
+                    DebugMode = new DebugModeConfiguration(),
+                    BatchLogs = new LogTargetBatchLogsConfiguration(),
+                    DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                }
+            };
+
+            LogTargetConfigurationCacheStore.SaveConfigurationPatches(ToRawJsonPatches(currentConfigs));
+
+            InitializeForTests("debug-user");
+
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Error));
+        }
+
+        [Test]
+        public void Initialize_WhenConfigCacheDisabled_IgnoresPersistedCache()
+        {
+            const string resourceSubFolderName = "LogManagerLifecycleTests_ConfigCacheDisabled";
+            var currentConfigs = new Dictionary<string, LogTargetConfiguration>
+            {
+                [nameof(TrackingLogTargetConfiguration)] = new TrackingLogTargetConfiguration
+                {
+                    MinLogLevel = LogLevel.Error,
+                    IsThreadSafe = true,
+                    DebugMode = new DebugModeConfiguration(),
+                    BatchLogs = new LogTargetBatchLogsConfiguration(),
+                    DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                }
+            };
+
+            LogTargetConfigurationCacheStore.SaveConfigurationPatches(ToRawJsonPatches(currentConfigs));
+            CreateConfigurationAssets(_tempRootAssetPath,
+                                      resourceSubFolderName,
+                                      new TrackingLogTargetConfiguration
+                                      {
+                                          MinLogLevel = LogLevel.Warning,
+                                          IsThreadSafe = true,
+                                          DebugMode = new DebugModeConfiguration
+                                          {
+                                              Enabled = true,
+                                              IDs = new[] { "debug-user" },
+                                              MinLogLevel = LogLevel.Debug
+                                          },
+                                          BatchLogs = new LogTargetBatchLogsConfiguration(),
+                                          DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                                      },
+                                      configuration => ConfigureConfigCache(configuration, enabled: false));
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget }, resourceSubFolderName + "/", CancellationToken.None, "debug-user");
+
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Warning));
+        }
+
+        [Test]
+        public void UpdateLogTargetsConfigurations_WhenConfigCacheDisabled_DoesNotPersistRuntimeChanges()
+        {
+            const string resourceSubFolderName = "LogManagerLifecycleTests_ConfigCacheDisabled_NoPersist";
+            CreateConfigurationAssets(_tempRootAssetPath,
+                                      resourceSubFolderName,
+                                      new TrackingLogTargetConfiguration
+                                      {
+                                          MinLogLevel = LogLevel.Warning,
+                                          IsThreadSafe = true,
+                                          DebugMode = new DebugModeConfiguration
+                                          {
+                                              Enabled = true,
+                                              IDs = new[] { "debug-user" },
+                                              MinLogLevel = LogLevel.Debug
+                                          },
+                                          BatchLogs = new LogTargetBatchLogsConfiguration(),
+                                          DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                                      },
+                                      configuration => ConfigureConfigCache(configuration, enabled: false));
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget }, resourceSubFolderName + "/", CancellationToken.None, "debug-user");
+
+            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
+            var updatedConfig = new TrackingLogTargetConfiguration
+            {
+                MinLogLevel = LogLevel.Error,
+                IsThreadSafe = true,
+                DebugMode = new DebugModeConfiguration
+                {
+                    Enabled = true,
+                    IDs = new[] { "debug-user" },
+                    MinLogLevel = LogLevel.Debug
+                },
+                BatchLogs = new LogTargetBatchLogsConfiguration(),
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            };
+
+            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
+            {
+                [nameof(TrackingLogTargetConfiguration)] = updatedConfig,
+                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
+            });
+
+            Assert.That(File.Exists(LogTargetConfigurationCacheStore.CacheDocumentFilePath), Is.False);
+
+            LogManager.Dispose();
+            ResetLogManagerState();
+
+            _trackingTarget = new TrackingLogTarget();
+            LogManager.Initialize(new LogTarget[] { _trackingTarget }, resourceSubFolderName + "/", CancellationToken.None, "debug-user");
+
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Warning));
+        }
+
+        [Test]
+        public void Initialize_WithCorruptCacheDocument_FallsBackToBuiltInConfiguration()
+        {
+            Directory.CreateDirectory(LogTargetConfigurationCacheStore.CacheDirectoryPath);
+            File.WriteAllText(LogTargetConfigurationCacheStore.CacheDocumentFilePath, "{ not-valid-json");
+
+            InitializeForTests("debug-user");
+
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Warning));
+        }
+
+        [Test]
+        public void Initialize_WithSchemaVersionMismatchCacheDocument_FallsBackToBuiltInConfiguration()
+        {
+            var currentConfigs = new Dictionary<string, LogTargetConfiguration>
+            {
+                [nameof(TrackingLogTargetConfiguration)] = new TrackingLogTargetConfiguration
+                {
+                    MinLogLevel = LogLevel.Error,
+                    IsThreadSafe = true,
+                    DebugMode = new DebugModeConfiguration(),
+                    BatchLogs = new LogTargetBatchLogsConfiguration(),
+                    DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                }
+            };
+
+            LogTargetConfigurationCacheStore.SaveConfigurationPatches(ToRawJsonPatches(currentConfigs));
+
+            var cacheDocumentJson = File.ReadAllText(LogTargetConfigurationCacheStore.CacheDocumentFilePath);
+            cacheDocumentJson = cacheDocumentJson.Replace("\"Version\":1", "\"Version\":999");
+            File.WriteAllText(LogTargetConfigurationCacheStore.CacheDocumentFilePath, cacheDocumentJson);
+
+            InitializeForTests("debug-user");
+
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Warning));
+        }
+
+        [Test]
+        public void SaveConfigurationPatches_WhenCachePathIsAFile_DoesNotThrow()
+        {
+            var parentDirectory = Path.GetDirectoryName(LogTargetConfigurationCacheStore.CacheDirectoryPath);
+            Directory.CreateDirectory(parentDirectory);
+            File.WriteAllText(LogTargetConfigurationCacheStore.CacheDirectoryPath, "occupied");
+
+            var currentConfigs = new Dictionary<string, LogTargetConfiguration>
+            {
+                [nameof(TrackingLogTargetConfiguration)] = new TrackingLogTargetConfiguration
+                {
+                    MinLogLevel = LogLevel.Error,
+                    IsThreadSafe = true,
+                    DebugMode = new DebugModeConfiguration(),
+                    BatchLogs = new LogTargetBatchLogsConfiguration(),
+                    DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                }
+            };
+
+            Assert.DoesNotThrow(() => LogTargetConfigurationCacheStore.SaveConfigurationPatches(ToRawJsonPatches(currentConfigs)));
+        }
+
+        [Test]
+        public void SaveConfigurationPatches_ReplacesPreviousDocumentContent()
+        {
+            Directory.CreateDirectory(LogTargetConfigurationCacheStore.CacheDirectoryPath);
+            File.WriteAllText(LogTargetConfigurationCacheStore.CacheDocumentFilePath,
+                              BuildCacheDocumentJson(("StaleConfiguration", "{\"MinLogLevel\":4}")));
+
+            var currentConfigs = new Dictionary<string, LogTargetConfiguration>
+            {
+                [nameof(TrackingLogTargetConfiguration)] = new TrackingLogTargetConfiguration
+                {
+                    MinLogLevel = LogLevel.Error,
+                    IsThreadSafe = true,
+                    DebugMode = new DebugModeConfiguration(),
+                    BatchLogs = new LogTargetBatchLogsConfiguration(),
+                    DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                }
+            };
+
+            LogTargetConfigurationCacheStore.SaveConfigurationPatches(ToRawJsonPatches(currentConfigs));
+
+            var cacheDocumentJson = File.ReadAllText(LogTargetConfigurationCacheStore.CacheDocumentFilePath);
+            StringAssert.DoesNotContain("StaleConfiguration", cacheDocumentJson);
+            StringAssert.Contains(nameof(TrackingLogTargetConfiguration), cacheDocumentJson);
+        }
+
+        [Test]
+        public void LogTargetConfigurationCacheStore_WithPlayerPrefsBackend_BootstrapsWithoutFileSystemWrites()
+        {
+            LogTargetConfigurationCacheStore.UsePlayerPrefsStorageOverride = true;
+
+            LogTargetConfigurationCacheStore.SaveConfigurationPatches(new Dictionary<string, string>
+            {
+                [nameof(TrackingLogTargetConfiguration)] = "{\"MinLogLevel\":3}"
+            });
+
+            Assert.That(File.Exists(LogTargetConfigurationCacheStore.CacheDocumentFilePath), Is.False);
+
+            InitializeForTests("debug-user");
+
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Error));
+            LogTargetConfigurationCacheStore.ClearCache();
+            Assert.That(File.Exists(LogTargetConfigurationCacheStore.CacheDocumentFilePath), Is.False);
+        }
+
+        [Test]
+        public void EffectiveRemoteOverrideStartupCacheSettings_WhenBackingFieldIsNull_DoesNotMutateAssetField()
+        {
+            var configuration = ScriptableObject.CreateInstance<LogManagerConfiguration>();
+            configuration.RemoteOverrideStartupCache = null;
+
+            var settings = configuration.EffectiveRemoteOverrideStartupCacheSettings;
+
+            Assert.That(settings, Is.Not.Null);
+            Assert.That(configuration.RemoteOverrideStartupCache, Is.Null);
         }
 
         [Test]
@@ -476,12 +997,23 @@ namespace TheBestLogger.Tests.Editor
             field.SetValue(configuration, value);
         }
 
+        private static void ConfigureConfigCache(LogManagerConfiguration configuration,
+                                                 bool enabled = true)
+        {
+            configuration.RemoteOverrideStartupCache = new LogTargetConfigurationCacheSettings
+            {
+                Enabled = enabled
+            };
+        }
+
         private static void ResetLogManagerState()
         {
+            LogManager.ResetConfigCacheTestState();
             SetStaticField("_wasDisposed", false);
             SetStaticField("_isInitialized", false);
             SetStaticField("_isRunningUpdates", false);
             SetStaticField("_configuration", null);
+            SetStaticField("_lastIncomingLogTargetConfigurationPatchesForCache", null);
             SetStaticField("_utilitySupplier", null);
             SetStaticField("_loggers", null);
             SetStaticField("_logSources", Array.Empty<ILogSource>());
@@ -491,6 +1023,31 @@ namespace TheBestLogger.Tests.Editor
             SetStaticField("_minUpdatesPeriodMs", (uint) 0);
             SetStaticField("_timeStampPrevious", default(DateTime));
             SetStaticField("_timeStampPreviousString", null);
+            SetStaticField("_currentDebugId", null);
+            SetStaticField("_debugModeRequestedState", false);
+        }
+
+        private static Dictionary<string, string> ToRawJsonPatches(Dictionary<string, LogTargetConfiguration> configurations)
+        {
+            var rawJsonPatches = new Dictionary<string, string>(configurations.Count);
+            foreach (var pair in configurations)
+            {
+                rawJsonPatches[pair.Key] = JsonUtility.ToJson(pair.Value);
+            }
+
+            return rawJsonPatches;
+        }
+
+        private static string BuildCacheDocumentJson(params (string targetName, string rawJsonPatch)[] entries)
+        {
+            var serializedEntries = new List<string>(entries.Length);
+            foreach (var entry in entries)
+            {
+                serializedEntries.Add(
+                    $"{{\"TargetName\":\"{entry.targetName}\",\"RawJsonPatch\":{JsonUtility.ToJson(entry.rawJsonPatch)}}}");
+            }
+
+            return $"{{\"Version\":1,\"Entries\":[{string.Join(",", serializedEntries)}]}}";
         }
 
         private static void ResetWasDisposedFlagOnly()

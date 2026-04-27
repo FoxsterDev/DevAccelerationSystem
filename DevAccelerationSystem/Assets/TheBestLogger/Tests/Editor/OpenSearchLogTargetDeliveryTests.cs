@@ -10,7 +10,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using TheBestLogger.Core.Utilities;
 using TheBestLogger.Examples.LogTargets;
+using UnityEditor;
 using UnityEngine;
 
 namespace TheBestLogger.Tests.Editor
@@ -18,6 +20,30 @@ namespace TheBestLogger.Tests.Editor
     [TestFixture]
     public class OpenSearchLogTargetDeliveryTests
     {
+        private string _tempRootAssetPath;
+
+        [SetUp]
+        public void SetUp()
+        {
+            LogManager.Dispose();
+            ResetLogManagerState();
+            _tempRootAssetPath = $"Assets/TheBestLogger/Tests/Editor/Generated/{Guid.NewGuid():N}";
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            LogManager.Dispose();
+            ResetLogManagerState();
+
+            if (!string.IsNullOrEmpty(_tempRootAssetPath))
+            {
+                FileUtil.DeleteFileOrDirectory(_tempRootAssetPath);
+                FileUtil.DeleteFileOrDirectory(_tempRootAssetPath + ".meta");
+                AssetDatabase.Refresh();
+            }
+        }
+
         [Test]
         public void Log_SendsSinglePayloadWithExpectedHeadersAndFields()
         {
@@ -86,6 +112,37 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
+        public void Log_WhenDebugModeDisabled_SendsDebugModeFalse()
+        {
+            using var server = new LocalHttpRequestCaptureServer();
+            var target = CreateTarget(server, apiKey: "debug-false-key");
+
+            target.Log(LogLevel.Error, "Gameplay", "debug-false", CreateAttributes("2026-04-26T10:00:00.0000000Z"), null);
+
+            var request = server.WaitForRequestOrThrow();
+            var lines = SplitBulkPayloadLines(request.Body);
+            var dto = JsonUtility.FromJson<OpenSearchLogDTO>(lines[1]);
+
+            Assert.That(dto.DebugMode, Is.False);
+        }
+
+        [Test]
+        public void Log_WhenDebugModeEnabled_SendsDebugModeTrue()
+        {
+            using var server = new LocalHttpRequestCaptureServer();
+            var target = CreateTarget(server, apiKey: "debug-true-key");
+            ((ILogTarget) target).DebugModeEnabled = true;
+
+            target.Log(LogLevel.Error, "Gameplay", "debug-true", CreateAttributes("2026-04-26T10:00:00.0000000Z"), null);
+
+            var request = server.WaitForRequestOrThrow();
+            var lines = SplitBulkPayloadLines(request.Body);
+            var dto = JsonUtility.FromJson<OpenSearchLogDTO>(lines[1]);
+
+            Assert.That(dto.DebugMode, Is.True);
+        }
+
+        [Test]
         public void ApplyConfiguration_AfterRemoteConfigMerge_UsesUpdatedApiKeyOnNextRequest()
         {
             using var server = new LocalHttpRequestCaptureServer();
@@ -109,6 +166,25 @@ namespace TheBestLogger.Tests.Editor
             target.Log(LogLevel.Info, "Gameplay", "after-update", CreateAttributes("2026-04-26T10:00:01.0000000Z"), null);
             var secondRequest = server.WaitForRequestOrThrow(requestIndex: 1);
             Assert.That(secondRequest.Headers["x-api-key"], Is.EqualTo("new-key"));
+        }
+
+        [Test]
+        public void LogManager_RawJsonPartialUpdate_UpdatesOpenSearchTargetEndToEnd()
+        {
+            using var server = new LocalHttpRequestCaptureServer();
+            CreateOpenSearchConfigurationAssets("OpenSearchLogManagerRawJson",
+                                                CreateConfiguration(server, "old-key"));
+
+            var target = new OpenSearchLogTarget();
+            LogManager.Initialize(new LogTarget[] { target }, "OpenSearchLogManagerRawJson/", CancellationToken.None, "debug-user");
+
+            LogManager.UpdateLogTargetConfiguration(nameof(OpenSearchLogTargetConfiguration), "{\"ApiKey\":\"new-key\"}");
+            LogManager.CreateLogger("Gameplay").LogInfo("after-raw-json-update");
+
+            var request = server.WaitForRequestOrThrow();
+            Assert.That(request.Path, Is.EqualTo("/logs"));
+            Assert.That(request.Headers["x-api-key"], Is.EqualTo("new-key"));
+            StringAssert.Contains("after-raw-json-update", request.Body);
         }
 
         [Test]
@@ -211,10 +287,88 @@ namespace TheBestLogger.Tests.Editor
                 IndexPrefix = "thebestlogger-",
                 ApiKey = apiKey,
                 MinLogLevel = LogLevel.Debug,
-                DebugMode = new DebugModeConfiguration(),
+                DebugMode = new DebugModeConfiguration
+                {
+                    Enabled = true,
+                    IDs = new[] { "debug-user" }
+                },
                 BatchLogs = new LogTargetBatchLogsConfiguration(),
                 DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
             };
+        }
+
+        private void CreateOpenSearchConfigurationAssets(string resourceSubFolderName,
+                                                         OpenSearchLogTargetConfiguration openSearchConfiguration)
+        {
+            var absoluteResourcesPath = Path.Combine(Application.dataPath,
+                                                     _tempRootAssetPath.Replace("Assets/", string.Empty),
+                                                     "Resources",
+                                                     resourceSubFolderName);
+            Directory.CreateDirectory(absoluteResourcesPath);
+            AssetDatabase.Refresh();
+
+            var openSearchConfigSo = ScriptableObject.CreateInstance<OpenSearchLogTargetConfigurationSO>();
+            openSearchConfigSo.SpecificConfiguration = openSearchConfiguration;
+            AssetDatabase.CreateAsset(openSearchConfigSo,
+                                      $"{_tempRootAssetPath}/OpenSearchLogTargetConfigurationSO_{resourceSubFolderName}.asset");
+
+            var logManagerConfiguration = ScriptableObject.CreateInstance<LogManagerConfiguration>();
+            logManagerConfiguration.DefaultUnityLogsCategoryName = "DefaultCategory";
+            logManagerConfiguration.MessageMaxLength = 512;
+            logManagerConfiguration.MinTimestampPeriodMs = 0;
+            logManagerConfiguration.MinUpdatesPeriodMs = 1000;
+            logManagerConfiguration.StackTraceFormatterConfiguration = new StackTraceFormatterConfiguration();
+            logManagerConfiguration.UniTaskConfiguration = new UniTaskConfiguration();
+            logManagerConfiguration.LogTargetConfigs = new LogTargetConfigurationSO[] { openSearchConfigSo };
+            SetEditorLogSourceFlag(logManagerConfiguration, "_unityDebugLogSourceForUnityEditor", false);
+            SetEditorLogSourceFlag(logManagerConfiguration, "_unityApplicationLogMessageReceivedSourceForUnityEditor", false);
+            SetEditorLogSourceFlag(logManagerConfiguration, "_unityApplicationLogMessageReceivedThreadedSourceForUnityEditor", false);
+            SetEditorLogSourceFlag(logManagerConfiguration, "_unobservedSystemTaskExceptionLogSourceForUnityEditor", false);
+            SetEditorLogSourceFlag(logManagerConfiguration, "_unobservedUniTaskExceptionLogSourceForUnityEditor", false);
+            SetEditorLogSourceFlag(logManagerConfiguration, "_systemDiagnosticsDebugLogSourceForUnityEditor", false);
+            SetEditorLogSourceFlag(logManagerConfiguration, "_systemDiagnosticsConsoleLogSourceForUnityEditor", false);
+            SetEditorLogSourceFlag(logManagerConfiguration, "_currentDomainUnhandledExceptionLogSourceForUnityEditor", false);
+
+            AssetDatabase.CreateAsset(logManagerConfiguration,
+                                      $"{_tempRootAssetPath}/Resources/{resourceSubFolderName}/LogManagerConfiguration.asset");
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        private static void SetEditorLogSourceFlag(LogManagerConfiguration configuration, string fieldName, bool value)
+        {
+            var field = typeof(LogManagerConfiguration).GetField(fieldName,
+                                                                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            Assert.That(field, Is.Not.Null, $"Missing field {fieldName}");
+            field.SetValue(configuration, value);
+        }
+
+        private static void ResetLogManagerState()
+        {
+            SetStaticField("_wasDisposed", false);
+            SetStaticField("_isInitialized", false);
+            SetStaticField("_isRunningUpdates", false);
+            SetStaticField("_configuration", null);
+            SetStaticField("_lastIncomingLogTargetConfigurationPatchesForCache", null);
+            SetStaticField("_utilitySupplier", null);
+            SetStaticField("_loggers", null);
+            SetStaticField("_logSources", Array.Empty<ILogSource>());
+            SetStaticField("_decoratedLogTargets", Array.Empty<ILogTarget>());
+            SetStaticField("_originalLogTargets", Array.Empty<LogTarget>());
+            SetStaticField("_targetUpdates", new List<IScheduledUpdate>());
+            SetStaticField("_minUpdatesPeriodMs", (uint) 0);
+            SetStaticField("_timeStampPrevious", default(DateTime));
+            SetStaticField("_timeStampPreviousString", null);
+            SetStaticField("_currentDebugId", null);
+            SetStaticField("_debugModeRequestedState", false);
+        }
+
+        private static void SetStaticField(string fieldName, object value)
+        {
+            var field = typeof(LogManager).GetField(fieldName,
+                                                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            Assert.That(field, Is.Not.Null, $"Missing field {fieldName}");
+            field.SetValue(null, value);
         }
 
         private static LogEntry CreateLogEntry(LogLevel level,
