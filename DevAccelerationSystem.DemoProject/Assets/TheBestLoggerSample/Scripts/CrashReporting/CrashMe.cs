@@ -57,10 +57,10 @@ namespace TheBestLoggerSample.CrashReporting
                 {
                     //Debug.Log(method.Name);
                     var clone = Instantiate(_buttonPrefab, _contentNativeExceptions);
-                    clone._label.text = method.Name;
+                    clone.Label.text = method.Name;
                     clone.name = method.Name + "Button";
                     clone.gameObject.SetActive(true);
-                    clone.GetComponent<Button>().onClick.AddListener(
+                    clone.Button.onClick.AddListener(
                         () =>
                         {
                             Debug.Log("Calling " + method.Name);

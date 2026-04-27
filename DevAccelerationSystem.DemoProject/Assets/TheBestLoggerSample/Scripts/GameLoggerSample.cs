@@ -376,12 +376,10 @@ public class GameLoggerSample : MonoBehaviour
     public string GetLiveOverviewSummary()
     {
         Dictionary<string, LogTargetConfiguration> configurations = LogManager.GetCurrentLogTargetConfigurations();
-        return $"Bootstrap mode: {_bootstrapMode}\n" +
-               $"Configuration source: {GetBootstrapSourceLabel()}\n" +
-               $"Active targets: {configurations.Count}\n" +
-               $"Runtime console: {FormatEnabled(_useRuntimeConsoleTarget)}\n" +
-               $"Debug mode: {FormatEnabled(SampleDebugModeEnabled)}\n" +
-               $"OpenSearch mock: {FormatEnabled(_useOpenSearchMockTarget)}";
+        return $"Preset: {_bootstrapMode}\n" +
+               $"Source: {GetBootstrapSourceLabel()}\n" +
+               $"Targets: {configurations.Count}  |  Runtime console: {FormatEnabled(_useRuntimeConsoleTarget)}\n" +
+               $"Debug mode: {FormatEnabled(SampleDebugModeEnabled)}  |  OpenSearch: {FormatEnabled(_useOpenSearchMockTarget)}";
     }
 
     public string GetDebugModeSummary()
@@ -484,11 +482,8 @@ public class GameLoggerSample : MonoBehaviour
 
     private static async void RunUnhandledAsyncVoidException()
     {
-        throw new InvalidOperationException("This exception is unhandled in async void.");
-
-#pragma warning disable CS0162
         await Task.Delay(100);
-#pragma warning restore CS0162
+        throw new InvalidOperationException("This exception is unhandled in async void.");
     }
 
     private void ApplyGlobalMinLevel(LogLevel minLevel)

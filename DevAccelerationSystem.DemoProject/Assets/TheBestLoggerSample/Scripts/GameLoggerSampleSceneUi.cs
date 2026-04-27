@@ -28,6 +28,9 @@ public sealed class GameLoggerSampleSceneUi : MonoBehaviour
     private Transform _nativeActionsRoot;
 
     [SerializeField]
+    private ScrollRect _actionScrollRect;
+
+    [SerializeField]
     private int _defaultPoolCapacity = 24;
 
     [SerializeField]
@@ -67,6 +70,11 @@ public sealed class GameLoggerSampleSceneUi : MonoBehaviour
             _sample = FindObjectOfType<GameLoggerSample>();
         }
 
+        if (_actionScrollRect == null)
+        {
+            _actionScrollRect = GetComponentInChildren<ScrollRect>(includeInactive: true);
+        }
+
         if (_sample == null || _summaryText == null || _buttonTemplate == null)
         {
             enabled = false;
@@ -83,6 +91,11 @@ public sealed class GameLoggerSampleSceneUi : MonoBehaviour
                                                    maxSize: _maxPoolSize);
         RebuildActionLists();
         RefreshSummary();
+    }
+
+    private void Start()
+    {
+        RefreshLayout();
     }
 
     private void OnEnable()
@@ -113,6 +126,7 @@ public sealed class GameLoggerSampleSceneUi : MonoBehaviour
         PopulateSection(_loggerActionsRoot, GetLoggerActions());
         PopulateSection(_managedActionsRoot, GetManagedActions());
         PopulateSection(_nativeActionsRoot, GetNativeActions());
+        RefreshLayout();
     }
 
     private void PopulateSection(Transform root, IReadOnlyList<ActionDefinition> actions)
@@ -192,16 +206,42 @@ public sealed class GameLoggerSampleSceneUi : MonoBehaviour
     private void RefreshSummary()
     {
         _summaryBuilder.Clear();
-        _summaryBuilder.Append("<size=28><b>THEBESTLOGGER SAMPLE STUDIO</b></size>\n");
-        _summaryBuilder.Append("<size=15>Editable scene UI for logger verification, managed exception coverage, and native iOS crash drills.</size>\n\n");
-        _summaryBuilder.Append("<b>Current configuration</b>\n");
+        _summaryBuilder.Append("<size=21><b>TheBestLogger Sample Studio</b></size>\n");
+        _summaryBuilder.Append("<size=12><color=#6A7787>Scene-authored logger validation workspace</color></size>\n\n");
         _summaryBuilder.Append(_sample.GetLiveOverviewSummary());
-        _summaryBuilder.Append("\n\n<b>Crash lab</b>\n");
-        _summaryBuilder.Append(_sample.GetCrashLabSummary());
-        _summaryBuilder.Append("\n\n<b>Latest action</b>\n");
+        _summaryBuilder.Append("\n\n<size=12><color=#6A7787><b>Latest action</b></color></size>\n");
         _summaryBuilder.Append(_sample.LastActionStatus);
         _summaryText.supportRichText = true;
         _summaryText.text = _summaryBuilder.ToString();
+    }
+
+    private void RefreshLayout()
+    {
+        Canvas.ForceUpdateCanvases();
+
+        if (transform is RectTransform rootRect)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rootRect);
+        }
+
+        if (_actionScrollRect == null)
+        {
+            return;
+        }
+
+        if (_actionScrollRect.content != null)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_actionScrollRect.content);
+        }
+
+        if (_actionScrollRect.viewport != null)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_actionScrollRect.viewport);
+        }
+
+        _actionScrollRect.StopMovement();
+        _actionScrollRect.verticalNormalizedPosition = 1f;
+        Canvas.ForceUpdateCanvases();
     }
 
     private ScrollButton CreateButton()
@@ -247,7 +287,7 @@ public sealed class GameLoggerSampleSceneUi : MonoBehaviour
 
     private static string BuildButtonMarkup(string title, string subtitle)
     {
-        return $"<b>{title}</b>\n<size=13>{subtitle}</size>";
+        return $"<size=14><b>{title}</b></size>\n<size=11>{subtitle}</size>";
     }
 
     private static string NicifyNativeName(string methodName)
@@ -282,9 +322,9 @@ public sealed class GameLoggerSampleSceneUi : MonoBehaviour
     {
         return tone switch
         {
-            ButtonTone.Managed => new Color(0.33f, 0.18f, 0.22f),
-            ButtonTone.Native => new Color(0.35f, 0.26f, 0.12f),
-            _ => new Color(0.13f, 0.2f, 0.3f)
+            ButtonTone.Managed => new Color(0.38f, 0.2f, 0.24f),
+            ButtonTone.Native => new Color(0.42f, 0.29f, 0.12f),
+            _ => new Color(0.12f, 0.19f, 0.29f)
         };
     }
 
@@ -292,23 +332,23 @@ public sealed class GameLoggerSampleSceneUi : MonoBehaviour
     {
         Color normal = tone switch
         {
-            ButtonTone.Managed => new Color(1f, 0.94f, 0.95f),
-            ButtonTone.Native => new Color(1f, 0.97f, 0.9f),
-            _ => new Color(0.93f, 0.97f, 1f)
+            ButtonTone.Managed => new Color(0.99f, 0.94f, 0.95f),
+            ButtonTone.Native => new Color(1f, 0.96f, 0.88f),
+            _ => new Color(0.93f, 0.96f, 1f)
         };
 
         Color highlighted = tone switch
         {
-            ButtonTone.Managed => new Color(0.98f, 0.88f, 0.9f),
-            ButtonTone.Native => new Color(0.99f, 0.92f, 0.77f),
-            _ => new Color(0.85f, 0.93f, 1f)
+            ButtonTone.Managed => new Color(0.97f, 0.89f, 0.91f),
+            ButtonTone.Native => new Color(0.99f, 0.9f, 0.74f),
+            _ => new Color(0.86f, 0.93f, 1f)
         };
 
         Color pressed = tone switch
         {
-            ButtonTone.Managed => new Color(0.93f, 0.8f, 0.83f),
-            ButtonTone.Native => new Color(0.95f, 0.85f, 0.63f),
-            _ => new Color(0.76f, 0.88f, 0.99f)
+            ButtonTone.Managed => new Color(0.92f, 0.81f, 0.84f),
+            ButtonTone.Native => new Color(0.95f, 0.84f, 0.62f),
+            _ => new Color(0.78f, 0.88f, 0.99f)
         };
 
         return new ColorBlock

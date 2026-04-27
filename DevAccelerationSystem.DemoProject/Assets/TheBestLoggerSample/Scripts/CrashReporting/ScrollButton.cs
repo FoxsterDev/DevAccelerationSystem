@@ -19,8 +19,19 @@ namespace TheBestLoggerSample.CrashReporting
         public Image Background => _background;
         public Text Label => _label;
 
+        private void Awake()
+        {
+            EnsureReferences();
+        }
+
+        private void OnValidate()
+        {
+            EnsureReferences();
+        }
+
         public void Bind(string markup, UnityAction onClick, ColorBlock colors, Color textColor)
         {
+            EnsureReferences();
             _button.onClick.RemoveAllListeners();
             if (onClick != null)
             {
@@ -38,10 +49,29 @@ namespace TheBestLoggerSample.CrashReporting
 
         public void ResetState(Transform parent)
         {
+            EnsureReferences();
             _button.onClick.RemoveAllListeners();
             _label.text = string.Empty;
             transform.SetParent(parent, false);
             gameObject.SetActive(false);
+        }
+
+        private void EnsureReferences()
+        {
+            if (_button == null)
+            {
+                _button = GetComponent<Button>();
+            }
+
+            if (_background == null)
+            {
+                _background = GetComponent<Image>();
+            }
+
+            if (_label == null)
+            {
+                _label = GetComponentInChildren<Text>(includeInactive: true);
+            }
         }
     }
 }

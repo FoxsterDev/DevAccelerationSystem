@@ -20,8 +20,7 @@ public class ThrowUnhandledExceptionExample : MonoBehaviour, IPointerClickHandle
 
     private async void RunTaskWithAwait()
     {
-        throw new InvalidOperationException("This exception is observed using await!");
-
         await Task.Delay(100);
+        throw new InvalidOperationException("This exception is unhandled in async void.");
     }
 }
