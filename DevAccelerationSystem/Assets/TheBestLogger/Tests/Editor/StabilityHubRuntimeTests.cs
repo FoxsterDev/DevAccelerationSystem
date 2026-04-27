@@ -71,6 +71,38 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
+        public void Initialize_WithExplicitConfiguration_DoesNotDependOnMonitoringAssetLoader()
+        {
+            var spyModule = new SpyCrashReporterModule();
+            var factoryCalls = 0;
+            StabilityHubService.MonitoringConfigLoader = () => null;
+            StabilityHubService.CrashReporterModuleFactory = enabled =>
+            {
+                factoryCalls++;
+                Assert.That(enabled, Is.True);
+                return spyModule;
+            };
+
+            var configuration = UnityEngine.ScriptableObject.CreateInstance<MonitoringConfiguration>();
+            configuration.CrashReporterModule = new CrashReporterModuleConfiguration
+            {
+                Enabled = true,
+                AutoProjectSettingsSetup = true,
+                IOS = new CrashReporteriOSConfiguration
+                {
+                    Enabled = true
+                }
+            };
+
+            StabilityHubService.Initialize(_logger, configuration);
+
+            Assert.That(factoryCalls, Is.EqualTo(1));
+            Assert.That(_logger.DebugMessages, Is.EqualTo(new[] { "CrashReporterModule is enabled" }));
+
+            UnityEngine.Object.DestroyImmediate(configuration);
+        }
+
+        [Test]
         public void RetrieveAndLogPreviousSessionIssues_ForwardsLoggerToModule()
         {
             var spyModule = new SpyCrashReporterModule();

@@ -1,7 +1,7 @@
 namespace TheBestLogger.Core.Utilities
 {
     [System.Serializable]
-    internal class StackTraceFormatterConfiguration
+    public class StackTraceFormatterConfiguration
     {
         public bool Enabled = true;
         public bool NeedFileInfo = false;

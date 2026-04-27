@@ -117,6 +117,60 @@ Important constraint:
 
 The example entrypoint in `Runtime/Examples/GameLoggerEntryPoint.cs` shows one package-owned initialization path that wires logger targets and `StabilityHub`.
 
+If you do not want `Resources` paths at bootstrap time, use the direct configuration overloads instead:
+
+```csharp
+using System.Threading;
+using StabilityHub;
+using StabilityHub.Monitoring;
+using TheBestLogger;
+using TheBestLogger.Examples;
+using UnityEngine;
+
+var logTargets = new LogTarget[]
+{
+#if UNITY_EDITOR
+    new UnityEditorConsoleLogTarget(),
+#endif
+#if UNITY_IOS || UNITY_TVOS || UNITY_STANDALONE_OSX
+    new AppleSystemLogTarget(Application.identifier, "Unity")
+#endif
+};
+
+var appleConfigurationSo = ScriptableObject.CreateInstance<AppleSystemLogTargetConfigurationSO>();
+appleConfigurationSo.SpecificConfiguration = new AppleSystemLogTargetConfiguration
+{
+    MinLogLevel = LogLevel.Warning,
+    IsThreadSafe = true,
+    DebugMode = new DebugModeConfiguration(),
+    BatchLogs = new LogTargetBatchLogsConfiguration(),
+    DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+};
+
+var loggerConfiguration = LogManagerConfigurationPresets.CreateQa(appleConfigurationSo);
+loggerConfiguration.DefaultUnityLogsCategoryName = "Game";
+
+var disposingToken = CancellationToken.None;
+#if UNITY_2022_3_OR_NEWER
+disposingToken = Application.exitCancellationToken;
+#endif
+
+LogManager.Initialize(logTargets, loggerConfiguration, disposingToken, "qa-device");
+
+var stabilityConfiguration = MonitoringConfigurationPresets.CreateQa();
+StabilityHubService.Initialize(LogManager.CreateLogger("Stability"), stabilityConfiguration);
+```
+
+The demo sample scene under `DevAccelerationSystem.DemoProject/Assets/TheBestLoggerSample/Scenes/LoggerSampleScene.unity` now supports both resource-driven bootstrap and scripted preset-driven bootstrap through the `GameLoggerSample` component settings.
+
+At runtime the sample also generates a tabbed control screen with:
+
+- bootstrap switching between `ResourcesDev`, scripted production, and scripted QA flows
+- main-thread, background-thread, exception, and Unity console log emission actions
+- runtime target patching and debug-mode toggling
+- `StabilityHub` previous-session retrieval flow
+- a safe mock `OpenSearch` delivery path that captures payload previews without talking to a real backend
+
 ## Integration Notes
 
 - Keep target sets intentional instead of enabling every sink by default.

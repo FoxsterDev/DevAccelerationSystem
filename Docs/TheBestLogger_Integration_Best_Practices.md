@@ -78,6 +78,74 @@ Why this profile is safe:
 - category loggers are cached by `LogManager.CreateLogger(...)`
 - default stack-trace policy already favors `Error` and `Exception`
 
+### Scripted Integration Without Resources Paths
+
+Use this profile when you want the bootstrap to stay fully in code and avoid implicit `Resources.Load(...)` dependencies, while still using the package's real public configuration types.
+
+Typical bootstrap shape:
+
+```csharp
+using System.Threading;
+using StabilityHub;
+using StabilityHub.Monitoring;
+using TheBestLogger;
+using TheBestLogger.Examples;
+using UnityEngine;
+
+public static class LoggerBootstrap
+{
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
+    public static void Initialize()
+    {
+        var logTargets = new LogTarget[]
+        {
+#if UNITY_EDITOR
+            new UnityEditorConsoleLogTarget(),
+#endif
+#if UNITY_ANDROID
+            new AndroidSystemLogTarget(Application.identifier),
+#elif UNITY_IOS || UNITY_TVOS || UNITY_STANDALONE_OSX
+            new AppleSystemLogTarget(Application.identifier, "Unity"),
+#endif
+        };
+
+        var appleConfigurationSo = ScriptableObject.CreateInstance<AppleSystemLogTargetConfigurationSO>();
+        appleConfigurationSo.SpecificConfiguration = new AppleSystemLogTargetConfiguration
+        {
+            MinLogLevel = LogLevel.Warning,
+            IsThreadSafe = true,
+            DebugMode = new DebugModeConfiguration(),
+            BatchLogs = new LogTargetBatchLogsConfiguration(),
+            DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+        };
+
+        var configuration = LogManagerConfigurationPresets.CreateProduction(appleConfigurationSo);
+#if UNITY_ANDROID
+        configuration.DebugUnityLoggerFilterLogType = LogType.Warning;
+#elif UNITY_IOS || UNITY_TVOS || UNITY_STANDALONE_OSX
+        appleConfigurationSo.SpecificConfiguration.MinLogLevel = LogLevel.Error;
+#endif
+
+        var disposingToken = CancellationToken.None;
+#if UNITY_2022_3_OR_NEWER
+        disposingToken = Application.exitCancellationToken;
+#endif
+
+        LogManager.Initialize(logTargets, configuration, disposingToken);
+        StabilityHubService.Initialize(LogManager.CreateLogger("Stability"), MonitoringConfigurationPresets.CreateProduction());
+    }
+}
+```
+
+Why this profile is useful:
+
+- you can start from `Production` or `Qa` presets
+- you can apply point overrides directly on the real config objects before initialization
+- bootstrap does not depend on `Resources` folder layout
+- the old `ScriptableObject` path still remains available for asset-driven projects
+
+If you want a consumer-facing reference implementation, the demo scene in `DevAccelerationSystem.DemoProject/Assets/TheBestLoggerSample/Scenes/LoggerSampleScene.unity` now exposes this profile through a runtime tabbed UI. It lets you switch bootstrap modes, emit representative logs, patch target configs live, exercise `StabilityHub`, and inspect a safe mock `OpenSearch` flow without wiring a real remote endpoint.
+
 ### Pro Integration
 
 Use this profile when the project already has:

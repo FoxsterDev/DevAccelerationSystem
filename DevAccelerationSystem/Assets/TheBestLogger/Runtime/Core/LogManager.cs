@@ -109,6 +109,11 @@ namespace TheBestLogger
         {
             var logTargetConfigurationsData = new Dictionary<string, LogTargetConfiguration>();
 
+            if (logTargetConfigurationsSo == null)
+            {
+                return logTargetConfigurationsData;
+            }
+
             foreach (var logTargetConfigSo in logTargetConfigurationsSo)
             {
                 if (logTargetConfigSo != null)
@@ -116,8 +121,10 @@ namespace TheBestLogger
                     var key = logTargetConfigSo.Configuration.GetType().Name;
 
 #if LOGGER_NOT_UNITY_EDITOR
-                    NormalizeConfigurationForRuntime(logTargetConfigSo.Configuration);
-                    logTargetConfigurationsData[key] = logTargetConfigSo.Configuration;
+                    var sourceConfiguration = logTargetConfigSo.Configuration;
+                    var runtimeConfiguration = CloneConfiguration(sourceConfiguration) ?? sourceConfiguration;
+                    NormalizeConfigurationForRuntime(runtimeConfiguration);
+                    logTargetConfigurationsData[key] = runtimeConfiguration;
 #else
                     var config = logTargetConfigSo.Configuration;
                     var logTargetConfigurationNew = DeepCopyInUnityEditor(config);

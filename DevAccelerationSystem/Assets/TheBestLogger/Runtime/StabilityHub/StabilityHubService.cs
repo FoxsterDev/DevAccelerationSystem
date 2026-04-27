@@ -34,14 +34,17 @@ namespace StabilityHub
         /// <param name="logger"></param>
         public static void Initialize(TheBestLogger.ILogger logger)
         {
+            Initialize(logger, MonitoringConfig);
+        }
+
+        public static void Initialize(TheBestLogger.ILogger logger, MonitoringConfiguration configuration)
+        {
             _logger = logger;
-            var monitoringConfig = MonitoringConfig;
-            var crashReporterModuleEnabled = monitoringConfig != null && monitoringConfig.IsIOSCrashReporterModuleEnabled;
+            var crashReporterModuleEnabled = configuration != null && configuration.IsIOSCrashReporterModuleEnabled;
 
             if (crashReporterModuleEnabled)
             {
                 _logger.LogDebug("CrashReporterModule is enabled");
-                //threadsafe
                 _crashReporterModule = CrashReporterModuleFactory?.Invoke(crashReporterModuleEnabled);
             }
             else

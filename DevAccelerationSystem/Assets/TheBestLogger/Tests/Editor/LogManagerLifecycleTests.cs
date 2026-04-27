@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using NUnit.Framework;
 using TheBestLogger.Core.Utilities;
+using TheBestLogger.Examples;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -121,6 +122,67 @@ namespace TheBestLogger.Tests.Editor
 
             Assert.That(logger1, Is.TypeOf<CoreLogger>());
             Assert.That(logger2, Is.SameAs(logger1));
+        }
+
+        [Test]
+        public void Initialize_WithExplicitConfiguration_AppliesProvidedTargetConfiguration()
+        {
+            var trackingConfigSo = ScriptableObject.CreateInstance<TrackingLogTargetConfigurationSO>();
+            trackingConfigSo.SpecificConfiguration = new TrackingLogTargetConfiguration
+            {
+                MinLogLevel = LogLevel.Error,
+                IsThreadSafe = true,
+                DebugMode = new DebugModeConfiguration(),
+                BatchLogs = new LogTargetBatchLogsConfiguration(),
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            };
+
+            var unityEditorConfigSo = ScriptableObject.CreateInstance<UnityEditorConsoleLogTargetConfigurationSO>();
+            unityEditorConfigSo.SpecificConfiguration = CreateDefaultUnityEditorConsoleTargetConfiguration();
+
+            var configuration = ScriptableObject.CreateInstance<LogManagerConfiguration>();
+            configuration.DefaultUnityLogsCategoryName = "RuntimeDefaultCategory";
+            configuration.MessageMaxLength = 512;
+            configuration.MinTimestampPeriodMs = 0;
+            configuration.MinUpdatesPeriodMs = 1000;
+            configuration.StackTraceFormatterConfiguration = new StackTraceFormatterConfiguration();
+            configuration.UniTaskConfiguration = new UniTaskConfiguration();
+            configuration.SetLogTargetConfigs(trackingConfigSo, unityEditorConfigSo);
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget }, configuration, CancellationToken.None, "debug-user");
+
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Error));
+            Assert.That(LogManager.GetCurrentLogTargetConfigurations(), Contains.Key(nameof(TrackingLogTargetConfiguration)));
+            Assert.That(LogManager.GetCurrentLogTargetConfigurations(), Contains.Key(nameof(UnityEditorConsoleLogTargetConfiguration)));
+
+            UnityEngine.Object.DestroyImmediate(trackingConfigSo);
+            UnityEngine.Object.DestroyImmediate(unityEditorConfigSo);
+            UnityEngine.Object.DestroyImmediate(configuration);
+        }
+
+        [Test]
+        public void LogManagerConfigurationPresets_QaPreset_AllowsPointOverrideBeforeInitialize()
+        {
+            var trackingConfigSo = ScriptableObject.CreateInstance<TrackingLogTargetConfigurationSO>();
+            trackingConfigSo.SpecificConfiguration = new TrackingLogTargetConfiguration
+            {
+                MinLogLevel = LogLevel.Debug,
+                IsThreadSafe = true,
+                DebugMode = new DebugModeConfiguration(),
+                BatchLogs = new LogTargetBatchLogsConfiguration(),
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            };
+
+            var configuration = LogManagerConfigurationPresets.CreateQa(trackingConfigSo);
+            trackingConfigSo.SpecificConfiguration.MinLogLevel = LogLevel.Exception;
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget }, configuration, CancellationToken.None, "debug-user");
+
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Exception));
+            Assert.That(configuration.LogTargetConfigs.Length, Is.EqualTo(1));
+
+            UnityEngine.Object.DestroyImmediate(trackingConfigSo);
+            UnityEngine.Object.DestroyImmediate(configuration);
         }
 
         [Test]
@@ -883,7 +945,7 @@ namespace TheBestLogger.Tests.Editor
         public void Initialize_WithMissingConfigurationPath_LeavesManagerUninitialized()
         {
             LogAssert.Expect(LogType.Error,
-                             new Regex(@"\[FallbackLogger\] During LogManager initialization happened exception Object reference not set to an instance of an object:",
+                             new Regex(@"\[FallbackLogger\] During LogManager initialization happened exception .*configuration.*",
                                        RegexOptions.Singleline));
             LogManager.Initialize(new LogTarget[] { _trackingTarget }, "MissingLogManagerConfigPath/", CancellationToken.None, "debug-user");
 

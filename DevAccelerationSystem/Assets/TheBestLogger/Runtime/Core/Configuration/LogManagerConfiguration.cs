@@ -16,7 +16,7 @@ namespace TheBestLogger
     [CreateAssetMenu(
         fileName = nameof(LogManagerConfiguration),
         menuName = "ScriptableObjects/Logger/LogManagerConfiguration", order = 1)]
-    internal sealed class LogManagerConfiguration : ScriptableObject
+    public sealed class LogManagerConfiguration : ScriptableObject
     {
         [Tooltip("Set it to Debug.unityLogger.filterLogType")]
         public LogType DebugUnityLoggerFilterLogType = LogType.Log;
@@ -247,5 +247,48 @@ namespace TheBestLogger
 
         public LogTargetConfigurationCacheSettings EffectiveRemoteOverrideStartupCacheSettings =>
             RemoteOverrideStartupCache ?? new LogTargetConfigurationCacheSettings();
+
+        public void SetLogTargetConfigs(params LogTargetConfigurationSO[] logTargetConfigs)
+        {
+            LogTargetConfigs = logTargetConfigs ?? new LogTargetConfigurationSO[0];
+        }
+
+        public void SetUnityEditorLogSources(bool unityDebug,
+                                             bool applicationLogMessageReceived,
+                                             bool applicationLogMessageReceivedThreaded,
+                                             bool unobservedSystemTaskException,
+                                             bool unobservedUniTaskException,
+                                             bool systemDiagnosticsDebug,
+                                             bool systemDiagnosticsConsole,
+                                             bool currentDomainUnhandledException)
+        {
+            _unityDebugLogSourceForUnityEditor = unityDebug;
+            _unityApplicationLogMessageReceivedSourceForUnityEditor = applicationLogMessageReceived;
+            _unityApplicationLogMessageReceivedThreadedSourceForUnityEditor = applicationLogMessageReceivedThreaded;
+            _unobservedSystemTaskExceptionLogSourceForUnityEditor = unobservedSystemTaskException;
+            _unobservedUniTaskExceptionLogSourceForUnityEditor = unobservedUniTaskException;
+            _systemDiagnosticsDebugLogSourceForUnityEditor = systemDiagnosticsDebug;
+            _systemDiagnosticsConsoleLogSourceForUnityEditor = systemDiagnosticsConsole;
+            _currentDomainUnhandledExceptionLogSourceForUnityEditor = currentDomainUnhandledException;
+        }
+
+        public void SetBuildRuntimeLogSources(bool unityDebug,
+                                              bool applicationLogMessageReceived,
+                                              bool applicationLogMessageReceivedThreaded,
+                                              bool unobservedSystemTaskException,
+                                              bool unobservedUniTaskException,
+                                              bool systemDiagnosticsDebug,
+                                              bool systemDiagnosticsConsole,
+                                              bool currentDomainUnhandledException)
+        {
+            _unityDebugLogSourceForBuildRuntime = unityDebug;
+            _unityApplicationLogMessageReceivedSourceForBuildRuntime = applicationLogMessageReceived;
+            _unityApplicationLogMessageReceivedThreadedSourceForBuildRuntime = applicationLogMessageReceivedThreaded;
+            _unobservedSystemTaskExceptionLogSourceForBuildRuntime = unobservedSystemTaskException;
+            _unobservedUniTaskExceptionLogSourceForBuildRuntime = unobservedUniTaskException;
+            _systemDiagnosticsDebugLogSourceForBuildRuntime = systemDiagnosticsDebug;
+            _systemDiagnosticsConsoleLogSourceForBuildRuntime = systemDiagnosticsConsole;
+            _currentDomainUnhandledExceptionLogSourceForBuildRuntime = currentDomainUnhandledException;
+        }
     }
 }

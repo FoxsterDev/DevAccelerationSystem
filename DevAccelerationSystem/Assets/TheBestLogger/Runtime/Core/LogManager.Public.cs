@@ -28,6 +28,19 @@ namespace TheBestLogger
                                       string resourceSubFolderThatContainsConfigs,
                                       CancellationToken disposingToken, string debugId = "")
         {
+            var configuration = Resources.Load<LogManagerConfiguration>(
+                resourceSubFolderThatContainsConfigs + nameof(LogManagerConfiguration));
+            Initialize(logTargets, configuration, disposingToken, debugId);
+        }
+
+        /// <summary>
+        /// Initializes the LogManager with explicit configuration without relying on Resources paths.
+        /// Should be called from the Unity main thread.
+        /// </summary>
+        public static void Initialize(IReadOnlyList<LogTarget> logTargets,
+                                      LogManagerConfiguration configuration,
+                                      CancellationToken disposingToken, string debugId = "")
+        {
             if (_isInitialized)
             {
                 Diagnostics.Write("LogManager is already initialized! Wrong behaviour usage detected", LogLevel.Warning);
@@ -51,7 +64,10 @@ namespace TheBestLogger
                 _originalLogTargets = logTargets;
                 _loggers = new ConcurrentDictionary<string, ILogger>(4, 25);
 
-                var configuration = Resources.Load<LogManagerConfiguration>(resourceSubFolderThatContainsConfigs + nameof(LogManagerConfiguration));
+                if (configuration == null)
+                {
+                    throw new ArgumentNullException(nameof(configuration));
+                }
 
                 _configuration = configuration;
 
@@ -60,7 +76,7 @@ namespace TheBestLogger
 
                 _minUpdatesPeriodMs = _configuration.MinUpdatesPeriodMs;
 
-                var dict = ConvertToDictionaryWithKeyNameAndValueConfigSpecificData(configuration.LogTargetConfigs);
+                var dict = ConvertToDictionaryWithKeyNameAndValueConfigSpecificData(_configuration.LogTargetConfigs);
                 TryOverlayCachedConfigurationsIfSupported(dict);
                 TryApplyConfigurations(dict, logTargets);
 
@@ -69,51 +85,51 @@ namespace TheBestLogger
 
                 _targetUpdates = TrySubscribeForUpdates(_decoratedLogTargets);
 
-                UnityEngine.Debug.unityLogger.filterLogType = configuration.DebugUnityLoggerFilterLogType;
+                UnityEngine.Debug.unityLogger.filterLogType = _configuration.DebugUnityLoggerFilterLogType;
 
 #if LOGGER_NOT_UNITY_EDITOR
                 SetApplicationLogTypesStackTrace(_configuration);
 #endif
                 _isInitialized = true;
-                var logger = CreateLogger(configuration.DefaultUnityLogsCategoryName);
+                var logger = CreateLogger(_configuration.DefaultUnityLogsCategoryName);
 
                 var logSources = new List<ILogSource>(4) { };
   
-                if (configuration.UnityDebugLogSourceEnabled)
+                if (_configuration.UnityDebugLogSourceEnabled)
                 {
                     logSources.Add(new UnityDebugLogSource(logger as ILogConsumer));
                 }
 
-                if (configuration.UnityApplicationLogMessageReceivedThreadedSourceEnabled)
+                if (_configuration.UnityApplicationLogMessageReceivedThreadedSourceEnabled)
                 {
                     logSources.Add(new UnityApplicationLogSourceThreaded(logger as ILogConsumer));
                 }
-                else if (configuration.UnityApplicationLogMessageReceivedSourceEnabled)
+                else if (_configuration.UnityApplicationLogMessageReceivedSourceEnabled)
                 {
                     logSources.Add(new UnityApplicationLogSource(logger as ILogConsumer));
                 }
 
-                if (configuration.UnobservedSystemTaskExceptionLogSourceEnabled)
+                if (_configuration.UnobservedSystemTaskExceptionLogSourceEnabled)
                 {
                     logSources.Add(new UnobservedTaskExceptionLogSource(logger as ILogConsumer));
                 }
 
-                if (configuration.UnobservedUniTaskExceptionLogSourceEnabled)
+                if (_configuration.UnobservedUniTaskExceptionLogSourceEnabled)
                 {
-                    logSources.Add(new UnobservedUniTaskExceptionLogSource(logger as ILogConsumer, configuration.UniTaskConfiguration));
+                    logSources.Add(new UnobservedUniTaskExceptionLogSource(logger as ILogConsumer, _configuration.UniTaskConfiguration));
                 }
 
-                if (configuration.CurrentDomainUnhandledExceptionLogSourceEnabled)
+                if (_configuration.CurrentDomainUnhandledExceptionLogSourceEnabled)
                 {
                     logSources.Add(new CurrentDomainUnhandledExceptionLogSource(logger as ILogConsumer));
                 }
 
-                if (configuration.SystemDiagnosticsDebugLogSourceEnabled)
+                if (_configuration.SystemDiagnosticsDebugLogSourceEnabled)
                 {
                     logSources.Add(new SystemDiagnosticsDebugLogSource(logger as ILogConsumer));
                 }
 
-                if (configuration.SystemDiagnosticsConsoleLogSourceEnabled)
+                if (_configuration.SystemDiagnosticsConsoleLogSourceEnabled)
                 {
                     logSources.Add(new SystemDiagnosticsConsoleLogSource(logger as ILogConsumer));
                 }

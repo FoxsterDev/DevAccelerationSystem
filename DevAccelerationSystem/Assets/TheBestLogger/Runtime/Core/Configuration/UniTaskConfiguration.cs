@@ -3,7 +3,7 @@ using UnityEngine;
 namespace TheBestLogger
 {
     [System.Serializable]
-    internal class UniTaskConfiguration
+    public class UniTaskConfiguration
     {
         [Tooltip("Propagate OperationCanceledException to UnobservedTaskException when true. Default is false.")]
         public bool PropagateOperationCanceledException = false;

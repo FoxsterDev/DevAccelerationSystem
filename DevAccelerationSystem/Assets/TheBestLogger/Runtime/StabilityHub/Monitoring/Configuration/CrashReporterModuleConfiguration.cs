@@ -4,7 +4,7 @@ using UnityEngine.Serialization;
 namespace StabilityHub.Monitoring
 {
     [System.Serializable]
-    internal struct CrashReporterModuleConfiguration
+    public struct CrashReporterModuleConfiguration
     {
         [Tooltip("The full disable or enable the crashreporter module")]
         public bool Enabled;
