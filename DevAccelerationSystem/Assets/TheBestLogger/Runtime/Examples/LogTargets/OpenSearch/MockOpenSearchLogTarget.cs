@@ -21,17 +21,20 @@ namespace TheBestLogger.Examples.LogTargets
         private static string _lastPayload = "No mock payload captured yet.";
 
         private readonly string _deviceModel;
+        private readonly Func<OpenSearchLogDTO> _dtoFactory;
         private readonly string _gameVersion;
         private readonly string _os;
         private readonly string _platform;
         private readonly string _uuid;
 
         private string _apiKeyHint = "none";
+        private string _bulkHeaderLine = "{ \"index\" : { \"_index\" : \"thebestlogger-sample-preview\" } }";
         private string _indexName = "thebestlogger-sample-preview";
         private string _openSearchUrl = "mock://sample-opensearch/logs";
 
-        public MockOpenSearchLogTarget()
+        public MockOpenSearchLogTarget(Func<OpenSearchLogDTO> dtoFactory = null)
         {
+            _dtoFactory = dtoFactory;
             _gameVersion = Application.version;
             _uuid = SystemInfo.deviceUniqueIdentifier;
             _deviceModel = SystemInfo.deviceModel;
@@ -62,6 +65,7 @@ namespace TheBestLogger.Examples.LogTargets
 
             var formattedDate = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             _indexName = string.Concat(config.IndexPrefix, formattedDate);
+            _bulkHeaderLine = string.Concat("{ \"index\" : { \"_index\" : \"", _indexName, "\" } }");
             _openSearchUrl = string.Concat(config.OpenSearchHostUrl, config.OpenSearchSingleLogMethod);
             _apiKeyHint = BuildApiKeyHint(config.ApiKey);
 
@@ -75,20 +79,29 @@ namespace TheBestLogger.Examples.LogTargets
 
         public override void LogBatch(IReadOnlyList<LogEntry> logBatch)
         {
-            using var sb = StringOperations.CreateStringBuilder();
-            foreach (var log in logBatch)
+            var sb = new OpenSearchPayloadBuilder(notNested: true);
+            try
             {
-                sb.AppendLine($"{{ \"index\" : {{ \"_index\" : \"{_indexName}\" }} }}");
-                sb.AppendLine(BuildJson(log.Level,
-                                        log.Category,
-                                        log.Message,
-                                        log.Attributes?.StackTrace,
-                                        log.Attributes?.TimeStampFormatted,
-                                        log.Attributes?.Props.ToSimpleNotEscapedJson(),
-                                        log.Attributes?.Tags));
-            }
+                foreach (var log in logBatch)
+                {
+                    WriteBulkHeader(ref sb);
+                    WriteJson(ref sb,
+                              LogLevelToString(log.Level),
+                              log.Category,
+                              log.Message,
+                              log.Attributes?.StackTrace,
+                              ResolveSerializedTimestamp(log.Attributes),
+                              log.Attributes?.Props.ToSimpleNotEscapedJson(),
+                              log.Attributes?.Tags);
+                    sb.AppendLine();
+                }
 
-            CapturePayload(sb.ToString());
+                CapturePayload(sb.ToString());
+            }
+            finally
+            {
+                sb.Dispose();
+            }
         }
 
         public override void Log(LogLevel level,
@@ -97,17 +110,26 @@ namespace TheBestLogger.Examples.LogTargets
                                  LogAttributes logAttributes,
                                  Exception exception = null)
         {
-            using var sb = StringOperations.CreateStringBuilder();
-            sb.AppendLine($"{{ \"index\" : {{ \"_index\" : \"{_indexName}\" }} }}");
-            sb.AppendLine(BuildJson(level,
-                                    category,
-                                    message,
-                                    logAttributes?.StackTrace,
-                                    logAttributes?.TimeStampFormatted,
-                                    logAttributes?.Props.ToSimpleNotEscapedJson(),
-                                    logAttributes?.Tags));
+            var json = BuildLegacyJson(LogLevelToString(level),
+                                       category,
+                                       message,
+                                       logAttributes?.StackTrace,
+                                       ResolveSerializedTimestamp(logAttributes),
+                                       logAttributes?.Props.ToSimpleNotEscapedJson(),
+                                       logAttributes?.Tags);
+            var sb = new OpenSearchPayloadBuilder(notNested: true);
+            try
+            {
+                WriteBulkHeader(ref sb);
+                sb.Append(json);
+                sb.AppendLine();
 
-            CapturePayload(sb.ToString());
+                CapturePayload(sb.ToString());
+            }
+            finally
+            {
+                sb.Dispose();
+            }
         }
 
         public static void ClearCapturedPayloads()
@@ -179,32 +201,95 @@ namespace TheBestLogger.Examples.LogTargets
             Diagnostics.Write($"MockOpenSearchLogTarget captured payload #{CapturedPayloadCount}");
         }
 
-        private string BuildJson(LogLevel level,
-                                 string category,
-                                 string message,
-                                 string stackTrace,
-                                 string timestamp,
-                                 string attributes,
-                                 string[] tags)
+        private static string ResolveSerializedTimestamp(LogAttributes logAttributes)
         {
-            var dto = new OpenSearchLogDTO
+            if (logAttributes == null)
             {
-                GameVersion = _gameVersion,
-                UUID = _uuid,
-                DeviceModel = _deviceModel,
-                OS = _os,
-                Platform = _platform,
-                LogLevel = LogLevelToString(level),
-                Category = category,
-                Message = message,
-                Stacktrace = stackTrace,
-                TimeUTC = timestamp,
-                Attributes = attributes,
-                DebugMode = DebugModeEnabled,
-                Tags = tags
-            };
+                return string.Empty;
+            }
 
+            if (logAttributes.TimeUtc != default)
+            {
+                return OpenSearchTimestampFormatter.FormatUtc(logAttributes.TimeUtc);
+            }
+
+            if (!string.IsNullOrEmpty(logAttributes.TimeStampFormatted))
+            {
+                return logAttributes.TimeStampFormatted;
+            }
+
+            return string.Empty;
+        }
+
+        private void WriteJson(ref OpenSearchPayloadBuilder sb,
+                               string logLevel,
+                               string category,
+                               string message,
+                               string stackTrace,
+                               string timestamp,
+                               string attributes,
+                               string[] tags)
+        {
+            var dto = _dtoFactory != null
+                          ? _dtoFactory.Invoke()
+                          : new DefaultOpenSearchBatchCompatibleLogDTO();
+            dto.GameVersion = _gameVersion;
+            dto.UUID = _uuid;
+            dto.DeviceModel = _deviceModel;
+            dto.OS = _os;
+            dto.Platform = _platform;
+            dto.LogLevel = logLevel;
+            dto.Category = category;
+            dto.Message = message;
+            dto.Stacktrace = stackTrace;
+            dto.TimeUTC = timestamp;
+            dto.Attributes = attributes;
+            dto.DebugMode = DebugModeEnabled;
+            dto.Tags = tags;
+
+            dto.PrepareForJsonSerialization();
+            if (SupportsManualBatchSerialization(dto))
+            {
+                ((IOpenSearchBatchJsonSerializable)dto).WriteJson(ref sb);
+            }
+            else
+            {
+                sb.Append(JsonUtility.ToJson(dto));
+            }
+        }
+
+        private string BuildLegacyJson(string logLevel,
+                                       string category,
+                                       string message,
+                                       string stackTrace,
+                                       string timestamp,
+                                       string attributes,
+                                       string[] tags)
+        {
+            var dto = _dtoFactory != null
+                          ? _dtoFactory.Invoke()
+                          : new DefaultOpenSearchBatchCompatibleLogDTO();
+            dto.GameVersion = _gameVersion;
+            dto.UUID = _uuid;
+            dto.DeviceModel = _deviceModel;
+            dto.OS = _os;
+            dto.Platform = _platform;
+            dto.LogLevel = logLevel;
+            dto.Category = category;
+            dto.Message = message;
+            dto.Stacktrace = stackTrace;
+            dto.TimeUTC = timestamp;
+            dto.Attributes = attributes;
+            dto.DebugMode = DebugModeEnabled;
+            dto.Tags = tags;
+            dto.PrepareForJsonSerialization();
             return JsonUtility.ToJson(dto);
+        }
+
+        private void WriteBulkHeader(ref OpenSearchPayloadBuilder sb)
+        {
+            sb.Append(_bulkHeaderLine);
+            sb.AppendLine();
         }
 
         private static string BuildApiKeyHint(string apiKey)
@@ -233,6 +318,11 @@ namespace TheBestLogger.Examples.LogTargets
                 LogLevel.Error => "Error",
                 _ => "Error"
             };
+        }
+
+        private static bool SupportsManualBatchSerialization(OpenSearchLogDTO dto)
+        {
+            return dto is IOpenSearchBatchJsonSerializable;
         }
     }
 }

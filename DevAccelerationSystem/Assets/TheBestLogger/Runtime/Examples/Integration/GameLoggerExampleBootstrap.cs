@@ -18,6 +18,7 @@ namespace TheBestLogger.Examples
     public static class GameLoggerExampleBootstrap
     {
         public const string DefaultDebugId = "sample-device";
+        private const string LocalOpenSearchConfigurationResourcePath = "GameLogger/Dev/OpenSearchLogTargetConfiguration.Local";
 
         public static void Initialize(GameLoggerExampleBootstrapMode bootstrapMode,
                                       bool useRuntimeConsoleTarget,
@@ -84,6 +85,10 @@ namespace TheBestLogger.Examples
             {
                 logTargets.Add(new MockOpenSearchLogTarget());
             }
+            else if (LoadLocalOpenSearchConfiguration() != null)
+            {
+                logTargets.Add(new OpenSearchLogTarget());
+            }
 
             return logTargets;
         }
@@ -113,7 +118,7 @@ namespace TheBestLogger.Examples
                 CreateUnityEditorConsoleLogTargetConfiguration(),
 #endif
                 CreateImguiRuntimeLogTargetConfiguration(logTargets),
-                CreateOpenSearchMockLogTargetConfiguration(logTargets));
+                CreateOpenSearchOverrideLogTargetConfiguration(logTargets));
             configuration.DefaultUnityLogsCategoryName = "Sample";
 
             LogManager.Initialize(logTargets.AsReadOnly(), configuration, cancelToken, DefaultDebugId);
@@ -125,10 +130,10 @@ namespace TheBestLogger.Examples
         private static void AppendOptionalLogTargetConfigs(LogManagerConfiguration configuration, IReadOnlyList<LogTarget> logTargets)
         {
             var optionalConfigs = new List<LogTargetConfigurationSO>(2);
-            var openSearchMockConfig = CreateOpenSearchMockLogTargetConfiguration(logTargets);
-            if (openSearchMockConfig != null)
+            var openSearchOverrideConfig = CreateOpenSearchOverrideLogTargetConfiguration(logTargets);
+            if (openSearchOverrideConfig != null)
             {
-                optionalConfigs.Add(openSearchMockConfig);
+                optionalConfigs.Add(openSearchOverrideConfig);
             }
 
             if (optionalConfigs.Count == 0)
@@ -136,40 +141,35 @@ namespace TheBestLogger.Examples
                 return;
             }
 
-            var existingConfigs = configuration.LogTargetConfigs ?? Array.Empty<LogTargetConfigurationSO>();
-            var existingNames = new HashSet<string>();
-            for (var index = 0; index < existingConfigs.Length; index++)
-            {
-                if (existingConfigs[index]?.Configuration != null)
-                {
-                    existingNames.Add(existingConfigs[index].Configuration.GetType().Name);
-                }
-            }
-
-            var missingConfigs = new List<LogTargetConfigurationSO>(optionalConfigs.Count);
+            var mergedConfigs = new List<LogTargetConfigurationSO>(configuration.LogTargetConfigs ?? Array.Empty<LogTargetConfigurationSO>());
             for (var index = 0; index < optionalConfigs.Count; index++)
             {
                 var optionalConfig = optionalConfigs[index];
                 var configurationName = optionalConfig?.Configuration?.GetType().Name;
-                if (!string.IsNullOrEmpty(configurationName) && !existingNames.Contains(configurationName))
+                if (string.IsNullOrEmpty(configurationName))
                 {
-                    missingConfigs.Add(optionalConfig);
+                    continue;
+                }
+
+                var replaced = false;
+                for (var existingIndex = 0; existingIndex < mergedConfigs.Count; existingIndex++)
+                {
+                    var existingName = mergedConfigs[existingIndex]?.Configuration?.GetType().Name;
+                    if (existingName == configurationName)
+                    {
+                        mergedConfigs[existingIndex] = optionalConfig;
+                        replaced = true;
+                        break;
+                    }
+                }
+
+                if (!replaced)
+                {
+                    mergedConfigs.Add(optionalConfig);
                 }
             }
 
-            if (missingConfigs.Count == 0)
-            {
-                return;
-            }
-
-            var combinedConfigs = new LogTargetConfigurationSO[existingConfigs.Length + missingConfigs.Count];
-            Array.Copy(existingConfigs, combinedConfigs, existingConfigs.Length);
-            for (var index = 0; index < missingConfigs.Count; index++)
-            {
-                combinedConfigs[existingConfigs.Length + index] = missingConfigs[index];
-            }
-
-            configuration.SetLogTargetConfigs(combinedConfigs);
+            configuration.SetLogTargetConfigs(mergedConfigs.ToArray());
         }
 
         private static LogTargetConfigurationSO CreatePlatformLogTargetConfiguration()
@@ -239,7 +239,7 @@ namespace TheBestLogger.Examples
             return null;
         }
 
-        private static LogTargetConfigurationSO CreateOpenSearchMockLogTargetConfiguration(IReadOnlyList<LogTarget> logTargets)
+        private static LogTargetConfigurationSO CreateOpenSearchOverrideLogTargetConfiguration(IReadOnlyList<LogTarget> logTargets)
         {
             foreach (var logTarget in logTargets)
             {
@@ -260,9 +260,23 @@ namespace TheBestLogger.Examples
                     };
                     return configurationSo;
                 }
+
+                if (logTarget is OpenSearchLogTarget)
+                {
+                    var localConfiguration = LoadLocalOpenSearchConfiguration();
+                    if (localConfiguration != null)
+                    {
+                        return ScriptableObject.Instantiate(localConfiguration);
+                    }
+                }
             }
 
             return null;
+        }
+
+        private static OpenSearchLogTargetConfigurationSO LoadLocalOpenSearchConfiguration()
+        {
+            return Resources.Load<OpenSearchLogTargetConfigurationSO>(LocalOpenSearchConfigurationResourcePath);
         }
     }
 }

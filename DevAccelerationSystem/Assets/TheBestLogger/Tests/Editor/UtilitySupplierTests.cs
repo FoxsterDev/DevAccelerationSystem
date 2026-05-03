@@ -40,14 +40,15 @@ namespace TheBestLogger.Tests.Editor
         public void GetTimeStamp_MultipleCallsWithinMinPeriod_ReturnsCachedTimestamp()
         {
             // Arrange
-            var (_, firstTimeStamp) = _utilitySupplier.GetTimeStamp();
+            var first = _utilitySupplier.GetTimeStamp();
             Thread.Sleep(5);
 
             // Act
-            var (_, secondTimeStamp) = _utilitySupplier.GetTimeStamp();
+            var second = _utilitySupplier.GetTimeStamp();
 
             // Assert
-            Assert.AreEqual(firstTimeStamp, secondTimeStamp);
+            Assert.AreEqual(first.timeStampFormatted, second.timeStampFormatted);
+            Assert.That(second.currentTimeUtc, Is.GreaterThan(first.currentTimeUtc));
         }
 
         [Test]

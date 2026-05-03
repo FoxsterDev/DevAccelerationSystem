@@ -11,6 +11,8 @@ namespace TheBestLogger.Examples.LogTargets
 {
     public class OpenSearchLogTarget : LogTarget
     {
+        private static readonly UTF8Encoding Utf8NoBom = new(false);
+
         private readonly string _deviceModel;
 
         private readonly Func<OpenSearchLogDTO> _dtoFactory;
@@ -20,6 +22,7 @@ namespace TheBestLogger.Examples.LogTargets
         private readonly string _platform;
         private readonly string _uuid;
         private string _apiKey;
+        private string _bulkHeaderLine;
         private string _indexName;
         private string _openSearchUrl;
 
@@ -45,6 +48,7 @@ namespace TheBestLogger.Examples.LogTargets
                 var utcNow = DateTime.UtcNow;
                 var formattedDate = utcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
                 _indexName = StringOperations.Concat(config.IndexPrefix, formattedDate);
+                _bulkHeaderLine = StringOperations.Concat("{ \"index\" : { \"_index\" : \"", _indexName, "\" } }");
 
                 _openSearchUrl =
                     StringOperations.Concat(config.OpenSearchHostUrl, config.OpenSearchSingleLogMethod);
@@ -54,31 +58,29 @@ namespace TheBestLogger.Examples.LogTargets
         public override void LogBatch(
             IReadOnlyList<LogEntry> logBatch)
         {
-            var send = "";
-            var sb = StringOperations.CreateStringBuilder();
+            var sb = new OpenSearchPayloadBuilder(notNested: true);
             try
             {
                 foreach (var log in logBatch)
                 {
-                    var logLevel = LogLevelToString(log.Level);
-                    var logDataJson = LogDataToJson(
-                        logLevel, log.Category, log.Message, log.Attributes.StackTrace,
-                        log.Attributes.TimeStampFormatted,
-                        log.Attributes.Props.ToSimpleNotEscapedJson(), log.Attributes.Tags);
-
-                    sb.AppendLine(StringOperations.Format("{{ \"index\" : {{ \"_index\" : \"{0}\" }} }}", _indexName));
-                    sb.AppendLine(logDataJson);
+                    WriteBulkHeader(ref sb);
+                    WriteLogDataJson(ref sb,
+                                     LogLevelToString(log.Level),
+                                     log.Category,
+                                     log.Message,
+                                     log.Attributes?.StackTrace,
+                                     ResolveSerializedTimestamp(log.Attributes),
+                                     log.Attributes?.Props.ToSimpleNotEscapedJson(),
+                                     log.Attributes?.Tags);
+                    sb.AppendLine();
                 }
 
-                send = sb.ToString();
+                PostLog(_openSearchUrl, sb.ToUtf8Bytes());
             }
             finally
             {
-                // when use with `ref`, can not use `using`.
                 sb.Dispose();
             }
-
-            PostLog(_openSearchUrl, send);
         }
 
         public override void Log(LogLevel level,
@@ -87,21 +89,29 @@ namespace TheBestLogger.Examples.LogTargets
                                  LogAttributes logAttributes,
                                  Exception exception = null)
         {
-            var logLevel = LogLevelToString(level);
-            var json = LogDataToJson(
-                logLevel, category, message, logAttributes.StackTrace,
-                logAttributes.TimeStampFormatted,
-                logAttributes.Props.ToSimpleNotEscapedJson(), logAttributes.Tags);
-            var send = "";
-            using (var sb = StringOperations.CreateStringBuilder())
+            var dto = CreateDto(LogLevelToString(level),
+                                category,
+                                message,
+                                logAttributes?.StackTrace,
+                                ResolveSerializedTimestamp(logAttributes),
+                                logAttributes?.Props.ToSimpleNotEscapedJson(),
+                                logAttributes?.Tags);
+            dto.PrepareForJsonSerialization();
+
+            var json = JsonUtility.ToJson(dto);
+            var sb = new OpenSearchPayloadBuilder(notNested: true);
+            try
             {
-                sb.AppendLine(StringOperations.Format("{{ \"index\" : {{ \"_index\" : \"{0}\" }} }}", _indexName));
-                sb.AppendLine(json);
+                WriteBulkHeader(ref sb);
+                sb.Append(json);
+                sb.AppendLine();
 
-                send = sb.ToString();
+                PostLog(_openSearchUrl, sb.ToUtf8Bytes());
             }
-
-            PostLog(_openSearchUrl, send);
+            finally
+            {
+                sb.Dispose();
+            }
         }
 
         private OpenSearchLogDTO CreateDto(string logLevel,
@@ -114,7 +124,7 @@ namespace TheBestLogger.Examples.LogTargets
         {
             var dto = _dtoFactory != null
                           ? _dtoFactory.Invoke()
-                          : new OpenSearchLogDTO();
+                          : new DefaultOpenSearchBatchCompatibleLogDTO();
             dto.GameVersion = _gameVersion;
             dto.UUID = _uuid;
             dto.DeviceModel = _deviceModel;
@@ -131,28 +141,58 @@ namespace TheBestLogger.Examples.LogTargets
             return dto;
         }
 
-        private string LogDataToJson(string logLevel,
-                                     string category,
-                                     string message,
-                                     string stackTrace,
-                                     string timestamp,
-                                     string attributes,
-                                     string[] tags)
+        private void WriteLogDataJson(ref OpenSearchPayloadBuilder sb,
+                                      string logLevel,
+                                      string category,
+                                      string message,
+                                      string stackTrace,
+                                      string timestamp,
+                                      string attributes,
+                                      string[] tags)
         {
             var dto = CreateDto(logLevel, category, message, stackTrace, timestamp, attributes, tags);
-            var jsonString = JsonUtility.ToJson(dto);
-
-            return jsonString;
+            dto.PrepareForJsonSerialization();
+            if (SupportsManualBatchSerialization(dto))
+            {
+                ((IOpenSearchBatchJsonSerializable)dto).WriteJson(ref sb);
+            }
+            else
+            {
+                sb.Append(JsonUtility.ToJson(dto));
+            }
         }
 
-        private void PostLog(string url, string jsonData)
+        private static bool SupportsManualBatchSerialization(OpenSearchLogDTO dto)
+        {
+            return dto is IOpenSearchBatchJsonSerializable;
+        }
+
+        private static string ResolveSerializedTimestamp(LogAttributes logAttributes)
+        {
+            if (logAttributes == null)
+            {
+                return string.Empty;
+            }
+
+            if (logAttributes.TimeUtc != default)
+            {
+                return OpenSearchTimestampFormatter.FormatUtc(logAttributes.TimeUtc);
+            }
+
+            if (!string.IsNullOrEmpty(logAttributes.TimeStampFormatted))
+            {
+                return logAttributes.TimeStampFormatted;
+            }
+
+            return string.Empty;
+        }
+
+        private void PostLog(string url, byte[] jsonData)
         {
             var request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST);
 
             request.SetRequestHeader("x-api-key", _apiKey);
-            var jsonToSend = new UTF8Encoding().GetBytes(jsonData);
-
-            request.uploadHandler = new UploadHandlerRaw(jsonToSend);
+            request.uploadHandler = new UploadHandlerRaw(jsonData);
 
 #if UNITY_EDITOR || THEBESTLOGGER_DIAGNOSTICS_ENABLED
             request.downloadHandler = new DownloadHandlerBuffer();
@@ -167,7 +207,8 @@ namespace TheBestLogger.Examples.LogTargets
                 if (request.result != UnityWebRequest.Result.Success)
                 {
 #if UNITY_EDITOR || THEBESTLOGGER_DIAGNOSTICS_ENABLED
-                    var messageError = $"Can not write log into opensearchtarget because error result: {request.result}, error: {request.error}, response: {request.downloadHandler?.text}\nsent:{jsonData}";
+                    var payloadString = Utf8NoBom.GetString(jsonData, 0, jsonData.Length);
+                    var messageError = $"Can not write log into opensearchtarget because error result: {request.result}, error: {request.error}, response: {request.downloadHandler?.text}\nsent:{payloadString}";
                     ReflectiveUnityEditorConsoleLogger.LogToConsoleDirectly(messageError, LogType.Error);
                     Diagnostics.Write(messageError);
 #endif
@@ -175,6 +216,12 @@ namespace TheBestLogger.Examples.LogTargets
 
                 request.Dispose();
             };
+        }
+
+        private void WriteBulkHeader(ref OpenSearchPayloadBuilder sb)
+        {
+            sb.Append(_bulkHeaderLine);
+            sb.AppendLine();
         }
 
         private static string LogLevelToString(LogLevel logLevel)
@@ -204,6 +251,51 @@ namespace TheBestLogger.Examples.LogTargets
             }
 
             return "Error";
+        }
+    }
+
+    public static class OpenSearchTimestampFormatter
+    {
+        public static string FormatUtc(DateTime timeUtc)
+        {
+            return string.Create(24, timeUtc, static (span, value) =>
+            {
+                Write4Digits(span, 0, value.Year);
+                span[4] = '-';
+                Write2Digits(span, 5, value.Month);
+                span[7] = '-';
+                Write2Digits(span, 8, value.Day);
+                span[10] = 'T';
+                Write2Digits(span, 11, value.Hour);
+                span[13] = ':';
+                Write2Digits(span, 14, value.Minute);
+                span[16] = ':';
+                Write2Digits(span, 17, value.Second);
+                span[19] = '.';
+                Write3Digits(span, 20, value.Millisecond);
+                span[23] = 'Z';
+            });
+        }
+
+        private static void Write2Digits(Span<char> span, int start, int value)
+        {
+            span[start] = (char)('0' + (value / 10));
+            span[start + 1] = (char)('0' + (value % 10));
+        }
+
+        private static void Write3Digits(Span<char> span, int start, int value)
+        {
+            span[start] = (char)('0' + (value / 100));
+            span[start + 1] = (char)('0' + ((value / 10) % 10));
+            span[start + 2] = (char)('0' + (value % 10));
+        }
+
+        private static void Write4Digits(Span<char> span, int start, int value)
+        {
+            span[start] = (char)('0' + (value / 1000));
+            span[start + 1] = (char)('0' + ((value / 100) % 10));
+            span[start + 2] = (char)('0' + ((value / 10) % 10));
+            span[start + 3] = (char)('0' + (value % 10));
         }
     }
 }

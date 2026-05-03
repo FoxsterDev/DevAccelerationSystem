@@ -53,7 +53,7 @@ namespace TheBestLogger.Tests.Editor
                                  .Add("attempt", 7)
                                  .Add("region", "eu");
             attributes.StackTrace = "stack-line";
-            attributes.TimeStampFormatted = "2026-04-26T10:11:12.3456789Z";
+            attributes.TimeStampFormatted = "2026-04-26T10:11:12.345Z";
             attributes.Tags = new[] { "prod", "critical" };
 
             target.Log(LogLevel.Warning, "Gameplay", "single-message", attributes, null);
@@ -73,9 +73,118 @@ namespace TheBestLogger.Tests.Editor
             Assert.That(dto.Category, Is.EqualTo("Gameplay"));
             Assert.That(dto.Message, Is.EqualTo("single-message"));
             Assert.That(dto.Stacktrace, Is.EqualTo("stack-line"));
-            Assert.That(dto.TimeUTC, Is.EqualTo("2026-04-26T10:11:12.3456789Z"));
+            Assert.That(dto.TimeUTC, Is.EqualTo("2026-04-26T10:11:12.345Z"));
             Assert.That(dto.Attributes, Is.EqualTo("{\"attempt\":7,\"region\":\"eu\"}"));
             Assert.That(dto.Tags, Is.EqualTo(new[] { "prod", "critical" }));
+        }
+
+        [Test]
+        public void Log_WhenTimeUtcIsPresent_UsesUniqueTimestampStringFromRawUtc()
+        {
+            using var server = new LocalHttpRequestCaptureServer();
+            var target = CreateTarget(server, apiKey: "precise-key");
+            var exactUtc = DateTime.Parse("2026-04-26T10:11:12.3456789Z", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            var attributes = new LogAttributes
+            {
+                TimeStampFormatted = "2026-04-26T10:11:12.345Z",
+                TimeUtc = exactUtc
+            };
+
+            target.Log(LogLevel.Info, "Gameplay", "precise-message", attributes, null);
+
+            var request = server.WaitForRequestOrThrow();
+            var lines = SplitBulkPayloadLines(request.Body);
+            var dto = JsonUtility.FromJson<OpenSearchLogDTO>(lines[1]);
+
+            Assert.That(dto.TimeUTC, Is.EqualTo("2026-04-26T10:11:12.345Z"));
+            StringAssert.DoesNotContain("\"TimeUtcTicks\"", lines[1]);
+        }
+
+        [Test]
+        public void Log_WhenOnlyTimeUtcIsPresent_WritesTimestampFromRawUtcWithoutCachedString()
+        {
+            using var server = new LocalHttpRequestCaptureServer();
+            var target = CreateTarget(server, apiKey: "raw-utc-key");
+            var exactUtc = DateTime.Parse("2026-04-26T10:11:12.3456789Z", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            var attributes = new LogAttributes { TimeUtc = exactUtc };
+
+            target.Log(LogLevel.Info, "Gameplay", "raw-utc-message", attributes, null);
+
+            var request = server.WaitForRequestOrThrow();
+            var lines = SplitBulkPayloadLines(request.Body);
+            var dto = JsonUtility.FromJson<OpenSearchLogDTO>(lines[1]);
+
+            Assert.That(dto.TimeUTC, Is.EqualTo("2026-04-26T10:11:12.345Z"));
+            StringAssert.DoesNotContain("\"TimeUtcTicks\"", lines[1]);
+        }
+
+        [Test]
+        public void Log_WithDerivedDtoAndSerializationCallback_WritesAdditionalFieldsAndAllowsOverrides()
+        {
+            using var server = new LocalHttpRequestCaptureServer();
+            GameSessionOpenSearchLogDTOExample.SetAppId("game-app", "override-uuid");
+            GameSessionOpenSearchLogDTOExample.SetSharedAppId("shared-app");
+            GameSessionOpenSearchLogDTOExample.SetPlayerIdAndSession("player-42", "session-abc");
+            var target = CreateTarget(server, apiKey: "derived-key", () => new GameSessionOpenSearchLogDTOExample());
+
+            target.Log(LogLevel.Info, "Gameplay", "derived-message", CreateAttributes("2026-04-26T10:00:00.0000000Z"), null);
+
+            var request = server.WaitForRequestOrThrow();
+            var lines = SplitBulkPayloadLines(request.Body);
+            var dto = JsonUtility.FromJson<GameSessionOpenSearchLogDTOExample>(lines[1]);
+
+            Assert.That(dto.Message, Is.EqualTo("derived-message"));
+            Assert.That(dto.PlayerId, Is.EqualTo("player-42"));
+            Assert.That(dto.SessionToken, Is.EqualTo("session-abc"));
+            Assert.That(dto.SharedAppId, Is.EqualTo("shared-app"));
+            Assert.That(dto.AppId, Is.EqualTo("game-app"));
+            Assert.That(dto.UUID, Is.EqualTo("override-uuid"));
+        }
+
+        [Test]
+        public void LogBatch_WithDerivedDtoWithoutBatchWriter_FallsBackToUnityJsonAndKeepsAdditionalFields()
+        {
+            using var server = new LocalHttpRequestCaptureServer();
+            GameSessionOpenSearchLogDTOJsonUtilityFallbackExample.SetPlayerIdAndSession("player-batch", "session-batch");
+            var target = CreateTarget(server,
+                                      apiKey: "derived-batch-key",
+                                      () => new GameSessionOpenSearchLogDTOJsonUtilityFallbackExample());
+            var batch = new List<LogEntry>
+            {
+                CreateLogEntry(LogLevel.Info, "derived-batch", "2026-04-26T10:00:02.0000000Z", "session-3", new[] { "batch" })
+            };
+
+            target.LogBatch(batch);
+
+            var request = server.WaitForRequestOrThrow();
+            var lines = SplitBulkPayloadLines(request.Body);
+            var dto = JsonUtility.FromJson<GameSessionOpenSearchLogDTOJsonUtilityFallbackExample>(lines[1]);
+
+            Assert.That(dto.Message, Is.EqualTo("derived-batch"));
+            Assert.That(dto.TimeUTC, Is.EqualTo("2026-04-26T10:00:02.000Z"));
+            Assert.That(dto.PlayerId, Is.EqualTo("player-batch"));
+            Assert.That(dto.SessionToken, Is.EqualTo("session-batch"));
+        }
+
+        [Test]
+        public void Log_EscapesSpecialCharactersInStringFields()
+        {
+            using var server = new LocalHttpRequestCaptureServer();
+            var target = CreateTarget(server, apiKey: "escape-key");
+            var attributes = CreateAttributes("2026-04-26T10:00:00.0000000Z");
+            attributes.StackTrace = "line1\nline2\t\"quoted\"";
+            const string category = "Game\"play";
+            const string message = "hello\n\"quoted\"\\path";
+
+            target.Log(LogLevel.Warning, category, message, attributes, null);
+
+            var request = server.WaitForRequestOrThrow();
+            var lines = SplitBulkPayloadLines(request.Body);
+            var dto = JsonUtility.FromJson<OpenSearchLogDTO>(lines[1]);
+
+            Assert.That(dto.Category, Is.EqualTo(category));
+            Assert.That(dto.Message, Is.EqualTo(message));
+            Assert.That(dto.Stacktrace, Is.EqualTo(attributes.StackTrace));
         }
 
         [Test]
@@ -272,9 +381,11 @@ namespace TheBestLogger.Tests.Editor
             Assert.That(requests.Any(request => request.Body.Contains("after-delay")), Is.True);
         }
 
-        private static OpenSearchLogTarget CreateTarget(LocalHttpRequestCaptureServer server, string apiKey)
+        private static OpenSearchLogTarget CreateTarget(LocalHttpRequestCaptureServer server,
+                                                        string apiKey,
+                                                        Func<OpenSearchLogDTO> dtoFactory = null)
         {
-            var target = new OpenSearchLogTarget();
+            var target = new OpenSearchLogTarget(dtoFactory);
             target.ApplyConfiguration(CreateConfiguration(server, apiKey));
             return target;
         }

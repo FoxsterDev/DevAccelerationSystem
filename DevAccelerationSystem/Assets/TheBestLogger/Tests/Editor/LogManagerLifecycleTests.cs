@@ -944,13 +944,36 @@ namespace TheBestLogger.Tests.Editor
         [Test]
         public void Initialize_WithMissingConfigurationPath_LeavesManagerUninitialized()
         {
-            LogAssert.Expect(LogType.Error,
-                             new Regex(@"\[FallbackLogger\] During LogManager initialization happened exception .*configuration.*",
-                                       RegexOptions.Singleline));
-            LogManager.Initialize(new LogTarget[] { _trackingTarget }, "MissingLogManagerConfigPath/", CancellationToken.None, "debug-user");
+            var originalIgnoreFailingMessages = LogAssert.ignoreFailingMessages;
+            LogAssert.ignoreFailingMessages = true;
+            string capturedError = null;
+
+            void Capture(string condition, string _, LogType type)
+            {
+                if (type == LogType.Error && condition.Contains("[FallbackLogger] During LogManager initialization happened exception"))
+                {
+                    capturedError = condition;
+                }
+            }
+
+            Application.logMessageReceived += Capture;
+            try
+            {
+                LogManager.Initialize(new LogTarget[] { _trackingTarget }, "MissingLogManagerConfigPath/", CancellationToken.None, "debug-user");
+            }
+            finally
+            {
+                Application.logMessageReceived -= Capture;
+                LogAssert.ignoreFailingMessages = originalIgnoreFailingMessages;
+            }
 
             var logger = LogManager.CreateLogger("Gameplay");
 
+            Assert.That(Regex.IsMatch(capturedError ?? string.Empty,
+                                      @".*\[FallbackLogger\] During LogManager initialization happened exception .*configuration.*",
+                                      RegexOptions.Singleline),
+                        Is.True,
+                        $"Expected fallback initialization error to mention configuration. Actual: {capturedError}");
             Assert.That(logger, Is.TypeOf<FallbackLogger>());
             Assert.That(LogManager.GetCurrentLogTargetConfigurations(), Is.Empty);
         }

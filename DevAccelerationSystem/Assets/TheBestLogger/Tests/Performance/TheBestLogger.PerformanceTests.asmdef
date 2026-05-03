@@ -5,7 +5,8 @@
         "UnityEngine.TestRunner",
         "Unity.PerformanceTesting",
         "TheBestLogger.Core.Utilities",
-        "TheBestLogger.Core"
+        "TheBestLogger.Core",
+        "TheBestLogger.Examples"
     ],
     "includePlatforms": [
         "Editor"

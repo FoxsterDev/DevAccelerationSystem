@@ -1,9 +1,12 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
 using System.Threading;
 using NUnit.Framework;
 using TheBestLogger.Core.Utilities;
+using TheBestLogger.Examples.LogTargets;
 using Unity.PerformanceTesting;
 using UnityEngine;
 
@@ -14,6 +17,10 @@ namespace TheBestLogger.Tests.Performance
     {
         private const int HotPathIterations = 500;
         private const int QueuedLogCount = 1000;
+        private const int OpenSearchBatchSize = 20;
+        private static readonly Encoding Utf8NoBom = new UTF8Encoding(false);
+        private static readonly DateTime OpenSearchFormatterPerfUtc =
+            DateTime.Parse("2026-04-29T19:15:42.0267890Z", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
 
         [Test, Performance]
         public void LogInfo_HotPath_RecordsTimeAndGcMetrics()
@@ -156,6 +163,117 @@ namespace TheBestLogger.Tests.Performance
                    .Run();
         }
 
+        [Test, Performance]
+        public void OpenSearchDto_ManualJson_RecordsTimeAndGcMetrics()
+        {
+            PrepareDerivedOpenSearchContext();
+
+            Measure.Method(() =>
+                   {
+                       var dto = CreateDerivedDto(7);
+                       dto.PrepareForJsonSerialization();
+                       var sb = new OpenSearchPayloadBuilder(notNested: true);
+                       try
+                       {
+                           dto.WriteJson(ref sb);
+                       }
+                       finally
+                       {
+                           sb.Dispose();
+                       }
+                   })
+                   .SampleGroup(new SampleGroup("OpenSearchDTO.ManualJson", SampleUnit.Millisecond))
+                   .WarmupCount(3)
+                   .MeasurementCount(12)
+                   .IterationsPerMeasurement(200)
+                   .GC()
+                   .Run();
+        }
+
+        [Test, Performance]
+        public void OpenSearchDto_LegacyJsonUtility_RecordsTimeAndGcMetrics()
+        {
+            PrepareDerivedOpenSearchContext();
+
+            Measure.Method(() =>
+                   {
+                       var dto = CreateDerivedDto(7);
+                       JsonUtility.ToJson(dto);
+                   })
+                   .SampleGroup(new SampleGroup("OpenSearchDTO.LegacyJsonUtility", SampleUnit.Millisecond))
+                   .WarmupCount(3)
+                   .MeasurementCount(12)
+                   .IterationsPerMeasurement(200)
+                   .GC()
+                   .Run();
+        }
+
+        [Test, Performance]
+        public void OpenSearchBatch_ManualJson_RecordsTimeAndGcMetrics()
+        {
+            var batch = CreateOpenSearchBatch(OpenSearchBatchSize);
+            MockOpenSearchLogTarget target = null;
+
+            Measure.Method(() => target.LogBatch(batch))
+                   .SampleGroup(new SampleGroup("OpenSearchBatch.ManualJson", SampleUnit.Millisecond))
+                   .SetUp(() =>
+                   {
+                       PrepareDerivedOpenSearchContext();
+                       MockOpenSearchLogTarget.ClearCapturedPayloads();
+                       target = new MockOpenSearchLogTarget(() => new GameSessionOpenSearchLogDTOExample());
+                       target.ApplyConfiguration(CreateOpenSearchConfiguration());
+                   })
+                   .WarmupCount(2)
+                   .MeasurementCount(10)
+                   .GC()
+                   .Run();
+        }
+
+        [Test, Performance]
+        public void OpenSearchBatch_LegacyJsonUtility_RecordsTimeAndGcMetrics()
+        {
+            var batch = CreateOpenSearchBatch(OpenSearchBatchSize);
+
+            Measure.Method(() => BuildLegacyOpenSearchBatchPayload(batch))
+                   .SampleGroup(new SampleGroup("OpenSearchBatch.LegacyJsonUtility", SampleUnit.Millisecond))
+                   .SetUp(PrepareDerivedOpenSearchContext)
+                   .WarmupCount(2)
+                   .MeasurementCount(10)
+                   .GC()
+                   .Run();
+        }
+
+        [Test, Performance]
+        public void OpenSearchTimestamp_ToStringFff_RecordsTimeAndGcMetrics()
+        {
+            Measure.Method(() =>
+                   {
+                       _ = OpenSearchFormatterPerfUtc.ToString(OpenSearchTimestampFormatter.Format,
+                                                               CultureInfo.InvariantCulture);
+                   })
+                   .SampleGroup(new SampleGroup("OpenSearchTimestamp.ToStringFff", SampleUnit.Millisecond))
+                   .WarmupCount(3)
+                   .MeasurementCount(12)
+                   .IterationsPerMeasurement(2000)
+                   .GC()
+                   .Run();
+        }
+
+        [Test, Performance]
+        public void OpenSearchTimestamp_StringCreateTryFormat_RecordsTimeAndGcMetrics()
+        {
+            Measure.Method(() =>
+                   {
+                       _ = OpenSearchTimestampFormatter.FormatUtc(OpenSearchFormatterPerfUtc);
+                   })
+                   .SampleGroup(new SampleGroup("OpenSearchTimestamp.StringCreateTryFormat", SampleUnit.Millisecond))
+                   .WarmupCount(3)
+                   .MeasurementCount(12)
+                   .IterationsPerMeasurement(2000)
+                   .GC()
+                   .Run();
+        }
+
         private static CoreLogger CreateLogger(params ILogTarget[] logTargets)
         {
             return new CoreLogger("PerfCategory",
@@ -197,6 +315,97 @@ namespace TheBestLogger.Tests.Performance
             {
                 throw exception;
             }
+        }
+
+        private static void PrepareDerivedOpenSearchContext()
+        {
+            GameSessionOpenSearchLogDTOExample.SetAppId("perf-app", "perf-uuid");
+            GameSessionOpenSearchLogDTOExample.SetSharedAppId("shared-perf");
+            GameSessionOpenSearchLogDTOExample.SetPlayerIdAndSession("player-perf", "session-perf");
+        }
+
+        private static GameSessionOpenSearchLogDTOExample CreateDerivedDto(int index)
+        {
+            return new GameSessionOpenSearchLogDTOExample
+            {
+                GameVersion = Application.version,
+                UUID = SystemInfo.deviceUniqueIdentifier,
+                DeviceModel = SystemInfo.deviceModel,
+                OS = SystemInfo.operatingSystem,
+                Platform = Application.platform.ToString(),
+                LogLevel = "Warn",
+                Category = "Gameplay",
+                Message = $"message-{index}",
+                Stacktrace = "stack-line\nnext-line",
+                TimeUTC = "2026-04-29T19:15:42.026Z",
+                Attributes = "{\"session\":\"session-perf\"}",
+                DebugMode = true,
+                Tags = new[] { "perf", "manual-json" }
+            };
+        }
+
+        private static List<LogEntry> CreateOpenSearchBatch(int count)
+        {
+            var batch = new List<LogEntry>(count);
+            var baseTimeUtc = DateTime.Parse("2026-04-29T19:15:42.0260000Z",
+                                             CultureInfo.InvariantCulture,
+                                             DateTimeStyles.RoundtripKind);
+            for (var index = 0; index < count; index++)
+            {
+                var timeUtc = baseTimeUtc.AddTicks(index);
+                batch.Add(new LogEntry(LogLevel.Warning,
+                                       "Gameplay",
+                                       $"message-{index}",
+                                       new LogAttributes("session", $"session-{index}")
+                                       {
+                                           StackTrace = $"stack-line-{index}\nnext-line",
+                                           TimeStampFormatted = OpenSearchTimestampFormatter.FormatUtc(timeUtc),
+                                           TimeUtc = timeUtc,
+                                           Tags = new[] { "perf", $"tag-{index % 4}" }
+                                       },
+                                       null));
+            }
+
+            return batch;
+        }
+
+        private static OpenSearchLogTargetConfiguration CreateOpenSearchConfiguration()
+        {
+            return new OpenSearchLogTargetConfiguration
+            {
+                OpenSearchHostUrl = "mock://sample-opensearch",
+                OpenSearchSingleLogMethod = "/logs",
+                IndexPrefix = "thebestlogger-perf-",
+                ApiKey = "perf-key",
+                MinLogLevel = LogLevel.Debug,
+                DebugMode = new DebugModeConfiguration(),
+                BatchLogs = new LogTargetBatchLogsConfiguration(),
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            };
+        }
+
+        private static byte[] BuildLegacyOpenSearchBatchPayload(IReadOnlyList<LogEntry> batch)
+        {
+            var builder = new StringBuilder(batch.Count * 256);
+            var indexName = "thebestlogger-perf-" + DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            for (var index = 0; index < batch.Count; index++)
+            {
+                var entry = batch[index];
+                var dto = CreateDerivedDto(index);
+                dto.Category = entry.Category;
+                dto.Message = entry.Message;
+                dto.Stacktrace = entry.Attributes.StackTrace;
+                dto.TimeUTC = entry.Attributes.TimeStampFormatted;
+                dto.Attributes = entry.Attributes.Props.ToSimpleNotEscapedJson();
+                dto.Tags = entry.Attributes.Tags;
+
+                builder.Append("{ \"index\" : { \"_index\" : \"");
+                builder.Append(indexName);
+                builder.AppendLine("\" } }");
+                builder.AppendLine(JsonUtility.ToJson(dto));
+            }
+
+            return Utf8NoBom.GetBytes(builder.ToString());
         }
 
         private sealed class PerformanceQueuedSynchronizationContext : SynchronizationContext

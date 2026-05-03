@@ -2,15 +2,15 @@ using System;
 
 namespace TheBestLogger.Core.Utilities
 {
-    internal class TimestampData
+    internal sealed class CachedTimestampData
     {
-        public readonly DateTime TimeStampCachedUtc;
-        public readonly string TimeStampStringCachedFormatted;
+        public readonly DateTime CachedUtc;
+        public readonly string CachedFormattedString;
 
-        public TimestampData(DateTime timeStampCachedUtc, string timeStampStringCachedFormatted)
+        public CachedTimestampData(DateTime cachedUtc, string cachedFormattedString)
         {
-            TimeStampCachedUtc = timeStampCachedUtc;
-            TimeStampStringCachedFormatted = timeStampStringCachedFormatted;
+            CachedUtc = cachedUtc;
+            CachedFormattedString = cachedFormattedString;
         }
     }
 }

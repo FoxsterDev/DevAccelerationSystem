@@ -8,6 +8,11 @@ namespace TheBestLogger
     [System.Serializable]
     public abstract class LogTargetConfiguration : ISerializationCallbackReceiver
     {
+        protected LogTargetConfiguration()
+        {
+            ApplyRuntimeDefaults();
+        }
+
         public bool Muted;
         public LogLevel MinLogLevel = LogLevel.Warning;
         public LogTargetCategory[] OverrideCategories;

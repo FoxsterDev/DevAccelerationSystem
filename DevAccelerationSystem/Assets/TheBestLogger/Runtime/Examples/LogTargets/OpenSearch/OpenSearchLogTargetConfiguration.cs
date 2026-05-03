@@ -14,7 +14,7 @@ namespace TheBestLogger.Examples.LogTargets
 #if THEBESTLOGGER_NEWTONSOFT_ENABLED
         [JsonIgnore]
 #endif
-        public string ApiKey;
+        public string ApiKey = string.Empty;
 
         public override void Merge(LogTargetConfiguration newConfig)
         {

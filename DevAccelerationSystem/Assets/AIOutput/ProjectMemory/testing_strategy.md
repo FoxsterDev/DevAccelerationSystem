@@ -45,6 +45,9 @@ Define the durable validation expectations for `DevAccelerationSystem`.
 - Validate runtime-facing logger changes in package playmode tests before relying on consumer evidence alone.
 - Validate performance-sensitive logger changes in the dedicated performance suite before making performance claims.
 - Validate cross-surface or integration-sensitive changes in a representative consumer workspace after source edits.
+- Do not grind through Unity CLI test execution, ad hoc batchmode runners, or repeated reruns when Unity validation is unstable in the current environment.
+- Do not launch Unity PlayMode or integration tests without a stable Unity MCP or equivalent reliable editor-control path when the task depends on actually driving Unity and reading trustworthy results.
+- If Unity execution control is weak, stop at code review plus test authoring, state the validation gap clearly, and ask for the proper Unity MCP path instead of spending turns fighting batchmode.
 - Prefer `DevAccelerationSystem.DemoProject/` as tracked consumer evidence.
 - Use `DAS.LocalProject/` for local repro or fast validation when helpful, but do not treat it as tracked release proof by default.
 - For `TheBestLogger`, production-facing confidence should be layered:

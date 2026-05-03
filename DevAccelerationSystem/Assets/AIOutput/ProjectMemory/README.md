@@ -33,6 +33,8 @@ Bootstrap status: seeded from `WORKSPACE.md`, repo layout, and current AI routin
 - `architecture_ownership.md`
 - `feature_surface.md`
 - `known_issues.md`
+- `public_api_refactoring_practices.md`
+- `public_api_refactoring_airout_promotion_triage.md`
 - `testing_strategy.md`
 - `platform_constraints.md`
 - `release_rules.md`

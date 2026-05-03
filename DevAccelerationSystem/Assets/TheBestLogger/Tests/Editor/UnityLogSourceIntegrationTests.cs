@@ -102,12 +102,16 @@ namespace TheBestLogger.Tests.Editor
         {
             var source = new UnityApplicationLogSource(_consumer);
 
-            Debug.Log("before-dispose");
+            InvokePrivate(source,
+                          "OnLogMessageReceived",
+                          "before-dispose",
+                          string.Empty,
+                          LogType.Log);
             Assert.That(_consumer.Count, Is.EqualTo(1));
 
             source.Dispose();
-            Debug.Log("after-dispose");
 
+            Assert.That(GetPrivateField<ILogConsumer>(source, "_logConsumer"), Is.Null);
             Assert.That(_consumer.Count, Is.EqualTo(1));
         }
 
@@ -134,12 +138,16 @@ namespace TheBestLogger.Tests.Editor
         {
             var source = new UnityApplicationLogSourceThreaded(_consumer);
 
-            Debug.Log("before-threaded-dispose");
+            InvokePrivate(source,
+                          "OnLogMessageReceivedThreaded",
+                          "before-threaded-dispose",
+                          string.Empty,
+                          LogType.Log);
             Assert.That(_consumer.Count, Is.EqualTo(1));
 
             source.Dispose();
-            Debug.Log("after-threaded-dispose");
 
+            Assert.That(GetPrivateField<ILogConsumer>(source, "_logConsumer"), Is.Null);
             Assert.That(_consumer.Count, Is.EqualTo(1));
         }
 
@@ -148,6 +156,13 @@ namespace TheBestLogger.Tests.Editor
             target.GetType()
                   .GetMethod(methodName, InstancePrivate)
                   ?.Invoke(target, args);
+        }
+
+        private static T GetPrivateField<T>(object target, string fieldName)
+        {
+            return (T)target.GetType()
+                            .GetField(fieldName, InstancePrivate)
+                            ?.GetValue(target);
         }
     }
 }
