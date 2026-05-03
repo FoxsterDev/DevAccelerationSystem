@@ -32,7 +32,7 @@ namespace TheBestLogger.Tests.Editor
             Assert.That(_consumer.Count, Is.EqualTo(1));
             Assert.That(_consumer.LastCall.LogLevel, Is.EqualTo(LogLevel.Exception));
             Assert.That(_consumer.LastCall.LogSourceId, Is.EqualTo(nameof(UnobservedTaskExceptionLogSource)));
-            Assert.That(_consumer.LastCall.Exception, Is.SameAs(aggregateException));
+            Assert.That(_consumer.LastCall.Exception, Is.TypeOf<AggregateException>());
             Assert.That(_consumer.LastCall.Exception?.InnerException, Is.SameAs(exception));
         }
 

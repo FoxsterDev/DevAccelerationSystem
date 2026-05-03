@@ -38,6 +38,18 @@ Load in this order:
 7. Project memory from `Assets/AIOutput/ProjectMemory/`
 8. Relevant prior analysis outputs from `Assets/AIOutput/`
 
+When the task includes test authoring, test review, validation planning, or test execution strategy, also load the test guidance below after the task file and before final implementation or review:
+1. `../../AIRoot/Modules/XUUnity/skills/tests/testing_doctrine.md`
+2. `Assets/AIOutput/ProjectMemory/testing_strategy.md`
+3. One or more relevant test workflow files from `../../AIRoot/Modules/XUUnity/skills/tests/`:
+   - `unit_tests.md` for deterministic editor or pure logic coverage
+   - `integration_tests.md` for runtime orchestration, persistence, and cross-component flows
+   - `playmode_tests.md` for Unity runtime behavior
+   - `runtime_service_testability.md` when deciding or reviewing seams
+   - `unity_test_runner_workflow.md` when planning or reporting Unity test execution
+   - `smoke_and_release_checks.md` when validation scope reaches release or smoke coverage
+4. `../../AIRoot/Modules/XUUnity/skills/mobile/lifecycle_boundary_review.md` when the change or test surface touches startup, resume, persistence restore, or other lifecycle-sensitive runtime paths
+
 ### `host-local protocols`
 Use host-local protocol families only when the repo explicitly attaches them under `../../AIModules/`.
 Load those families from verified on-disk paths instead of assuming any named private modules.

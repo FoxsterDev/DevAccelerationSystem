@@ -248,7 +248,7 @@ namespace TheBestLogger.Tests.Performance
         {
             Measure.Method(() =>
                    {
-                       _ = OpenSearchFormatterPerfUtc.ToString(OpenSearchTimestampFormatter.Format,
+                       _ = OpenSearchFormatterPerfUtc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ",
                                                                CultureInfo.InvariantCulture);
                    })
                    .SampleGroup(new SampleGroup("OpenSearchTimestamp.ToStringFff", SampleUnit.Millisecond))

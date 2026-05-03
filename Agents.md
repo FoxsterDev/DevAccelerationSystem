@@ -14,6 +14,7 @@ Use it when a session starts from this nested repo root instead of the hub root.
 
 ## Default Protocol
 - Use `xuunity` for implementation, review, SDK work, native work, validation planning, and product-facing engineering explanation.
+- For test authoring, test review, or validation planning under `xuunity`, explicitly load `skills/tests/testing_doctrine.md`, the selected test workflow files from `skills/tests/`, and the target project's test strategy memory before finalizing test changes or validation claims.
 
 ## Workspace Map
 - Canonical package source: `DevAccelerationSystem/`

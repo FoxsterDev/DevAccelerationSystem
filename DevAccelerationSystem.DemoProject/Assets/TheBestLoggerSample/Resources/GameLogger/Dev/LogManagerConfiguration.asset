@@ -19,6 +19,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 77b0ca964f8314184929de499320b56a, type: 2}
   - {fileID: 11400000, guid: 19c13534d73864c19a06210f55f17d48, type: 2}
   DefaultUnityLogsCategoryName: Uncategorized
+  MessageMaxLength: 256
   MinTimestampPeriodMs: 60
   MinUpdatesPeriodMs: 250
   ApplicationLogTypesStackTrace:
@@ -37,14 +38,66 @@ MonoBehaviour:
     LogTypeAssert:
       LogType: 1
       StackTraceLevel: 1
-  DebugLogSourceUnityEditor: 1
-  ApplicationLogSourceUnityEditor: 0
-  ApplicationLogSourceThreadedUnityEditor: 0
-  CurrentDomainUnhandledExceptionLogSourceUnityEditor: 0
-  UnobservedTaskExceptionLogSourceUnityEditor: 1
-  SystemDiagnosticsDebugLogSourceUnityEditor: 0
-  SystemDiagnosticsConsoleLogSourceUnityEditor: 1
-  UnityDebugLogSourceForBuildRuntime: 0
-  UnityApplicationLogMessageReceivedSourceForBuildRuntime: 0
-  UnityApplicationLogMessageReceivedThreadedSourceForBuildRuntime: 1
-  SystemThreadingTaskUnobservedTaskExceptionLogSourceForBuildRuntime: 1
+  StackTraceFormatterConfiguration:
+    Enabled: 1
+    NeedFileInfo: 0
+    MaximumInnerExceptionDepth: 3
+    Utf16ValueStringBuilder: 0
+    SkipFrames: 5
+    MaxLength: 512
+    FilterOutLinesWhen:
+    - DeclaringTypeNamespace: UnityEngine
+      TypeNameEntries:
+      - DeclaringTypeName: Debug
+        MethodName: 
+      - DeclaringTypeName: Logger
+        MethodName: 
+      - DeclaringTypeName: DebugLogHandler
+        MethodName: 
+      - DeclaringTypeName: StackTraceUtility
+        MethodName: 
+      - DeclaringTypeName: MonoBehaviour
+        MethodName: print
+      - DeclaringTypeName: UnitySynchronizationContext
+        MethodName: 
+      - DeclaringTypeName: WorkRequest
+        MethodName: 
+    - DeclaringTypeNamespace: TheBestLogger
+      TypeNameEntries:
+      - DeclaringTypeName: 
+        MethodName: 
+    - DeclaringTypeNamespace: UnityEngine.Assertions
+      TypeNameEntries:
+      - DeclaringTypeName: Assert
+        MethodName: 
+    - DeclaringTypeNamespace: System.Runtime.CompilerServices
+      TypeNameEntries:
+      - DeclaringTypeName: MoveNextRunner
+        MethodName: 
+    - DeclaringTypeNamespace: System.Threading
+      TypeNameEntries:
+      - DeclaringTypeName: ExecutionContext
+        MethodName: 
+  UniTaskConfiguration:
+    PropagateOperationCanceledException: 0
+    UnobservedExceptionWriteLogType: 4
+    DispatchUnityMainThread: 0
+  SessionDebugRolloutPercentage: 2.5
+  RemoteOverrideStartupCache:
+    Enabled: 1
+  _unityDebugLogSourceForUnityEditor: 1
+  _unityApplicationLogMessageReceivedSourceForUnityEditor: 0
+  _unityApplicationLogMessageReceivedThreadedSourceForUnityEditor: 1
+  _unobservedSystemTaskExceptionLogSourceForUnityEditor: 1
+  _unobservedUniTaskExceptionLogSourceForUnityEditor: 1
+  _systemDiagnosticsDebugLogSourceForUnityEditor: 0
+  _systemDiagnosticsConsoleLogSourceForUnityEditor: 0
+  _currentDomainUnhandledExceptionLogSourceForUnityEditor: 1
+  _unityDebugLogSourceForBuildRuntime: 1
+  _unityApplicationLogMessageReceivedSourceForBuildRuntime: 0
+  _unityApplicationLogMessageReceivedThreadedSourceForBuildRuntime: 1
+  _unobservedSystemTaskExceptionLogSourceForBuildRuntime: 1
+  _unobservedUniTaskExceptionLogSourceForBuildRuntime: 1
+  _systemDiagnosticsConsoleLogSourceForBuildRuntime: 0
+  _systemDiagnosticsDebugLogSourceForBuildRuntime: 0
+  _currentDomainUnhandledExceptionLogSourceForBuildRuntime: 0

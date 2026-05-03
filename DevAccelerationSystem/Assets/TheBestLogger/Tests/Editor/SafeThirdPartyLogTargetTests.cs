@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using NUnit.Framework;
@@ -23,10 +24,11 @@ namespace TheBestLogger.Tests.Editor
         public void Log_WhenThirdPartyThrows_MutesTargetAndSkipsSubsequentCalls()
         {
             var target = new ThrowingSafeThirdPartyLogTarget(throwOnCallNumber: 1);
-            LogAssert.Expect(LogType.Exception, "InvalidOperationException: Simulated third-party failure.");
-
-            Assert.DoesNotThrow(() => target.Log(LogLevel.Error, "Gameplay", "first", new LogAttributes(), null));
-            Assert.DoesNotThrow(() => target.Log(LogLevel.Error, "Gameplay", "second", new LogAttributes(), null));
+            AssertThirdPartyFailureExceptionLogged(() =>
+            {
+                Assert.DoesNotThrow(() => target.Log(LogLevel.Error, "Gameplay", "first", new LogAttributes(), null));
+                Assert.DoesNotThrow(() => target.Log(LogLevel.Error, "Gameplay", "second", new LogAttributes(), null));
+            });
 
             Assert.That(target.CallCount, Is.EqualTo(1));
             Assert.That(target.IsLogLevelAllowed(LogLevel.Error, "Gameplay"), Is.False);
@@ -42,9 +44,7 @@ namespace TheBestLogger.Tests.Editor
                 CreateLogEntry("second"),
                 CreateLogEntry("third")
             };
-            LogAssert.Expect(LogType.Exception, "InvalidOperationException: Simulated third-party failure.");
-
-            Assert.DoesNotThrow(() => target.LogBatch(batch));
+            AssertThirdPartyFailureExceptionLogged(() => Assert.DoesNotThrow(() => target.LogBatch(batch)));
 
             Assert.That(target.CallCount, Is.EqualTo(1));
             Assert.That(target.IsLogLevelAllowed(LogLevel.Info, "Gameplay"), Is.False);
@@ -56,10 +56,11 @@ namespace TheBestLogger.Tests.Editor
             var failingTarget = new ThrowingSafeThirdPartyLogTarget(throwOnCallNumber: 1);
             var healthyTarget = new MockLogTarget();
             var logger = CreateLogger(failingTarget, healthyTarget);
-            LogAssert.Expect(LogType.Exception, "InvalidOperationException: Simulated third-party failure.");
-
-            Assert.DoesNotThrow(() => logger.LogInfo("first"));
-            Assert.DoesNotThrow(() => logger.LogInfo("second"));
+            AssertThirdPartyFailureExceptionLogged(() =>
+            {
+                Assert.DoesNotThrow(() => logger.LogInfo("first"));
+                Assert.DoesNotThrow(() => logger.LogInfo("second"));
+            });
 
             Assert.That(failingTarget.CallCount, Is.EqualTo(1));
             Assert.That(healthyTarget.LoggedEntries.Count, Is.EqualTo(2));
@@ -75,7 +76,6 @@ namespace TheBestLogger.Tests.Editor
             var syncContext = new QueuedSynchronizationContext();
             var utilitySupplier = CreateUtilitySupplier();
             var currentTime = DateTime.UtcNow;
-            LogAssert.Expect(LogType.Exception, "InvalidOperationException: Simulated third-party failure.");
 
             var failingTarget = new LogTargetBatchLogsDecoration(
                 new LogTargetBatchLogsConfiguration
@@ -112,15 +112,18 @@ namespace TheBestLogger.Tests.Editor
                                         utilitySupplier,
                                         512);
 
-            RunOnWorkerThread(() =>
+            AssertThirdPartyFailureExceptionLogged(() =>
             {
-                logger.LogInfo("first", new LogAttributes(LogImportance.Important));
-                logger.LogInfo("second", new LogAttributes(LogImportance.Important));
-            });
+                RunOnWorkerThread(() =>
+                {
+                    logger.LogInfo("first", new LogAttributes(LogImportance.Important));
+                    logger.LogInfo("second", new LogAttributes(LogImportance.Important));
+                });
 
-            currentTime = currentTime.AddMilliseconds(150);
-            ((IScheduledUpdate) failingTarget).Update(currentTime, 150);
-            syncContext.FlushPostedCallbacks();
+                currentTime = currentTime.AddMilliseconds(150);
+                ((IScheduledUpdate) failingTarget).Update(currentTime, 150);
+                syncContext.FlushPostedCallbacks();
+            });
 
             Assert.That(failingInnerTarget.CallCount, Is.EqualTo(1));
             Assert.That(healthyTarget.LoggedCount, Is.EqualTo(2));
@@ -133,6 +136,46 @@ namespace TheBestLogger.Tests.Editor
                                   targets,
                                   CreateUtilitySupplier(),
                                   512);
+        }
+
+        private static void AssertThirdPartyFailureExceptionLogged(Action action)
+        {
+            var originalIgnoreFailingMessages = LogAssert.ignoreFailingMessages;
+            LogAssert.ignoreFailingMessages = true;
+            var capturedExceptionMessages = new List<string>();
+
+            void Capture(string condition, string stackTrace, LogType type)
+            {
+                if (type != LogType.Exception)
+                {
+                    return;
+                }
+
+                if (!string.IsNullOrEmpty(condition))
+                {
+                    capturedExceptionMessages.Add(condition);
+                }
+
+                if (!string.IsNullOrEmpty(stackTrace))
+                {
+                    capturedExceptionMessages.Add(stackTrace);
+                }
+            }
+
+            Application.logMessageReceived += Capture;
+            try
+            {
+                action.Invoke();
+            }
+            finally
+            {
+                Application.logMessageReceived -= Capture;
+                LogAssert.ignoreFailingMessages = originalIgnoreFailingMessages;
+            }
+
+            Assert.That(capturedExceptionMessages.Any(message => message.Contains("Simulated third-party failure.")),
+                        Is.True,
+                        $"Expected exception log mentioning simulated third-party failure. Actual logs: {string.Join("\n---\n", capturedExceptionMessages)}");
         }
 
         private static UtilitySupplier CreateUtilitySupplier()

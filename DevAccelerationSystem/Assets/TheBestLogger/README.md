@@ -330,6 +330,35 @@ Practical guidance:
 - prefer raw JSON patches for partial remote updates
 - if you send only one target update, use the single-target overloads
 - if startup cache should not survive restarts for a given product flow, disable `RemoteOverrideStartupCache`
+- do not treat `OpenSearch.ApiKey` as a supported remote-config field; it should come from the client build or another local secure source
+
+Security note:
+
+- passing `ApiKey` through remote config is not secure
+- for `OpenSearch`, the intended model is that the client uses the key that was shipped with the build or was provisioned locally by a secure product-specific path
+- README examples below do not treat `ApiKey` as part of the supported remote patch contract
+
+Supported remote patch fields for `OpenSearchLogTargetConfiguration`:
+
+- top-level:
+  - `Muted`
+  - `MinLogLevel`
+  - `OverrideCategories`
+  - `BatchLogs`
+  - `DispatchingLogsToMainThread`
+  - `StackTraces`
+  - `IsThreadSafe`
+  - `OpenSearchHostUrl`
+  - `OpenSearchSingleLogMethod`
+  - `IndexPrefix`
+- nested under `DebugMode`:
+  - `Enabled`
+  - `SessionDebugRolloutPercentage`
+  - `IDs`
+  - `MinLogLevel`
+  - `OverrideCategories`
+- not supported for remote patch:
+  - `ApiKey`
 
 ### DebugMode And Partial Remote Config Behavior
 
@@ -509,15 +538,13 @@ Combination 1. Change only transport settings:
 
 ```json
 {
-  "OpenSearchHostUrl": "https://logs-b.example",
-  "ApiKey": "secret-b"
+  "OpenSearchHostUrl": "https://logs-b.example"
 }
 ```
 
 Result:
 
 - endpoint changes immediately
-- API key changes immediately
 - current `DebugMode` values are preserved
 - current session rollout decision is preserved
 
@@ -621,6 +648,13 @@ Result on the next session:
 
 - startup rollout uses `10.0%`
 - explicit allowlist uses `player-9999`
+
+Important `ApiKey` note for `OpenSearch`:
+
+- `ApiKey` is shown in full effective-config examples only to illustrate the local target shape
+- it is not documented here as a supported remote patch field
+- do not send `ApiKey` through remote config
+- the intended production model is that `ApiKey` comes from the client build or another local secure source
 
 ## Integration Notes
 

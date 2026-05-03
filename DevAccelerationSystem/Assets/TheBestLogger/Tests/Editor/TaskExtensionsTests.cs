@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace TheBestLogger.Tests.Editor
 {
@@ -23,11 +25,15 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
-        public async Task RunSafely_WhenExceptionCallbackThrows_DoesNotPropagate()
+        public void RunSafely_WhenExceptionCallbackThrows_DoesNotPropagate()
         {
             var task = Task.FromException(new InvalidOperationException("boom"));
+            LogAssert.Expect(LogType.Exception, "ArgumentException: callback failed");
+            LogAssert.Expect(LogType.Exception, "InvalidOperationException: boom");
 
-            Assert.DoesNotThrowAsync(async () => await task.RunSafely(_ => throw new ArgumentException("callback failed")));
+            Assert.DoesNotThrow(() => task.RunSafely(_ => throw new ArgumentException("callback failed"))
+                                          .GetAwaiter()
+                                          .GetResult());
         }
 
         [Test]
