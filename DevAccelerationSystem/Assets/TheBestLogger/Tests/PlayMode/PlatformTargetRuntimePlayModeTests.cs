@@ -75,9 +75,13 @@ namespace TheBestLogger.Tests.PlayMode
 
             var target = new AppleSystemLogTarget("com.foxster.app", "Unity");
             var exception = new InvalidOperationException("boom");
-            var exceptionAttributes = new LogAttributes { StackTrace = "captured-stack" };
+            var debugAttributes = new LogAttributes(LogImportance.Important);
+            debugAttributes.Tags = new[] { "playmode", "apple" };
+            debugAttributes.Add("attempt", 5);
+            var exceptionAttributes = new LogAttributes(LogImportance.Critical) { StackTrace = "captured-stack" };
+            exceptionAttributes.Add("traceId", "ios-42");
 
-            target.Log(LogLevel.Debug, "Gameplay", "debug-message", new LogAttributes());
+            target.Log(LogLevel.Debug, "Gameplay", "debug-message", debugAttributes);
             target.Log(LogLevel.Exception, "Gameplay", "ignored", exceptionAttributes, exception);
             target.LogBatch(new List<LogEntry>
             {
@@ -90,9 +94,18 @@ namespace TheBestLogger.Tests.PlayMode
             Assert.That(bridge.Initializations.Count, Is.EqualTo(1));
             Assert.That(bridge.Initializations[0], Is.EqualTo(("com.foxster.app", "Unity")));
             Assert.That(bridge.Calls.Count, Is.EqualTo(4));
-            Assert.That(bridge.Calls[0], Is.EqualTo((AppleSystemLogMethod.Debug, "Gameplay", "debug-message")));
+            Assert.That(bridge.Calls[0].Method, Is.EqualTo(AppleSystemLogMethod.Debug));
+            Assert.That(bridge.Calls[0].Category, Is.EqualTo("Gameplay"));
+            Assert.That(bridge.Calls[0].Message, Does.StartWith("debug-message"));
+            Assert.That(bridge.Calls[0].Message, Does.Contain("Importance: Important"));
+            Assert.That(bridge.Calls[0].Message, Does.Contain("Tags: playmode, apple"));
+            Assert.That(bridge.Calls[0].Message, Does.Contain("attempt: 5"));
             Assert.That(bridge.Calls[1].Method, Is.EqualTo(AppleSystemLogMethod.Error));
-            Assert.That(bridge.Calls[1].Message, Is.EqualTo("boom\ncaptured-stack"));
+            Assert.That(bridge.Calls[1].Message, Does.StartWith("ignored"));
+            Assert.That(bridge.Calls[1].Message, Does.Contain("Importance: Critical"));
+            Assert.That(bridge.Calls[1].Message, Does.Contain("traceId: ios-42"));
+            Assert.That(bridge.Calls[1].Message, Does.Contain("--- Exception ---"));
+            Assert.That(bridge.Calls[1].Message, Does.Contain("boom\ncaptured-stack"));
             Assert.That(bridge.Calls[2], Is.EqualTo((AppleSystemLogMethod.Info, "Bootstrap", "batch-one")));
             Assert.That(bridge.Calls[3], Is.EqualTo((AppleSystemLogMethod.Default, "Runtime", "batch-two")));
         }
@@ -121,6 +134,7 @@ namespace TheBestLogger.Tests.PlayMode
             Assert.That(bridge.Calls.Count, Is.EqualTo(3));
             Assert.That(bridge.Calls[0].Method, Is.EqualTo(AndroidSystemLogMethod.Warning));
             Assert.That(bridge.Calls[0].Message, Does.StartWith("[Gameplay] warn-message"));
+            Assert.That(bridge.Calls[0].Message, Does.Contain("Importance: Critical"));
             Assert.That(bridge.Calls[0].Message, Does.Contain("Tags: core"));
             Assert.That(bridge.Calls[0].Message, Does.Contain("Props: - attempt: 2"));
             Assert.That(bridge.Calls[1].Method, Is.EqualTo(AndroidSystemLogMethod.Info));

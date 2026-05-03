@@ -51,6 +51,40 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
+        public void BuildMessagePayload_AppendsFormattedAttributes()
+        {
+            var attributes = new LogAttributes(LogImportance.Critical);
+            attributes.Tags = new[] { "ios", "native" };
+            attributes.Add("attempt", 7);
+
+            var result = AppleSystemLogTarget.BuildMessagePayload("hello", attributes);
+
+            Assert.That(result, Does.StartWith("hello"));
+            Assert.That(result, Does.Contain("Importance: Critical"));
+            Assert.That(result, Does.Contain("Tags: ios, native"));
+            Assert.That(result, Does.Contain("attempt: 7"));
+        }
+
+        [Test]
+        public void BuildExceptionPayload_AppendsMessageAttributesAndExceptionText()
+        {
+            var attributes = new LogAttributes(LogImportance.Important);
+            attributes.Add("session", "abc");
+            var exception = new InvalidOperationException("boom");
+            exception = CaptureException(exception);
+
+            var messagePayload = AppleSystemLogTarget.BuildMessagePayload("hello", attributes);
+            var result = AppleSystemLogTarget.BuildExceptionPayload(messagePayload, exception, attributes);
+
+            Assert.That(result, Does.StartWith("hello"));
+            Assert.That(result, Does.Contain("Importance: Important"));
+            Assert.That(result, Does.Contain("session: abc"));
+            Assert.That(result, Does.Contain("--- Exception ---"));
+            Assert.That(result, Does.Contain("boom\n"));
+            Assert.That(result, Does.Contain(nameof(CaptureException)));
+        }
+
+        [Test]
         public void LogBatch_WhenNull_DoesNotThrow()
         {
             var target = new SpyAppleSystemLogTarget();

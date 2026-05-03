@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using TheBestLogger.Core.Utilities;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -86,36 +87,39 @@ namespace TheBestLogger
                                  LogAttributes logAttributes,
                                  Exception exception = null)
         {
+            var messagePayload = BuildMessagePayload(message, logAttributes);
+
             switch (MapLogLevel(level))
             {
                 case AppleSystemLogMethod.Debug:
                 {
-                    Bridge?.LogDebug(category, message);
+                    Bridge?.LogDebug(category, messagePayload);
                     break;
                 }
                 case AppleSystemLogMethod.Info:
                 {
-                    Bridge?.LogInfo(category, message);
+                    Bridge?.LogInfo(category, messagePayload);
                     break;
                 }
                 case AppleSystemLogMethod.Default:
                 {
-                    Bridge?.LogDefault(category, message);
+                    Bridge?.LogDefault(category, messagePayload);
                     break;
                 }
                 case AppleSystemLogMethod.Error:
                 {
                     if (exception != null)
                     {
-                        Bridge?.LogError(category, BuildExceptionMessage(exception, logAttributes));
+                        Bridge?.LogError(category, BuildExceptionPayload(messagePayload, exception, logAttributes));
                         return;
                     }
-                    Bridge?.LogError(category, message);
+
+                    Bridge?.LogError(category, messagePayload);
                     break;
                 }
                 default:
                 {
-                    Bridge?.LogDefault(category, message);
+                    Bridge?.LogDefault(category, messagePayload);
                     break;
                 }
             }
@@ -162,6 +166,30 @@ namespace TheBestLogger
             return string.IsNullOrEmpty(stackTrace)
                        ? exception.Message ?? string.Empty
                        : (exception.Message ?? string.Empty) + "\n" + stackTrace;
+        }
+
+        internal static string BuildMessagePayload(string message, LogAttributes logAttributes)
+        {
+            message ??= string.Empty;
+            return logAttributes == null
+                       ? message
+                       : StringOperations.Concat(message, logAttributes.ToRegularString(true, false));
+        }
+
+        internal static string BuildExceptionPayload(string messagePayload, Exception exception, LogAttributes logAttributes)
+        {
+            var exceptionMessage = BuildExceptionMessage(exception, logAttributes);
+            if (string.IsNullOrEmpty(messagePayload))
+            {
+                return exceptionMessage;
+            }
+
+            if (string.IsNullOrEmpty(exceptionMessage))
+            {
+                return messagePayload;
+            }
+
+            return $"{messagePayload}\n--- Exception ---\n{exceptionMessage}";
         }
 
         internal static void ResetTestHooks()

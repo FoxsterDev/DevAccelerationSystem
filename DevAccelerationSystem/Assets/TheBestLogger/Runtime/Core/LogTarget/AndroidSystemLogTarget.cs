@@ -122,7 +122,7 @@ namespace TheBestLogger
         /// <param name="level">The severity level of the log (e.g., Debug, Error).</param>
         /// <param name="category">The log category (tag) to be used in Logcat.</param>
         /// <param name="message">The main log message.</param>
-        /// <param name="logAttributes">Optional structured data. (Currently not serialized in this implementation).</param>
+        /// <param name="logAttributes">Optional structured data appended to the Logcat payload.</param>
         /// <param name="exception">An optional exception to include in the log.</param>
         public override void Log(LogLevel level,
                                  string category,
@@ -166,16 +166,21 @@ namespace TheBestLogger
                                                    Exception exception)
         {
             category ??= string.Empty;
-            message = message == null
-                          ? string.Empty
-                          : StringOperations.Concat("[", category, "] ", message, logAttributes?.ToFlatString() ?? string.Empty);
+            var messagePayload = message == null
+                                     ? string.Empty
+                                     : StringOperations.Concat("[", category, "] ", message);
+
+            if (logAttributes != null)
+            {
+                messagePayload = StringOperations.Concat(messagePayload, logAttributes.ToFlatString(true, false));
+            }
 
             if (exception != null)
             {
-                message = $"{message}\n--- Exception ---\n{exception}";
+                messagePayload = $"{messagePayload}\n--- Exception ---\n{exception}";
             }
 
-            return message;
+            return messagePayload;
         }
 
         internal static void ResetTestHooks()

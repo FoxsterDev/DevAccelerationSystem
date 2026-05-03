@@ -27,6 +27,7 @@ namespace TheBestLogger.Tests.Editor
             var result = AndroidSystemLogTarget.BuildMessagePayload("Gameplay", "hello", attributes, null);
 
             Assert.That(result, Does.StartWith("[Gameplay] hello"));
+            Assert.That(result, Does.Contain("Importance: Critical"));
             Assert.That(result, Does.Contain("Tags: core, android"));
             Assert.That(result, Does.Contain("Props: - attempt: 3"));
         }
@@ -49,6 +50,19 @@ namespace TheBestLogger.Tests.Editor
             var result = AndroidSystemLogTarget.BuildMessagePayload(null, null, null, null);
 
             Assert.That(result, Is.EqualTo(string.Empty));
+        }
+
+        [Test]
+        public void BuildMessagePayload_WhenMessageIsNull_PreservesAttributes()
+        {
+            var attributes = new LogAttributes(LogImportance.Important);
+            attributes.Add("session", "android-42");
+
+            var result = AndroidSystemLogTarget.BuildMessagePayload(null, null, attributes, null);
+
+            Assert.That(result, Does.Contain("[LogAttributes]"));
+            Assert.That(result, Does.Contain("Importance: Important"));
+            Assert.That(result, Does.Contain("session: android-42"));
         }
 
         [Test]

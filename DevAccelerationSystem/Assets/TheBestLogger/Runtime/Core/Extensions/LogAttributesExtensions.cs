@@ -58,7 +58,7 @@ namespace TheBestLogger
             sb.Append($" [LogAttributes]");
             if (includeImportance)
             {
-                sb.Append(" Importance: {attributes.LogImportance}");
+                sb.Append($" Importance: {attributes.LogImportance}");
             }
 
             if (attributes.Tags != null && attributes.Tags.Length > 0)
