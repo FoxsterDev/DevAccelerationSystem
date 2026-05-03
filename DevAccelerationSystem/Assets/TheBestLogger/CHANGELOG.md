@@ -11,6 +11,12 @@
 - Fixed async-disposal deadlock risk in `FileBackgroundAsyncWriter`.
 - Fixed `UnityDebugLogSource` handler replacement to be instance-safe under repeated test or runtime setup.
 
+## [2.2.15] - 2026-05-03
+- Added `DebugMode.SessionDebugRolloutPercentage` for per-target session-random debug activation.
+- Made `DebugMode` rollout sticky for the current logger session and explicit `debugId` activation target-specific.
+- Updated remote-config behavior so partial nested `DebugMode` patches preserve absent fields and `DebugMode.Enabled = false` turns target debug off immediately.
+- Expanded logger README guidance with concrete partial `OpenSearchLogTargetConfiguration` remote-patch scenarios.
+
 ## [2.2.14] - 2025-11-19
 - Added `[HideInCallstack]` to the `LogTrace` extension method to improve click-through behavior in the Unity Console.
 

@@ -23,7 +23,7 @@ namespace TheBestLogger
         /// <param name="logTargets">List of log targets to output logs, requiring configurations in LogManagerConfiguration.</param>
         /// <param name="disposingToken">Token used to dispose the logger, e.g., when the application exits.</param>
         /// <param name="resourceSubFolderThatContainsConfigs">Path to the Unity Resources folder containing log configurations (e.g., "Logger/Dev/").</param>
-        /// <param name="debugId">Optional identifier for enabling debug mode. If empty, a device ID will be used.</param>
+        /// <param name="debugId">Optional explicit identifier for allowlist-based debug mode during initialization.</param>
         public static void Initialize(IReadOnlyList<LogTarget> logTargets,
                                       string resourceSubFolderThatContainsConfigs,
                                       CancellationToken disposingToken, string debugId = "")
@@ -46,6 +46,8 @@ namespace TheBestLogger
                 Diagnostics.Write("LogManager is already initialized! Wrong behaviour usage detected", LogLevel.Warning);
                 return;
             }
+
+            _wasDisposed = false;
 
             try
             {
@@ -84,6 +86,7 @@ namespace TheBestLogger
                 _decoratedLogTargets = TryDecorateLogTargets(logTargets, currentTimeUtc, _utilitySupplier);
 
                 _targetUpdates = TrySubscribeForUpdates(_decoratedLogTargets);
+                InitializeSessionDebugModeStates(_decoratedLogTargets);
 
                 UnityEngine.Debug.unityLogger.filterLogType = _configuration.DebugUnityLoggerFilterLogType;
 
@@ -142,10 +145,15 @@ namespace TheBestLogger
                     RunUpdates(_targetUpdates, _minUpdatesPeriodMs, currentTimeUtc, disposingToken).FireAndForget();
                 }
 
-                var id = !string.IsNullOrEmpty(debugId) ? debugId : SystemInfo.deviceUniqueIdentifier;
-                _currentDebugId = id;
-                _debugModeRequestedState = true;
-                SetDebugMode(id, true);
+                _currentDebugId = null;
+                _debugModeRequestedState = false;
+                ReapplyCurrentDebugModeState();
+                if (!string.IsNullOrEmpty(debugId))
+                {
+                    _currentDebugId = debugId;
+                    _debugModeRequestedState = true;
+                    SetDebugMode(debugId, true);
+                }
 
                 Diagnostics.Write("LogManager has initialized!");
             }
@@ -319,7 +327,7 @@ namespace TheBestLogger
         /// Enables or disables debug mode for specified log targets based on the debugId and state provided.
         /// If LogManager is not properly configured, logs a warning and returns false.
         /// </summary>
-        /// <param name="debugId">Unique identifier (e.g., UDID, playerId) specific to each log target configuration.</param>
+        /// <param name="debugId">Unique identifier (e.g., UDID, playerId) used by each log target configuration for explicit debug allowlists.</param>
         /// <param name="state">Debug mode state to set (true to enable, false to disable).</param>
         /// <returns>True if debug mode state changes, false otherwise.</returns>
         public static bool SetDebugMode(string debugId, bool state)

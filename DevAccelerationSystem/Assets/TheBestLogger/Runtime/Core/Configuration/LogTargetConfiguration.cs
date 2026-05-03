@@ -50,7 +50,7 @@ namespace TheBestLogger
             Diagnostics.Write(" end for "+GetType().Name);
         }
 
-        public void ApplyRuntimeDefaults()
+        public virtual void ApplyRuntimeDefaults()
         {
             OverrideCategories ??= Array.Empty<LogTargetCategory>();
             DebugMode ??= new DebugModeConfiguration();

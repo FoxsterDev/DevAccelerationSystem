@@ -65,6 +65,10 @@ namespace TheBestLogger.Tests.Editor
         {
             var local = new OpenSearchLogTargetConfiguration
             {
+                DebugMode = new DebugModeConfiguration
+                {
+                    SessionDebugRolloutPercentage = 2.5f
+                },
                 OpenSearchHostUrl = "https://local",
                 OpenSearchSingleLogMethod = "/bulk",
                 IndexPrefix = "game-logs-",
@@ -74,6 +78,10 @@ namespace TheBestLogger.Tests.Editor
 
             var remote = new OpenSearchLogTargetConfiguration
             {
+                DebugMode = new DebugModeConfiguration
+                {
+                    SessionDebugRolloutPercentage = 0f
+                },
                 OpenSearchHostUrl = "https://remote",
                 OpenSearchSingleLogMethod = string.Empty,
                 IndexPrefix = null,
@@ -87,6 +95,7 @@ namespace TheBestLogger.Tests.Editor
             Assert.That(local.OpenSearchSingleLogMethod, Is.EqualTo("/bulk"));
             Assert.That(local.IndexPrefix, Is.EqualTo("game-logs-"));
             Assert.That(local.ApiKey, Is.EqualTo("secret-local"));
+            Assert.That(local.DebugMode.SessionDebugRolloutPercentage, Is.EqualTo(0f));
             Assert.That(local.MinLogLevel, Is.EqualTo(LogLevel.Debug));
         }
 
@@ -115,6 +124,7 @@ namespace TheBestLogger.Tests.Editor
             Assert.That(config.DebugMode, Is.Not.Null);
             Assert.That(config.DebugMode.IDs, Is.Not.Null);
             Assert.That(config.DebugMode.IDs, Is.EquivalentTo(new[] { "legacy-debug-id" }));
+            Assert.That(config.DebugMode.SessionDebugRolloutPercentage, Is.EqualTo(0f));
             Assert.That(config.StackTraces, Is.Not.Null);
             Assert.That(config.StackTraces.Length, Is.EqualTo(5));
             Assert.That(config.DispatchingLogsToMainThread.Enabled, Is.False);
@@ -133,6 +143,7 @@ namespace TheBestLogger.Tests.Editor
             Assert.That(config.DebugMode, Is.Not.Null);
             Assert.That(config.DebugMode.Enabled, Is.True);
             Assert.That(config.DebugMode.IDs, Is.EquivalentTo(new[] { "debug-a", "debug-b" }));
+            Assert.That(config.DebugMode.SessionDebugRolloutPercentage, Is.EqualTo(0f));
             Assert.That(config.StackTraces, Is.Not.Null);
             Assert.That(config.StackTraces.Length, Is.EqualTo(5));
             Assert.That(config.DispatchingLogsToMainThread.Enabled, Is.True);
@@ -195,7 +206,8 @@ namespace TheBestLogger.Tests.Editor
                 {
                     Enabled = true,
                     IDs = new[] { "debug-a" },
-                    MinLogLevel = LogLevel.Debug
+                    MinLogLevel = LogLevel.Debug,
+                    SessionDebugRolloutPercentage = 2.5f
                 },
                 DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
             };
@@ -211,7 +223,28 @@ namespace TheBestLogger.Tests.Editor
             Assert.That(config.MinLogLevel, Is.EqualTo(LogLevel.Error));
             Assert.That(config.BatchLogs.UpdatePeriodMs, Is.EqualTo(500));
             Assert.That(config.BatchLogs.MaxCountLogs, Is.EqualTo(20));
+            Assert.That(config.DebugMode.Enabled, Is.True);
+            Assert.That(config.DebugMode.MinLogLevel, Is.EqualTo(LogLevel.Debug));
+            Assert.That(config.DebugMode.SessionDebugRolloutPercentage, Is.EqualTo(2.5f));
             Assert.That(config.DebugMode.IDs, Is.EquivalentTo(new[] { "debug-a" }));
+        }
+
+        [Test]
+        public void UnityJsonOverwrite_PartialPatch_UpdatesSessionDebugRolloutPercentage()
+        {
+            var config = new OpenSearchLogTargetConfiguration
+            {
+                DebugMode = new DebugModeConfiguration
+                {
+                    SessionDebugRolloutPercentage = 2.5f
+                },
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            };
+
+            JsonUtility.FromJsonOverwrite(@"{""DebugMode"":{""SessionDebugRolloutPercentage"":20.5}}", config);
+            config.ApplyRuntimeDefaults();
+
+            Assert.That(config.DebugMode.SessionDebugRolloutPercentage, Is.EqualTo(20.5f));
         }
 
         [Test]
@@ -234,6 +267,52 @@ namespace TheBestLogger.Tests.Editor
             Assert.That(config.BatchLogs.Enabled, Is.True);
             Assert.That(config.BatchLogs.UpdatePeriodMs, Is.EqualTo(750));
             Assert.That(config.BatchLogs.MaxCountLogs, Is.EqualTo(42));
+        }
+
+        [Test]
+        public void UnityJsonOverwrite_PartialPatch_PreservesAbsentNestedDebugModeFields()
+        {
+            var config = new OpenSearchLogTargetConfiguration
+            {
+                DebugMode = new DebugModeConfiguration
+                {
+                    Enabled = true,
+                    MinLogLevel = LogLevel.Debug,
+                    IDs = new[] { "debug-a" },
+                    SessionDebugRolloutPercentage = 15.5f
+                },
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            };
+
+            JsonUtility.FromJsonOverwrite(@"{""DebugMode"":{""Enabled"":false}}", config);
+            config.ApplyRuntimeDefaults();
+
+            Assert.That(config.DebugMode.Enabled, Is.False);
+            Assert.That(config.DebugMode.MinLogLevel, Is.EqualTo(LogLevel.Debug));
+            Assert.That(config.DebugMode.SessionDebugRolloutPercentage, Is.EqualTo(15.5f));
+            Assert.That(config.DebugMode.IDs, Is.EquivalentTo(new[] { "debug-a" }));
+        }
+
+        [Test]
+        public void ApplyRuntimeDefaults_ClampsSessionDebugRolloutPercentage()
+        {
+            var config = new OpenSearchLogTargetConfiguration
+            {
+                DebugMode = new DebugModeConfiguration
+                {
+                    SessionDebugRolloutPercentage = 250.5f
+                },
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            };
+
+            config.ApplyRuntimeDefaults();
+
+            Assert.That(config.DebugMode.SessionDebugRolloutPercentage, Is.EqualTo(100f));
+
+            config.DebugMode.SessionDebugRolloutPercentage = -10.5f;
+            config.ApplyRuntimeDefaults();
+
+            Assert.That(config.DebugMode.SessionDebugRolloutPercentage, Is.EqualTo(0f));
         }
 
         [Test]

@@ -12,7 +12,7 @@ This repository currently publishes two Unity package surfaces:
 Latest tagged releases in this repository:
 
 - `DevAccelerationSystem`: `1.0.1`
-- `TheBestLogger`: `2.2.14`
+- `TheBestLogger`: `2.2.15`
 
 ## Packages In This Repository
 
@@ -34,7 +34,7 @@ Purpose:
 
 - Package id: `com.foxsterdev.thebestlogger`
 - Package path: `DevAccelerationSystem/Assets/TheBestLogger`
-- Latest tagged release: `2.2.14`
+- Latest tagged release: `2.2.15`
 - Declared Unity baseline in package manifest: `2022.3`
 - Package README: [DevAccelerationSystem/Assets/TheBestLogger/README.md](./DevAccelerationSystem/Assets/TheBestLogger/README.md)
 - Package changelog: [DevAccelerationSystem/Assets/TheBestLogger/CHANGELOG.md](./DevAccelerationSystem/Assets/TheBestLogger/CHANGELOG.md)
@@ -46,6 +46,19 @@ Purpose:
 - platform targets and example integrations
 - `StabilityHub` integration for stability-oriented flows
 - current repository state also includes editor, playmode, performance, and tracked consumer-validation coverage around the logger package
+
+Operational notes:
+
+- `DebugMode` is target-specific and has two independent activation paths:
+  - target-owned session rollout from `DebugMode.SessionDebugRolloutPercentage`, rolled once on `LogManager.Initialize(...)` for that target
+  - explicit allowlist activation when the client passes a matching `debugId` into `LogManager.Initialize(...)` or `LogManager.SetDebugMode(...)`
+- effective rule is `session rollout OR explicit debugId match`
+- startup no longer falls back to `SystemInfo.deviceUniqueIdentifier` for explicit debug activation
+- `DebugMode.SessionDebugRolloutPercentage` is a `float`, so rollout values such as `2.5` are supported
+- runtime remote config can be applied immediately and can also be restored from startup cache on the next launch
+- for partial remote updates, prefer the raw JSON config overloads
+- detailed `DebugMode` and remote-config behavior is documented in the package README:
+  - [TheBestLogger README](./DevAccelerationSystem/Assets/TheBestLogger/README.md)
 
 Additional public docs:
 
@@ -103,7 +116,7 @@ https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSyst
 ### Install via UPM
 
 ```text
-https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/TheBestLogger#2.2.14
+https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/TheBestLogger#2.2.15
 ```
 
 ### Install via `manifest.json`
@@ -111,7 +124,7 @@ https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSyst
 ```json
 {
   "dependencies": {
-    "com.foxsterdev.thebestlogger": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/TheBestLogger#2.2.14"
+    "com.foxsterdev.thebestlogger": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/TheBestLogger#2.2.15"
   }
 }
 ```
@@ -232,6 +245,10 @@ Recent `TheBestLogger` highlights:
   - `LogTrace` extension method and formatting improvements
 - `2.2.14`
   - `[HideInCallstack]` on `LogTrace` for better Unity Console navigation
+- `2.2.15`
+  - target-specific `DebugMode.SessionDebugRolloutPercentage`
+  - sticky session-random debug activation
+  - expanded partial remote-config examples for `OpenSearch`
 
 ## Contributing
 

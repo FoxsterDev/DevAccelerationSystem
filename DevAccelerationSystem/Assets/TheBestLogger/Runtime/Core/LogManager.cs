@@ -31,6 +31,7 @@ namespace TheBestLogger
         private static IReadOnlyList<ILogTarget> _decoratedLogTargets = Array.Empty<ILogTarget>();
         private static IReadOnlyList<LogTarget> _originalLogTargets = Array.Empty<LogTarget>();
         private static IReadOnlyList<ILogSource> _logSources = Array.Empty<ILogSource>();
+        private static Dictionary<ILogTarget, bool> _sessionDebugModeStates = new Dictionary<ILogTarget, bool>();
         private static LogManagerConfiguration _configuration;
         private static UtilitySupplier _utilitySupplier;
         private static uint _minUpdatesPeriodMs;
@@ -166,25 +167,99 @@ namespace TheBestLogger
             }
 
             var previousState = logTarget.DebugModeEnabled;
-            var debugModeState = false;
-            var debugMode = logTarget.Configuration.DebugMode;
-            if (state && debugMode != null && debugMode.Enabled && debugMode.IDs != null && debugMode.IDs.Length > 0)
-            {
-                foreach (var id in debugMode.IDs)
-                {
-                    if (string.Equals(id, debugId, StringComparison.Ordinal))
-                    {
-                        Diagnostics.Write($"For LogTarget: {logTarget.GetType()} was enabled {state} debugMode");
-                        debugModeState = true;
-                        break;
-                    }
-                }
-            }
+            var debugModeState = ShouldEnableSessionDebugModeForLogTarget(logTarget) ||
+                                 ShouldEnableDebugModeForExplicitDebugId(logTarget.Configuration.DebugMode, debugId, state);
 
             logTarget.DebugModeEnabled = debugModeState;
             var debugModeStateChanged = previousState != debugModeState;
             Diagnostics.Write("end with debugModeEnabled:"+debugModeState);
             return debugModeStateChanged;
+        }
+
+        private static void InitializeSessionDebugModeStates(IReadOnlyList<ILogTarget> logTargets)
+        {
+            _sessionDebugModeStates.Clear();
+
+            if (logTargets == null || logTargets.Count < 1)
+            {
+                return;
+            }
+
+            foreach (var logTarget in logTargets)
+            {
+                var debugMode = logTarget?.Configuration?.DebugMode;
+                if (debugMode == null)
+                {
+                    continue;
+                }
+
+                _sessionDebugModeStates[logTarget] = RollSessionDebugModeState(debugMode.SessionDebugRolloutPercentage);
+            }
+        }
+
+        private static bool GetSessionDebugModeState(ILogTarget logTarget)
+        {
+            if (logTarget == null)
+            {
+                return false;
+            }
+
+            return _sessionDebugModeStates.TryGetValue(logTarget, out var debugModeState) && debugModeState;
+        }
+
+        private static bool RollSessionDebugModeState(float rolloutPercentage)
+        {
+            if (rolloutPercentage <= 0f)
+            {
+                return false;
+            }
+
+            if (rolloutPercentage >= 100f)
+            {
+                return true;
+            }
+
+            return UnityEngine.Random.value < (rolloutPercentage / 100f);
+        }
+
+        private static bool ShouldEnableSessionDebugModeForLogTarget(ILogTarget logTarget)
+        {
+            return GetSessionDebugModeState(logTarget) && logTarget?.Configuration?.DebugMode != null && logTarget.Configuration.DebugMode.Enabled;
+        }
+
+        private static bool ShouldEnableDebugModeForExplicitDebugId(DebugModeConfiguration debugMode,
+                                                                    string debugId,
+                                                                    bool state)
+        {
+            if (!state || debugMode == null || !debugMode.Enabled || string.IsNullOrEmpty(debugId))
+            {
+                return false;
+            }
+
+            if (IsDebugModeEnabledForExplicitId(debugMode.IDs, debugId))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsDebugModeEnabledForExplicitId(string[] ids, string debugId)
+        {
+            if (ids == null || ids.Length < 1)
+            {
+                return false;
+            }
+
+            foreach (var id in ids)
+            {
+                if (string.Equals(id, debugId, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -240,7 +315,7 @@ namespace TheBestLogger
 
         private static void ReapplyCurrentDebugModeState()
         {
-            if (string.IsNullOrEmpty(_currentDebugId) || _decoratedLogTargets == null || _decoratedLogTargets.Count < 1)
+            if (_decoratedLogTargets == null || _decoratedLogTargets.Count < 1)
             {
                 return;
             }
@@ -414,6 +489,8 @@ namespace TheBestLogger
 #if UNITY_EDITOR
         internal static void ResetConfigCacheTestState()
         {
+            _wasDisposed = false;
+            _hasWarnedAboutMissingInitialization = false;
         }
 #endif
 
@@ -594,6 +671,9 @@ namespace TheBestLogger
             _configuration = null;
             _lastIncomingLogTargetConfigurationPatchesForCache = null;
             _utilitySupplier = null;
+            _currentDebugId = null;
+            _debugModeRequestedState = false;
+            _sessionDebugModeStates.Clear();
             if (_targetUpdates != null)
             {
                 _targetUpdates.Clear();
