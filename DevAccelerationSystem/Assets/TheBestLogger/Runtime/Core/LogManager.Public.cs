@@ -90,6 +90,7 @@ namespace TheBestLogger
 #if LOGGER_NOT_UNITY_EDITOR
                 SetApplicationLogTypesStackTrace(_configuration);
 #endif
+                _hasWarnedAboutMissingInitialization = false;
                 _isInitialized = true;
                 var logger = CreateLogger(_configuration.DefaultUnityLogsCategoryName);
 

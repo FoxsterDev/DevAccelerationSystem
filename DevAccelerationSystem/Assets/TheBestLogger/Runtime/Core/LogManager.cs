@@ -44,6 +44,7 @@ namespace TheBestLogger
         private static List<IScheduledUpdate> _targetUpdates;
         private static CancellationToken _disposingToken;
         private static bool _isInitialized = false;
+        private static bool _hasWarnedAboutMissingInitialization = false;
         private static readonly ILogger FallbackLogger = new FallbackLogger();
 
 #if THEBESTLOGGER_ENABLE_PROFILER
@@ -55,8 +56,12 @@ namespace TheBestLogger
         {
             if (!_isInitialized)
             {
-                FallbackLogger.LogWarning(
-                    "LogManager is not initialized!");
+                if (!_hasWarnedAboutMissingInitialization)
+                {
+                    _hasWarnedAboutMissingInitialization = true;
+                    FallbackLogger.LogWarning("LogManager is not initialized!");
+                }
+
                 return true;
             }
 
@@ -588,6 +593,7 @@ namespace TheBestLogger
             Diagnostics.Write("is disposing!");
 
             _isInitialized = false;
+            _hasWarnedAboutMissingInitialization = false;
 
             _isRunningUpdates = false;
             _configuration = null;

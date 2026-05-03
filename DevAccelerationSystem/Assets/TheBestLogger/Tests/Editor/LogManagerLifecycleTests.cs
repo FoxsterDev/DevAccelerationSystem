@@ -73,6 +73,19 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
+        public void CreateLogger_BeforeInitialize_LogsMissingInitializationWarningOnlyOnce()
+        {
+            var warnings = CaptureFallbackInitializationWarnings(() =>
+            {
+                LogManager.CreateLogger("Gameplay");
+                LogManager.CreateLogger("Bootstrap");
+                LogManager.CreateLogger("UI");
+            });
+
+            Assert.That(warnings, Has.Count.EqualTo(1));
+        }
+
+        [Test]
         public void GetCurrentLogTargetConfigurations_BeforeInitialize_ReturnsEmptyDictionary()
         {
             var configs = LogManager.GetCurrentLogTargetConfigurations();
@@ -820,6 +833,23 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
+        public void CreateLogger_AfterDispose_LogsMissingInitializationWarningOnlyOnce()
+        {
+            InitializeForTests("debug-user");
+            LogManager.Dispose();
+            ResetWasDisposedFlagOnly();
+
+            var warnings = CaptureFallbackInitializationWarnings(() =>
+            {
+                LogManager.CreateLogger("Gameplay");
+                LogManager.CreateLogger("Bootstrap");
+                LogManager.CreateLogger("UI");
+            });
+
+            Assert.That(warnings, Has.Count.EqualTo(1));
+        }
+
+        [Test]
         public void Initialize_CalledTwice_DoesNotReplaceExistingRuntime()
         {
             InitializeForTests("debug-user");
@@ -1104,6 +1134,7 @@ namespace TheBestLogger.Tests.Editor
             LogManager.ResetConfigCacheTestState();
             SetStaticField("_wasDisposed", false);
             SetStaticField("_isInitialized", false);
+            SetStaticField("_hasWarnedAboutMissingInitialization", false);
             SetStaticField("_isRunningUpdates", false);
             SetStaticField("_configuration", null);
             SetStaticField("_lastIncomingLogTargetConfigurationPatchesForCache", null);
@@ -1231,6 +1262,34 @@ namespace TheBestLogger.Tests.Editor
         private static void ResetWasDisposedFlagOnly()
         {
             SetStaticField("_wasDisposed", false);
+        }
+
+        private static List<string> CaptureFallbackInitializationWarnings(Action action)
+        {
+            var originalIgnoreFailingMessages = LogAssert.ignoreFailingMessages;
+            LogAssert.ignoreFailingMessages = true;
+            var warnings = new List<string>();
+
+            void Capture(string condition, string _, LogType type)
+            {
+                if (type == LogType.Warning && condition.Contains("[FallbackLogger] LogManager is not initialized!"))
+                {
+                    warnings.Add(condition);
+                }
+            }
+
+            Application.logMessageReceived += Capture;
+            try
+            {
+                action();
+            }
+            finally
+            {
+                Application.logMessageReceived -= Capture;
+                LogAssert.ignoreFailingMessages = originalIgnoreFailingMessages;
+            }
+
+            return warnings;
         }
 
         private static void SetStaticField(string fieldName, object value)
