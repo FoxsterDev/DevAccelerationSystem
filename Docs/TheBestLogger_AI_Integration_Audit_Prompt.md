@@ -17,6 +17,8 @@ xuunity review the existing TheBestLogger integration in this project.
 
 Scope:
 - inspect bootstrap and initialization flow
+- inspect whether any logger is created before `LogManager.Initialize(...)`
+- inspect constructor, static-field, and static-property logger creation
 - inspect Resources-backed LogManagerConfiguration usage
 - inspect current log target set and each target configuration
 - inspect log source enablement
@@ -60,6 +62,8 @@ Expected output:
   - recommended validation plan
 
 Focus especially on:
+- early `LogManager.CreateLogger(...)` calls that force `FallbackLogger`
+- startup systems that create loggers in constructors or static initialization
 - incorrect or duplicate source capture
 - non-thread-safe targets used from worker threads without dispatch
 - thread-safe targets unnecessarily dispatched to main thread
@@ -77,13 +81,31 @@ Focus especially on:
 A useful review should answer these questions explicitly:
 
 1. Is logger bootstrap correct and early enough?
-2. Is the target set coherent for the project stage and platform mix?
-3. Are `BatchLogs` and `DispatchingLogsToMainThread` configured in a way that matches target thread safety?
-4. Are remote sinks protected from noisy low-value traffic?
-5. Are stack traces enabled only where they justify their cost?
-6. Are important exceptions and crash-path events actually captured?
-7. Are the hottest log paths likely to allocate or block unnecessarily?
-8. Is there enough evidence to trust the current integration in production?
+2. Are any loggers created before initialization or from startup constructors/static initializers?
+3. Is the target set coherent for the project stage and platform mix?
+4. Are `BatchLogs` and `DispatchingLogsToMainThread` configured in a way that matches target thread safety?
+5. Are remote sinks protected from noisy low-value traffic?
+6. Are stack traces enabled only where they justify their cost?
+7. Are important exceptions and crash-path events actually captured?
+8. Are the hottest log paths likely to allocate or block unnecessarily?
+9. Is there enough evidence to trust the current integration in production?
+
+## What To Give Another AI
+
+When using this prompt in another Unity project, give the AI enough project-local context to review the integration instead of only the package docs:
+
+- the logger bootstrap entrypoint
+- the `LogManager.Initialize(...)` call site
+- any startup steps that can call `LogManager.CreateLogger(...)`
+- the `Resources` folder or explicit config assets used by `LogManager`
+- any wrapper types like `GameLogger`, `Logger`, or project-local logger factories
+- example high-frequency systems that emit logs during startup, gameplay, and shutdown
+- any consumer validation or device-validation evidence already available
+
+If you can attach two docs from this repo, attach:
+
+- `Docs/TheBestLogger_Integration_Best_Practices.md`
+- `Docs/TheBestLogger_AI_Integration_Audit_Prompt.md`
 
 ## Optional Follow-Up Prompts
 
@@ -109,4 +131,3 @@ xuunity add or refresh consumer validation for the current TheBestLogger integra
 
 - [TheBestLogger package README](../DevAccelerationSystem/Assets/TheBestLogger/README.md)
 - [TheBestLogger Integration Best Practices](./TheBestLogger_Integration_Best_Practices.md)
-

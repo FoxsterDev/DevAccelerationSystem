@@ -181,6 +181,29 @@ Typical target mix:
 - Pass a non-empty target list.
 - Point `resourceSubFolderThatContainsConfigs` to the `Resources` subfolder that contains `LogManagerConfiguration`.
 - Use `Application.exitCancellationToken` on supported Unity versions so logger disposal is wired into shutdown.
+- Do not call `LogManager.CreateLogger(...)` before initialization.
+- Do not create loggers from constructors, static field initializers, or other early bootstrap paths that can run before logger initialization.
+- If a startup system needs a logger, resolve it lazily after initialization or inject it after the logger bootstrap step.
+
+Common bad pattern:
+
+```csharp
+public sealed class SomeStartupStep
+{
+    private readonly ILogger _logger = LogManager.CreateLogger("Startup");
+}
+```
+
+Safer pattern:
+
+```csharp
+public sealed class SomeStartupStep
+{
+    private ILogger _logger;
+
+    private ILogger Logger => _logger ??= LogManager.CreateLogger("Startup");
+}
+```
 
 ### 2. Category Rules
 
@@ -419,3 +442,15 @@ Recommended validation stack:
 - consumer validation is green
 - performance evidence exists
 - native/device proof exists for platform-native targets
+
+## What Another AI Should Check
+
+If you ask another AI to review a project that already integrated `TheBestLogger`, make sure it checks these bootstrap-specific risks explicitly:
+
+- `LogManager.Initialize(...)` order relative to the real app bootstrap
+- any `LogManager.CreateLogger(...)` call that can run before initialization
+- loggers created from constructors
+- loggers created from static fields or static properties
+- bootstrap steps that log during their own construction
+- fallback-logger warnings that indicate early logger access instead of a properly initialized runtime
+- whether logger creation is lazy or injected after bootstrap
