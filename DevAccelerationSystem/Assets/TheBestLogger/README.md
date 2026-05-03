@@ -178,3 +178,49 @@ At runtime the sample also generates a tabbed control screen with:
 - Use main-thread dispatch only for targets that are not safe to execute from worker threads.
 - Keep stack traces mostly on `Error` and `Exception` unless you are actively diagnosing a hot issue.
 - Treat `OpenSearch` as production-sensitive if you use it in a real backend pipeline.
+
+## Exception Hardening Checklist
+
+Use these rules if you want the logger to stay an observer of failures instead of becoming a new failure source.
+
+- Keep logger-owned runtime paths `never-throw` in production.
+- If a custom target or third-party sink fails, isolate that failure, mute or disable the broken sink, and keep healthy targets alive.
+- If you already have a real `Exception`, pass the real exception object into the logger:
+  - `logger.LogException(exception)`
+  - `logger.LogError("context message", exception)`
+- Do not reduce exceptions to only `exception.Message` or only `exception.StackTrace` too early.
+- Do not collapse `AggregateException` to one `InnerException` unless that loss of context is intentional.
+- Prefer package-safe helpers such as `FireAndForget()` or `FireAndLogWhenExceptions(...)` over raw `async void` logging helpers.
+- If you rethrow after logging, use:
+  - `throw;` for the same caught exception in the same `catch`
+  - `ExceptionDispatchInfo.Capture(exception).Throw();` for delayed rethrow or rethrow of an extracted inner exception
+- Do not use:
+  - `throw ex;`
+  - `throw ex.InnerException;`
+- If a reflection-based integration uses `Invoke(...)`, prefer the overload that supports `BindingFlags.DoNotWrapExceptions` when available.
+
+Minimal good pattern:
+
+```csharp
+try
+{
+    SendRemotePayload();
+}
+catch (Exception ex)
+{
+    logger.LogError("Remote payload send failed.", ex);
+}
+```
+
+Minimal bad pattern:
+
+```csharp
+try
+{
+    SendRemotePayload();
+}
+catch (Exception ex)
+{
+    logger.LogError($"Remote payload send failed: {ex.Message}");
+}
+```

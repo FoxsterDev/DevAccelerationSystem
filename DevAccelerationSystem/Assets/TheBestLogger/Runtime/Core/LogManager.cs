@@ -159,35 +159,30 @@ namespace TheBestLogger
         {
             Diagnostics.Write("begin");
 
-            var debugModeState = false;
-            var debugModeStateChanged = false;
-            if (logTarget?.Configuration != null && logTarget.DebugModeEnabled != state)
+            if (logTarget?.Configuration == null)
             {
-                var debugMode = logTarget.Configuration.DebugMode;
+                Diagnostics.Write("logTarget or logTarget.configuration is null", LogLevel.Error);
+                return false;
+            }
 
-                if (debugMode.Enabled && debugMode.IDs != null && debugMode.IDs.Length > 0)
+            var previousState = logTarget.DebugModeEnabled;
+            var debugModeState = false;
+            var debugMode = logTarget.Configuration.DebugMode;
+            if (state && debugMode != null && debugMode.Enabled && debugMode.IDs != null && debugMode.IDs.Length > 0)
+            {
+                foreach (var id in debugMode.IDs)
                 {
-                    foreach (var id in debugMode.IDs)
+                    if (string.Equals(id, debugId, StringComparison.Ordinal))
                     {
-                        if (id == debugId)
-                        {
-                            Diagnostics.Write($"For LogTarget: {logTarget.GetType()} was enabled {state} debugMode");
-                            debugModeState = state;
-                            debugModeStateChanged = true;
-                            break;
-                        }
+                        Diagnostics.Write($"For LogTarget: {logTarget.GetType()} was enabled {state} debugMode");
+                        debugModeState = true;
+                        break;
                     }
                 }
-
-                //does it make sense to plaer prefs safe to get logs from launch the game ?
-                logTarget.DebugModeEnabled = debugModeState;
-            }
-            else
-            {
-                Diagnostics.Write(
-                    $"logTarget or logTarget.configuration is null", LogLevel.Error);
             }
 
+            logTarget.DebugModeEnabled = debugModeState;
+            var debugModeStateChanged = previousState != debugModeState;
             Diagnostics.Write("end with debugModeEnabled:"+debugModeState);
             return debugModeStateChanged;
         }

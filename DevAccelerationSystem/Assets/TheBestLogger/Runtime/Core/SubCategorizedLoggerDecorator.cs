@@ -35,9 +35,8 @@ namespace TheBestLogger
                              Exception exception,
                              LogAttributes logAttributes = null)
         {
-
             var formatted = LogMessageFormatter.TryFormat(_subCategoryName, message, exception);
-            _logger.LogError(formatted,  logAttributes);
+            _logger.LogError(formatted, exception, logAttributes);
         }
 
         public void LogWarning(string message, LogAttributes logAttributes = null)
@@ -100,7 +99,7 @@ namespace TheBestLogger
                                   string message,
                                   in T1 arg1)
         {
-            throw new NotImplementedException();
+            _logger.LogFormat(level, ZString.Concat(_subCategoryName, " ", message), arg1);
         }
 
         public void LogFormat<T1, T2>(LogLevel level,
@@ -108,7 +107,7 @@ namespace TheBestLogger
                                       in T1 arg1,
                                       in T2 arg2)
         {
-            throw new NotImplementedException();
+            _logger.LogFormat(level, ZString.Concat(_subCategoryName, " ", message), arg1, arg2);
         }
 
         public void LogFormat<T1, T2, T3>(LogLevel level,
@@ -117,7 +116,7 @@ namespace TheBestLogger
                                           in T2 arg2,
                                           in T3 arg3)
         {
-            throw new NotImplementedException();
+            _logger.LogFormat(level, ZString.Concat(_subCategoryName, " ", message), arg1, arg2, arg3);
         }
     }
 }

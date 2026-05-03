@@ -7,6 +7,61 @@ namespace TheBestLogger
 {
     public static class TaskExtensions
     {
+        private static void LogTaskCancellation(ILogger logger)
+        {
+            if (logger != null)
+            {
+                try
+                {
+                    logger.LogTrace("Task was canceled.");
+                    return;
+                }
+                catch (Exception loggerException)
+                {
+                    UnityEngine.Debug.LogException(loggerException);
+                }
+            }
+
+            UnityEngine.Debug.Log("Task was canceled.");
+        }
+
+        private static void LogTaskException(ILogger logger, string message, Exception exception)
+        {
+            if (exception == null)
+            {
+                UnityEngine.Debug.LogError(message);
+                return;
+            }
+
+            if (logger != null)
+            {
+                try
+                {
+                    logger.LogError(message, exception);
+                    return;
+                }
+                catch (Exception loggerException)
+                {
+                    UnityEngine.Debug.LogException(loggerException);
+                }
+            }
+
+            UnityEngine.Debug.LogException(exception);
+        }
+
+        private static TaskScheduler GetSafeCurrentSynchronizationContextScheduler()
+        {
+            try
+            {
+                return TaskScheduler.FromCurrentSynchronizationContext();
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogException(ex);
+                return TaskScheduler.Current;
+            }
+        }
+
         /// <summary>
         /// Fires a task without waiting for it, and logs any exceptions that occur.
         /// </summary>
@@ -20,11 +75,11 @@ namespace TheBestLogger
             }
             catch (OperationCanceledException)
             {
-                logger.LogTrace("Task was canceled.");
+                LogTaskCancellation(logger);
             }
             catch (Exception ex)
             {
-                logger.LogError($"Unhandled exception in fire-and-forget task: {ex.Message}", new LogAttributes(ex.StackTrace));
+                LogTaskException(logger, "Unhandled exception in fire-and-forget task.", ex);
             }
         }
 
@@ -43,7 +98,7 @@ namespace TheBestLogger
             }
             catch (Exception ex)
             {
-                UnityEngine.Debug.LogError($"Unhandled exception in fire-and-forget task: {ex.Message}\n{ex.StackTrace}");
+                UnityEngine.Debug.LogException(ex);
             }
         }
 
@@ -64,8 +119,16 @@ namespace TheBestLogger
             }
             catch (Exception ex)
             {
-                onException?.Invoke(ex);
-                UnityEngine.Debug.LogError($"Unhandled exception in safe task: {ex.Message}\n{ex.StackTrace}");
+                try
+                {
+                    onException?.Invoke(ex);
+                }
+                catch (Exception callbackException)
+                {
+                    UnityEngine.Debug.LogException(callbackException);
+                }
+
+                UnityEngine.Debug.LogException(ex);
             }
         }
 
@@ -83,9 +146,11 @@ namespace TheBestLogger
 
             if (task.IsFaulted)
             {
-                var innerException = task.Exception?.Flatten().InnerException;
-                if (innerException != null)
-                    UnityEngine.Debug.LogError($"Task faulted with exception: {innerException?.Message}");
+                var exception = task.Exception?.Flatten();
+                if (exception != null)
+                {
+                    UnityEngine.Debug.LogException(exception);
+                }
             }
         }
 
@@ -154,16 +219,31 @@ namespace TheBestLogger
                 {
                     if (t.IsCanceled)
                     {
-                        onCanceled?.Invoke();
+                        try
+                        {
+                            onCanceled?.Invoke();
+                        }
+                        catch (Exception callbackException)
+                        {
+                            UnityEngine.Debug.LogException(callbackException);
+                        }
+
                         return;
                     }
 
                     if (t.IsFaulted)
                     {
-                        var ex = t.Exception?.Flatten().InnerException;
-                        onException?.Invoke(ex);
+                        var ex = t.Exception?.Flatten();
+                        try
+                        {
+                            onException?.Invoke(ex);
+                        }
+                        catch (Exception callbackException)
+                        {
+                            UnityEngine.Debug.LogException(callbackException);
+                        }
                     }
-                }, TaskScheduler.FromCurrentSynchronizationContext());
+                }, GetSafeCurrentSynchronizationContextScheduler());
 #pragma warning restore VSTHRD110
         }
 
@@ -185,7 +265,7 @@ namespace TheBestLogger
 
                     if (t.IsFaulted)
                     {
-                        var ex = t.Exception?.Flatten().InnerException;
+                        var ex = t.Exception?.Flatten();
                         UnityEngine.Debug.LogException(ex);
                     }
                 }, TaskScheduler.Current);

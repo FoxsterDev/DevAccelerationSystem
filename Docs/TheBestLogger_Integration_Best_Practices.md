@@ -6,6 +6,11 @@ This guide is for teams integrating `com.foxsterdev.thebestlogger` into a real U
 - low main-thread overhead
 - safe production behavior under exceptions, threading, batching, and remote delivery
 
+Core production rule:
+
+- the logger should observe failures, format them, and route them to healthy targets
+- the logger should not become a new source of runtime exceptions in gameplay, startup, shutdown, or crash-reporting paths
+
 Use the package README for the package surface and release info:
 
 - [TheBestLogger package README](../DevAccelerationSystem/Assets/TheBestLogger/README.md)
@@ -216,7 +221,115 @@ Why:
 - categories drive filtering and override rules in `LogTargetConfiguration`
 - loggers are cached by category and subcategory key
 
-### 3. Log Target Configuration Rules
+### 3. Logger API Usage Rules
+
+- Prefer direct `ILogger` methods such as `LogError(...)`, `LogWarning(...)`, `LogInfo(...)`, `LogDebug(...)`, and `LogException(...)`.
+- If a call site already has a variable `LogLevel`, prefer `ILogger.LogFormat(logLevel, message, attributes)` over a project-local wrapper that re-dispatches the level manually.
+- Do not add convenience wrappers that collapse multiple levels into fewer outputs or silently remap `Info`, `Exception`, or custom flows to `Debug`.
+- Keep the call site explicit enough that a reviewer can see the intended severity without opening another helper.
+- If a call site already has a real `Exception`, pass the real `Exception` object into the logger.
+- Prefer `logger.LogException(exception)` or `logger.LogError("context message", exception)` over logging only `exception.Message` or only `exception.StackTrace`.
+- Do not downgrade a structured exception into a plain string too early, because that loses type, inner-exception chain, and tooling support in targets.
+- Do not unwrap `AggregateException` to only one `InnerException` unless that is a deliberate product decision and the lost context is acceptable.
+
+Bad pattern:
+
+```csharp
+private static void Log(ILogger logger, string message, LogLevel logLevel, LogAttributes attributes)
+{
+    if (logger == null || string.IsNullOrEmpty(message))
+    {
+        return;
+    }
+
+    switch (logLevel)
+    {
+        case LogLevel.Error:
+            logger.LogError(message, attributes);
+            break;
+        case LogLevel.Warning:
+            logger.LogWarning(message, attributes);
+            break;
+        default:
+            logger.LogDebug(message, attributes);
+            break;
+    }
+}
+```
+
+Why this is bad:
+
+- it hides the real logger API behind a local adapter
+- it silently remaps `Info` to `Debug`
+- it makes `Exception` handling unclear
+- it makes audit and grep of real severity usage harder
+
+Preferred patterns:
+
+```csharp
+logger.LogWarning("config is missing", attributes);
+logger.LogError("startup failed", attributes);
+logger.LogInfo("bootstrap completed", attributes);
+```
+
+```csharp
+logger.LogFormat(logLevel, message, attributes);
+```
+
+### 3a. Exception Handling Rules
+
+Use these rules for app code around the logger and for custom integrations that extend the package.
+
+- Treat logger delivery paths as `never-throw` in production runtime.
+- A broken log target should fail in isolation and should not take down gameplay, app startup, app shutdown, or other healthy targets.
+- A custom target, custom log source, or async helper that catches an exception should log the original exception object when possible, not only its string fields.
+- If a logger callback, scheduler callback, or third-party SDK callback can throw, catch that exception inside the logging path and degrade to fallback logging instead of letting it escape into the app flow.
+- If a target becomes unhealthy at runtime, mute or disable that target and continue routing logs to the remaining healthy targets.
+- Keep exception logging explicit in code review. A reviewer should be able to see where the original exception object is preserved and where failure isolation is owned.
+
+Bad pattern:
+
+```csharp
+catch (Exception ex)
+{
+    logger.LogError($"Request failed: {ex.Message}");
+}
+```
+
+Why this is bad:
+
+- it loses the exception type
+- it loses the inner-exception chain
+- it weakens downstream formatting and target-specific exception handling
+
+Preferred pattern:
+
+```csharp
+catch (Exception ex)
+{
+    logger.LogError("Request failed.", ex);
+}
+```
+
+If the app must rethrow after logging:
+
+- use `throw;` when rethrowing the same caught exception from the same `catch`
+- use `ExceptionDispatchInfo.Capture(exception).Throw();` when rethrowing later or rethrowing an extracted inner exception
+- do not use `throw ex;`
+- do not use `throw ex.InnerException;`
+
+If your integration uses reflection invoke:
+
+- prefer the `Invoke(...)` overload that allows `BindingFlags.DoNotWrapExceptions` when that is available in your target runtime
+- otherwise assume reflection may wrap the real failure in `TargetInvocationException` and preserve the original exception object when logging or rethrowing
+
+For fire-and-forget task usage inside integration code:
+
+- prefer package-owned safe helpers such as `FireAndForget()` or `FireAndLogWhenExceptions(...)` over raw `async void`
+- if you add your own task helpers, keep their logging path `never-throw`
+- cancellation should stay a normal non-crash path and should not be promoted into a fatal logger failure
+
+### 4. Log Target Configuration Rules
 
 Every target inherits a common configuration surface:
 
@@ -242,7 +355,7 @@ Why the last rule matters:
 - the logger already warns when a target is marked `IsThreadSafe` and main-thread dispatch is still enabled
 - dispatching adds queueing and main-thread work, so it should be intentional
 
-### 4. Batching and Main-Thread Dispatch
+### 5. Batching and Main-Thread Dispatch
 
 Use `BatchLogs` when:
 
@@ -269,7 +382,7 @@ Important nuance:
 - `Critical` log importance forces immediate drain and send
 - regular and `NiceToHave` logs can be batched
 
-### 5. Debug Mode Strategy
+### 6. Debug Mode Strategy
 
 `DebugModeConfiguration` supports:
 
@@ -358,6 +471,7 @@ Best practices:
 
 - prefer guarded integration over direct unsafe target calls
 - isolate third-party initialization failures
+- if a third-party sink throws at runtime, mute or disable that sink and keep the rest of the logger alive
 - treat fault isolation as part of release validation, not just implementation detail
 
 ### FileBackgroundAsyncWriter
@@ -388,6 +502,7 @@ Recommended approach:
 - decide explicitly whether you want threaded application log capture
 - enable extra exception-oriented sources in production when you need crash-path visibility
 - validate source behavior with runtime tests, not only editor assumptions
+- for unobserved task paths, prefer preserving the full exception object or flattened aggregate instead of collapsing the signal to one inner exception
 
 ## StabilityHub Guidance
 

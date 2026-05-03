@@ -45,7 +45,13 @@ namespace TheBestLogger
                     _defaultUnityLogHandler.LogFormat(LogType.Error, logAttributes?.UnityContextObject, "{0}", message);
                     break;
                 case LogLevel.Exception:
-                    _defaultUnityLogHandler.LogException(exception, logAttributes?.UnityContextObject);
+                    if (exception != null)
+                    {
+                        _defaultUnityLogHandler.LogException(exception, logAttributes?.UnityContextObject);
+                        break;
+                    }
+
+                    _defaultUnityLogHandler.LogFormat(LogType.Error, logAttributes?.UnityContextObject, "{0}", message);
                     break;
             }
         }

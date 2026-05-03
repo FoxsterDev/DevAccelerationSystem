@@ -352,6 +352,138 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
+        public void Initialize_WithNonMatchingDebugId_KeepsBaseMinLogLevelAndCategoryOverrides()
+        {
+            const string resourceSubFolderName = "LogManagerLifecycleTests_DebugInactive";
+
+            CreateConfigurationAssets(_tempRootAssetPath,
+                                      resourceSubFolderName,
+                                      new TrackingLogTargetConfiguration
+                                      {
+                                          MinLogLevel = LogLevel.Warning,
+                                          OverrideCategories = new[]
+                                          {
+                                              new LogTargetCategory
+                                              {
+                                                  Category = "Gameplay",
+                                                  MinLevel = LogLevel.Warning
+                                              }
+                                          },
+                                          IsThreadSafe = true,
+                                          DebugMode = new DebugModeConfiguration
+                                          {
+                                              Enabled = true,
+                                              IDs = new[] { "debug-user" },
+                                              MinLogLevel = LogLevel.Debug,
+                                              OverrideCategories = new[]
+                                              {
+                                                  new LogTargetCategory
+                                                  {
+                                                      Category = "Gameplay",
+                                                      MinLevel = LogLevel.Debug
+                                                  }
+                                              }
+                                          },
+                                          BatchLogs = new LogTargetBatchLogsConfiguration(),
+                                          DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                                      });
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget }, resourceSubFolderName + "/", CancellationToken.None, "other-user");
+
+            Assert.That(((ILogTarget) _trackingTarget).DebugModeEnabled, Is.False);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.False);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Warning, "Gameplay"), Is.True);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, "Network"), Is.False);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Warning, "Network"), Is.True);
+        }
+
+        [Test]
+        public void UpdateLogTargetsConfigurations_WhenDebugModeStopsMatchingCurrentId_RestoresBaseFiltering()
+        {
+            const string resourceSubFolderName = "LogManagerLifecycleTests_DebugDisabledByConfigUpdate";
+
+            CreateConfigurationAssets(_tempRootAssetPath,
+                                      resourceSubFolderName,
+                                      new TrackingLogTargetConfiguration
+                                      {
+                                          MinLogLevel = LogLevel.Warning,
+                                          OverrideCategories = new[]
+                                          {
+                                              new LogTargetCategory
+                                              {
+                                                  Category = "Gameplay",
+                                                  MinLevel = LogLevel.Warning
+                                              }
+                                          },
+                                          IsThreadSafe = true,
+                                          DebugMode = new DebugModeConfiguration
+                                          {
+                                              Enabled = true,
+                                              IDs = new[] { "debug-user" },
+                                              MinLogLevel = LogLevel.Debug,
+                                              OverrideCategories = new[]
+                                              {
+                                                  new LogTargetCategory
+                                                  {
+                                                      Category = "Gameplay",
+                                                      MinLevel = LogLevel.Debug
+                                                  }
+                                              }
+                                          },
+                                          BatchLogs = new LogTargetBatchLogsConfiguration(),
+                                          DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                                      });
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget }, resourceSubFolderName + "/", CancellationToken.None, "debug-user");
+
+            Assert.That(((ILogTarget) _trackingTarget).DebugModeEnabled, Is.True);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.True);
+
+            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
+            var updatedConfig = new TrackingLogTargetConfiguration
+            {
+                MinLogLevel = LogLevel.Warning,
+                OverrideCategories = new[]
+                {
+                    new LogTargetCategory
+                    {
+                        Category = "Gameplay",
+                        MinLevel = LogLevel.Warning
+                    }
+                },
+                IsThreadSafe = true,
+                DebugMode = new DebugModeConfiguration
+                {
+                    Enabled = true,
+                    IDs = new[] { "other-user" },
+                    MinLogLevel = LogLevel.Debug,
+                    OverrideCategories = new[]
+                    {
+                        new LogTargetCategory
+                        {
+                            Category = "Gameplay",
+                            MinLevel = LogLevel.Debug
+                        }
+                    }
+                },
+                BatchLogs = new LogTargetBatchLogsConfiguration(),
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            };
+
+            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
+            {
+                [nameof(TrackingLogTargetConfiguration)] = updatedConfig,
+                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
+            });
+
+            Assert.That(((ILogTarget) _trackingTarget).DebugModeEnabled, Is.False);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.False);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Warning, "Gameplay"), Is.True);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, "Network"), Is.False);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Warning, "Network"), Is.True);
+        }
+
+        [Test]
         public void UpdateLogTargetConfiguration_WithRawJsonPatch_PreservesAbsentPrimitiveFieldsAndPersistsAcrossRestart()
         {
             InitializeForTests("debug-user");

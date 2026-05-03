@@ -24,6 +24,11 @@ namespace TheBestLogger
 
         private void OnUnobservedTaskException(Exception obj)
         {
+            if (_logConsumer == null)
+            {
+                return;
+            }
+
             if (obj != null)
             {
                 _logConsumer.LogFormat(LogLevel.Exception, nameof(UnobservedUniTaskExceptionLogSource), string.Empty, obj);

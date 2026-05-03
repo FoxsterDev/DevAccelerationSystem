@@ -16,6 +16,13 @@ namespace TheBestLogger
         [HideInCallstack]
         void ILogger.LogException(Exception ex, LogAttributes logAttributes)
         {
+            if (ex == null)
+            {
+                Diagnostics.Write("FallbackLogger received a null exception.", LogLevel.Exception);
+                UnityEngine.Debug.LogError("[FallbackLogger] null exception");
+                return;
+            }
+
             Diagnostics.Write(ex.Message + "\n" + ex.StackTrace, LogLevel.Exception);
             UnityEngine.Debug.LogException(ex);
         }

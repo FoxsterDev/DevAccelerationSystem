@@ -151,7 +151,7 @@ namespace TheBestLogger
             }
             catch (Exception ex)
             {
-                FallbackLogger.LogError($"During LogManager initialization happened exception {ex.Message}:\n{ex.StackTrace}");
+                FallbackLogger.LogError("During LogManager initialization happened exception.", ex);
                 Dispose();
             }
         }

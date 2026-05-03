@@ -15,13 +15,17 @@ namespace TheBestLogger
 
         private void OnUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
         {
+            if (_logConsumer == null)
+            {
+                return;
+            }
+
             e.SetObserved(); // Mark the exception as observed to prevent the process from terminating
 
             var exception = e.Exception;
-            if(exception != null)
+            if (exception != null)
             {
-                var inner = exception.InnerException ?? exception;
-                _logConsumer.LogFormat(LogLevel.Exception, nameof(UnobservedTaskExceptionLogSource), string.Empty, inner);
+                _logConsumer.LogFormat(LogLevel.Exception, nameof(UnobservedTaskExceptionLogSource), string.Empty, exception.Flatten());
             }
             else
             {

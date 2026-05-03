@@ -19,11 +19,12 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
-        public void UnobservedTaskExceptionLogSource_LogsInnerExceptionAndMarksObserved()
+        public void UnobservedTaskExceptionLogSource_LogsAggregateExceptionAndMarksObserved()
         {
             using var source = new UnobservedTaskExceptionLogSource(_consumer);
             var exception = new InvalidOperationException("boom");
-            var args = new UnobservedTaskExceptionEventArgs(new AggregateException(exception));
+            var aggregateException = new AggregateException(exception);
+            var args = new UnobservedTaskExceptionEventArgs(aggregateException);
 
             InvokePrivate(source, "OnUnobservedTaskException", null, args);
 
@@ -31,7 +32,8 @@ namespace TheBestLogger.Tests.Editor
             Assert.That(_consumer.Count, Is.EqualTo(1));
             Assert.That(_consumer.LastCall.LogLevel, Is.EqualTo(LogLevel.Exception));
             Assert.That(_consumer.LastCall.LogSourceId, Is.EqualTo(nameof(UnobservedTaskExceptionLogSource)));
-            Assert.That(_consumer.LastCall.Exception, Is.SameAs(exception));
+            Assert.That(_consumer.LastCall.Exception, Is.SameAs(aggregateException));
+            Assert.That(_consumer.LastCall.Exception?.InnerException, Is.SameAs(exception));
         }
 
         [Test]
