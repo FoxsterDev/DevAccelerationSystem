@@ -40,6 +40,10 @@ namespace TheBestLogger
 
             IDs ??= Array.Empty<string>();
             OverrideCategories ??= Array.Empty<LogTargetCategory>();
+            for (var index = 0; index < OverrideCategories.Length; index++)
+            {
+                OverrideCategories[index]?.ApplyRuntimeDefaults();
+            }
         }
     }
 }

@@ -84,6 +84,8 @@ namespace TheBestLogger
 
                 var currentTimeUtc = _utilitySupplier.GetTimeStamp().currentTimeUtc;
                 _decoratedLogTargets = TryDecorateLogTargets(logTargets, currentTimeUtc, _utilitySupplier);
+                var sessionDebugRolloutSessionId = Interlocked.Increment(ref _nextSessionDebugRolloutSessionId);
+                _sessionDebugRolloutSessionKey = $"debug-rollout:{sessionDebugRolloutSessionId}:{DateTime.UtcNow.Ticks}";
 
                 _targetUpdates = TrySubscribeForUpdates(_decoratedLogTargets);
                 InitializeSessionDebugModeStates(_decoratedLogTargets);

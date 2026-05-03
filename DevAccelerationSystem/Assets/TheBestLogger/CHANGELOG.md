@@ -1,21 +1,29 @@
 # Changelog
 
 ## [Unreleased]
+- No unreleased entries yet.
+
+## [2.2.15] - 2026-05-03
 - Added broad hardening coverage across editor, playmode, performance, and tracked consumer-validation surfaces.
 - Added production-oriented regression coverage for logger lifecycle, concurrency, batching, main-thread dispatch, target fault isolation, `OpenSearch` config compatibility, delivery behavior, and `StabilityHub`.
 - Added performance measurements through Unity Performance Testing.
 - Added repository-level logger integration and audit docs for public use.
+- Added direct scripted bootstrap paths and sample-scene support for switching between resource-driven, QA, and production logger initialization flows.
+- Added `DebugMode.SessionDebugRolloutPercentage` for per-target session-random debug activation.
+- Added `LogTargetCategory.SessionRolloutPercentage` for per-category rollout-gated target overrides, including `DebugMode.OverrideCategories`.
+- Replaced Unity global-random rollout usage with deterministic rollout sampling so logger rollout decisions no longer advance shared `UnityEngine.Random` state.
+- Made `DebugMode` rollout sticky for the current logger session and explicit `debugId` activation target-specific.
+- Added runtime configuration startup-cache overlay support for target patches across launches.
+- Updated remote-config behavior so partial nested `DebugMode` patches preserve absent fields, partial target patches keep absent values intact, and `DebugMode.Enabled = false` turns target debug off immediately.
+- Expanded logger README guidance with concrete partial `OpenSearchLogTargetConfiguration` remote-patch scenarios, rollout examples, and category-rollout partial-patch cases.
 - Fixed generic `LogFormat` forwarding for multi-argument overloads.
 - Fixed batch snapshot and duplicate-delivery risks in concurrent batch-drain paths.
 - Fixed Apple exception-message handling and safer crash-path intake behavior.
+- Fixed `AppleSystemLogTarget` payload decoration so default empty `LogAttributes` no longer change plain batch/runtime messages.
 - Fixed async-disposal deadlock risk in `FileBackgroundAsyncWriter`.
+- Fixed `TaskExtensions.HandleExceptions(...)` fallback scheduling so missing or unusable `SynchronizationContext` no longer emits an internal exception log before falling back.
 - Fixed `UnityDebugLogSource` handler replacement to be instance-safe under repeated test or runtime setup.
-
-## [2.2.15] - 2026-05-03
-- Added `DebugMode.SessionDebugRolloutPercentage` for per-target session-random debug activation.
-- Made `DebugMode` rollout sticky for the current logger session and explicit `debugId` activation target-specific.
-- Updated remote-config behavior so partial nested `DebugMode` patches preserve absent fields and `DebugMode.Enabled = false` turns target debug off immediately.
-- Expanded logger README guidance with concrete partial `OpenSearchLogTargetConfiguration` remote-patch scenarios.
+- Fixed repeated pre-initialization usage so `LogManager` warns only once before a valid initialize.
 
 ## [2.2.14] - 2025-11-19
 - Added `[HideInCallstack]` to the `LogTrace` extension method to improve click-through behavior in the Unity Console.

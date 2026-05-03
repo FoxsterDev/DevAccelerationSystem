@@ -53,6 +53,11 @@ namespace TheBestLogger
         public virtual void ApplyRuntimeDefaults()
         {
             OverrideCategories ??= Array.Empty<LogTargetCategory>();
+            for (var index = 0; index < OverrideCategories.Length; index++)
+            {
+                OverrideCategories[index]?.ApplyRuntimeDefaults();
+            }
+
             DebugMode ??= new DebugModeConfiguration();
             DebugMode.ApplyRuntimeDefaults();
             BatchLogs ??= new LogTargetBatchLogsConfiguration();

@@ -109,6 +109,7 @@ Important constraint:
   - `[HideInCallstack]` on `LogTrace` extension method for cleaner Unity Console navigation
 - `2.2.15`
   - target-specific `DebugMode.SessionDebugRolloutPercentage`
+  - per-category `LogTargetCategory.SessionRolloutPercentage`
   - sticky session-random debug activation
   - expanded partial remote-config documentation for `OpenSearch`
 
@@ -225,7 +226,7 @@ The runtime does this at startup:
 - read `DebugMode.SessionDebugRolloutPercentage`
 - if that percentage is `<= 0`, session rollout is inactive
 - if that percentage is `>= 100`, session rollout is active
-- otherwise the logger rolls `Random.value < SessionDebugRolloutPercentage / 100f`
+- otherwise the logger computes a deterministic rollout bucket for that target in the current logger session and compares it with `SessionDebugRolloutPercentage`
 
 How that session rollout is applied:
 
@@ -245,6 +246,45 @@ This is intended for cases such as:
 
 - observe `Debug`-level behavior in `2.5%` of sessions
 - keep the rest of production on the normal top-level target config for that sink
+
+### Category rollout behavior
+
+`LogTargetCategory.SessionRolloutPercentage` is a category-level gate for a target override entry.
+
+Example target config:
+
+```json
+{
+  "MinLogLevel": 3,
+  "OverrideCategories": [
+    {
+      "Category": "Gameplay",
+      "MinLevel": 0,
+      "SessionRolloutPercentage": 10.0
+    }
+  ]
+}
+```
+
+Interpretation:
+
+- the target baseline still starts from top-level `MinLogLevel`
+- the `Gameplay` category override wants to lower that target to `Debug`
+- but that category override participates only in `10%` of current applied target configurations
+
+Important category rollout rules:
+
+- category rollout is per target and per category entry
+- it works only when `0 < SessionRolloutPercentage < 100`
+- `0` and `100` do not change category behavior
+- the category decision is computed once when that target configuration is applied
+- if config is applied again later, category rollout is recomputed for that apply
+- `DebugMode.OverrideCategories` supports the same `SessionRolloutPercentage` field and follows the same rules while debug is active
+
+Practical meaning:
+
+- if the category rollout passes, the category override behaves normally and uses its `MinLevel`
+- if the category rollout does not pass, that category override is skipped for that target apply and the category effectively falls back to the target baseline filtering
 
 ### Explicit `debugId` behavior
 
@@ -315,6 +355,11 @@ What happens when a runtime update is applied:
 3. current debug state is reevaluated against the new config, the current session rollout flag, and current `debugId`
 4. if startup cache is enabled, the effective incoming patches are saved to persistent cache
 
+Important rollout detail during runtime updates:
+
+- `DebugMode.SessionDebugRolloutPercentage` belongs to session startup behavior and is not rerolled by runtime updates in the current logger session
+- `LogTargetCategory.SessionRolloutPercentage` belongs to applied target configuration behavior and is recomputed whenever that target configuration is applied again
+
 What happens on next launch:
 
 1. built-in config is loaded from the client
@@ -360,9 +405,15 @@ Supported remote patch fields for `OpenSearchLogTargetConfiguration`:
 - not supported for remote patch:
   - `ApiKey`
 
+`OverrideCategories` and `DebugMode.OverrideCategories` entries may include:
+
+- `Category`
+- `MinLevel`
+- `SessionRolloutPercentage`
+
 ### DebugMode And Partial Remote Config Behavior
 
-There are three important cases to distinguish.
+There are five important cases to distinguish.
 
 #### 1. Full remote patch replaces the `DebugMode` section
 
@@ -435,6 +486,59 @@ Result:
 - existing `DebugMode.OverrideCategories` is preserved
 - existing `SessionDebugRolloutPercentage` is preserved
 
+#### 4. Partial remote patch replaces `OverrideCategories`
+
+If the patch includes `OverrideCategories`, the target's current top-level category override array is replaced by the incoming array.
+
+Example patch:
+
+```json
+{
+  "OverrideCategories": [
+    {
+      "Category": "Gameplay",
+      "MinLevel": 0,
+      "SessionRolloutPercentage": 10.0
+    }
+  ]
+}
+```
+
+Result:
+
+- the previous top-level `OverrideCategories` array is replaced with the new array
+- the `Gameplay` category override now uses `MinLevel = Debug`
+- the `Gameplay` category override is active only when its current apply-time category rollout passes
+- if the same target config is applied again later, that category rollout is recomputed
+
+#### 5. Partial remote patch replaces `DebugMode.OverrideCategories`
+
+If the patch includes `DebugMode.OverrideCategories`, that nested array is replaced while other `DebugMode` fields remain preserved unless they are also present in the patch.
+
+Example patch:
+
+```json
+{
+  "DebugMode": {
+    "OverrideCategories": [
+      {
+        "Category": "Networking",
+        "MinLevel": 0,
+        "SessionRolloutPercentage": 25.0
+      }
+    ]
+  }
+}
+```
+
+Result:
+
+- existing `DebugMode.Enabled` is preserved
+- existing `DebugMode.IDs` is preserved
+- existing `DebugMode.MinLogLevel` is preserved
+- `DebugMode.OverrideCategories` is replaced with the new array
+- while debug is active, the `Networking` category override participates only in `25%` of current target applies
+
 ### Practical DebugMode Scenarios With `OpenSearchLogTargetConfiguration`
 
 Assume the current effective config for `OpenSearchLogTargetConfiguration` is:
@@ -484,6 +588,27 @@ Result in the current session:
 - current session keeps its already rolled session-debug flag for this target
 - this target stops participating in that session rollout immediately
 - explicit `debugId` allowlist also stops for this target because `DebugMode.Enabled = false`
+
+Scenario B2. Remote patch opens one noisy category only for part of current applies:
+
+```json
+{
+  "OverrideCategories": [
+    {
+      "Category": "Gameplay",
+      "MinLevel": 0,
+      "SessionRolloutPercentage": 10.0
+    }
+  ]
+}
+```
+
+Result in the current session:
+
+- the top-level category override array is replaced
+- the target immediately recomputes category rollout for `Gameplay`
+- if the category rollout passes on this apply, `Gameplay` can log at `Debug`
+- if the category rollout does not pass on this apply, `Gameplay` falls back to the target baseline filtering
 
 Scenario C. Remote patch disables `DebugMode` completely:
 
@@ -567,6 +692,26 @@ Result on the next session:
 
 - this target rolls startup debug with `20.0%`
 
+Combination 2b. Change only top-level category rollout percentage:
+
+```json
+{
+  "OverrideCategories": [
+    {
+      "Category": "Gameplay",
+      "MinLevel": 0,
+      "SessionRolloutPercentage": 20.0
+    }
+  ]
+}
+```
+
+Result:
+
+- top-level `OverrideCategories` is replaced with the new array
+- category rollout for `Gameplay` is recomputed immediately for this target apply
+- future config applies will recompute that category again using the then-current configuration
+
 Combination 3. Disable target debug now, but keep rollout percentage for later:
 
 ```json
@@ -648,6 +793,32 @@ Result on the next session:
 
 - startup rollout uses `10.0%`
 - explicit allowlist uses `player-9999`
+
+Combination 7. Mix transport changes with category rollout changes:
+
+```json
+{
+  "OpenSearchHostUrl": "https://logs-c.example",
+  "OverrideCategories": [
+    {
+      "Category": "Gameplay",
+      "MinLevel": 0,
+      "SessionRolloutPercentage": 15.0
+    },
+    {
+      "Category": "Economy",
+      "MinLevel": 2
+    }
+  ]
+}
+```
+
+Result:
+
+- `OpenSearchHostUrl` is updated immediately
+- top-level `OverrideCategories` is replaced with the incoming array
+- `Gameplay` category now participates in a `15.0%` category rollout on each target apply
+- `Economy` keeps normal category-override behavior because its entry has no rollout percentage
 
 Important `ApiKey` note for `OpenSearch`:
 

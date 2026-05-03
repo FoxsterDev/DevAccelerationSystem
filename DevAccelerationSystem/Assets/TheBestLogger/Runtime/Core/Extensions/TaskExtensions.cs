@@ -55,10 +55,9 @@ namespace TheBestLogger
             {
                 return TaskScheduler.FromCurrentSynchronizationContext();
             }
-            catch (Exception ex)
+            catch
             {
-                UnityEngine.Debug.LogException(ex);
-                return TaskScheduler.Current;
+                return TaskScheduler.Current ?? TaskScheduler.Default;
             }
         }
 

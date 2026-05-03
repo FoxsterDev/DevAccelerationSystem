@@ -171,9 +171,21 @@ namespace TheBestLogger
         internal static string BuildMessagePayload(string message, LogAttributes logAttributes)
         {
             message ??= string.Empty;
-            return logAttributes == null
-                       ? message
-                       : StringOperations.Concat(message, logAttributes.ToRegularString(true, false));
+            if (logAttributes == null)
+            {
+                return message;
+            }
+
+            if (logAttributes.LogImportance == LogImportance.NiceToHave &&
+                (logAttributes.Tags == null || logAttributes.Tags.Length < 1) &&
+                (logAttributes.Props == null || logAttributes.Props.Count < 1) &&
+                logAttributes.UnityContextObject == null &&
+                string.IsNullOrEmpty(logAttributes.StackTrace))
+            {
+                return message;
+            }
+
+            return StringOperations.Concat(message, logAttributes.ToRegularString(true, false));
         }
 
         internal static string BuildExceptionPayload(string messagePayload, Exception exception, LogAttributes logAttributes)

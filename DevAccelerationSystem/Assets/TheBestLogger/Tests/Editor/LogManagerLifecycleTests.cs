@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -729,6 +730,62 @@ namespace TheBestLogger.Tests.Editor
             Assert.That(((ILogTarget) _trackingTarget).DebugModeEnabled, Is.False);
             Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.False);
             Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Warning, "Gameplay"), Is.True);
+        }
+
+        [Test]
+        public void UpdateLogTargetsConfigurations_WhenCategorySessionRolloutChanges_ReRollsCategoryDecision()
+        {
+            var categoryName = FindTrackingCategoryNameForReapplyDecisionChange(_trackingTarget);
+            var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_CategorySessionRolloutUpdate");
+            var initialRolloutPercentage = CreateTrackingRolloutPercentageForDecision(_trackingTarget, categoryName, expectedAllowed: false);
+
+            CreateConfigurationAssets(_tempRootAssetPath,
+                                      resourceSubFolderName,
+                                      CreateTrackingTargetConfigurationWithCategorySessionRollout(categoryName, initialRolloutPercentage));
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget },
+                                  resourceSubFolderName + "/",
+                                  CancellationToken.None);
+
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, categoryName), Is.False);
+
+            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
+            var updatedRolloutPercentage = CreateTrackingRolloutPercentageForDecision(_trackingTarget, categoryName, expectedAllowed: true);
+            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
+            {
+                [nameof(TrackingLogTargetConfiguration)] =
+                    CreateTrackingTargetConfigurationWithCategorySessionRollout(categoryName, updatedRolloutPercentage),
+                [nameof(UnityEditorConsoleLogTargetConfiguration)] =
+                    currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
+            });
+
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, categoryName), Is.True);
+        }
+
+        [Test]
+        public void UpdateLogTargetConfiguration_WithRawJsonPatchForCategorySessionRollout_ReRollsCategoryDecision()
+        {
+            var categoryName = FindTrackingCategoryNameForReapplyDecisionChange(_trackingTarget);
+            var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_CategorySessionRolloutRawJsonUpdate");
+            var initialRolloutPercentage = CreateTrackingRolloutPercentageForDecision(_trackingTarget, categoryName, expectedAllowed: false);
+
+            CreateConfigurationAssets(_tempRootAssetPath,
+                                      resourceSubFolderName,
+                                      CreateTrackingTargetConfigurationWithCategorySessionRollout(categoryName, initialRolloutPercentage));
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget },
+                                  resourceSubFolderName + "/",
+                                  CancellationToken.None);
+
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, categoryName), Is.False);
+
+            var updatedRolloutPercentage = CreateTrackingRolloutPercentageForDecision(_trackingTarget, categoryName, expectedAllowed: true);
+            var rawJsonPatch =
+                $"{{\"OverrideCategories\":[{{\"Category\":\"{categoryName}\",\"MinLevel\":0,\"SessionRolloutPercentage\":{updatedRolloutPercentage.ToString(CultureInfo.InvariantCulture)}}}]}}";
+
+            LogManager.UpdateLogTargetConfiguration(nameof(TrackingLogTargetConfiguration), rawJsonPatch);
+
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, categoryName), Is.True);
         }
 
         [Test]
@@ -1602,6 +1659,28 @@ namespace TheBestLogger.Tests.Editor
             };
         }
 
+        private static TrackingLogTargetConfiguration CreateTrackingTargetConfigurationWithCategorySessionRollout(string categoryName,
+                                                                                                                  float sessionRolloutPercentage)
+        {
+            return new TrackingLogTargetConfiguration
+            {
+                MinLogLevel = LogLevel.Error,
+                OverrideCategories = new[]
+                {
+                    new LogTargetCategory
+                    {
+                        Category = categoryName,
+                        MinLevel = LogLevel.Debug,
+                        SessionRolloutPercentage = sessionRolloutPercentage
+                    }
+                },
+                IsThreadSafe = true,
+                DebugMode = new DebugModeConfiguration(),
+                BatchLogs = new LogTargetBatchLogsConfiguration(),
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            };
+        }
+
         private static void CreateConfigurationAssets(string tempRootAssetPath,
                                                       string resourceSubFolderName,
                                                       TrackingLogTargetConfiguration trackingConfig,
@@ -1696,6 +1775,42 @@ namespace TheBestLogger.Tests.Editor
         private static string CreateUniqueResourceSubFolderName(string baseName)
         {
             return $"{baseName}_{Guid.NewGuid():N}";
+        }
+
+        private static string FindTrackingCategoryNameForReapplyDecisionChange(TrackingLogTarget target)
+        {
+            for (var index = 1; index < 10000; index++)
+            {
+                var categoryName = $"LifecycleCategory_{index}";
+                var firstBucket = RolloutSampler.ComputeBucketPercentage(target.CategoryRolloutSessionKey,
+                                                                         target.NextConfigurationApplyVersion,
+                                                                         0,
+                                                                         categoryName);
+                var secondBucket = RolloutSampler.ComputeBucketPercentage(target.CategoryRolloutSessionKey,
+                                                                          target.NextConfigurationApplyVersion + 1,
+                                                                          0,
+                                                                          categoryName);
+                if (firstBucket > 1f && secondBucket < 99f && Math.Abs(firstBucket - secondBucket) > 1f)
+                {
+                    return categoryName;
+                }
+            }
+
+            Assert.Fail("Could not find lifecycle category for reapply decision change.");
+            return string.Empty;
+        }
+
+        private static float CreateTrackingRolloutPercentageForDecision(TrackingLogTarget target,
+                                                                        string categoryName,
+                                                                        bool expectedAllowed)
+        {
+            var bucket = RolloutSampler.ComputeBucketPercentage(target.CategoryRolloutSessionKey,
+                                                                target.NextConfigurationApplyVersion,
+                                                                0,
+                                                                categoryName);
+            return expectedAllowed
+                ? Math.Min(99.99f, bucket + 0.5f)
+                : Math.Max(0.01f, bucket - 0.5f);
         }
 
         private static void ClearAllConfigCacheBackends()

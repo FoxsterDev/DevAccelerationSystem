@@ -39,6 +39,8 @@ namespace TheBestLogger
         private static string _timeStampPreviousString;
         private static string _currentDebugId;
         private static bool _debugModeRequestedState;
+        private static long _nextSessionDebugRolloutSessionId;
+        private static string _sessionDebugRolloutSessionKey;
 
         private static bool _isRunningUpdates = false;
         private static bool _wasDisposed = false;
@@ -185,15 +187,18 @@ namespace TheBestLogger
                 return;
             }
 
-            foreach (var logTarget in logTargets)
+            for (var index = 0; index < logTargets.Count; index++)
             {
+                var logTarget = logTargets[index];
                 var debugMode = logTarget?.Configuration?.DebugMode;
                 if (debugMode == null)
                 {
                     continue;
                 }
 
-                _sessionDebugModeStates[logTarget] = RollSessionDebugModeState(debugMode.SessionDebugRolloutPercentage);
+                _sessionDebugModeStates[logTarget] = RollSessionDebugModeState(logTarget,
+                                                                               index,
+                                                                               debugMode.SessionDebugRolloutPercentage);
             }
         }
 
@@ -207,7 +212,9 @@ namespace TheBestLogger
             return _sessionDebugModeStates.TryGetValue(logTarget, out var debugModeState) && debugModeState;
         }
 
-        private static bool RollSessionDebugModeState(float rolloutPercentage)
+        private static bool RollSessionDebugModeState(ILogTarget logTarget,
+                                                      int logTargetIndex,
+                                                      float rolloutPercentage)
         {
             if (rolloutPercentage <= 0f)
             {
@@ -219,7 +226,21 @@ namespace TheBestLogger
                 return true;
             }
 
-            return UnityEngine.Random.value < (rolloutPercentage / 100f);
+            return RolloutSampler.ShouldEnable(_sessionDebugRolloutSessionKey,
+                                               0,
+                                               logTargetIndex,
+                                               BuildSessionDebugRolloutItemName(logTarget),
+                                               rolloutPercentage);
+        }
+
+        private static string BuildSessionDebugRolloutItemName(ILogTarget logTarget)
+        {
+            if (logTarget == null)
+            {
+                return string.Empty;
+            }
+
+            return string.Concat(logTarget.GetType().FullName, ":", logTarget.LogTargetConfigurationName);
         }
 
         private static bool ShouldEnableSessionDebugModeForLogTarget(ILogTarget logTarget)
@@ -673,6 +694,7 @@ namespace TheBestLogger
             _utilitySupplier = null;
             _currentDebugId = null;
             _debugModeRequestedState = false;
+            _sessionDebugRolloutSessionKey = null;
             _sessionDebugModeStates.Clear();
             if (_targetUpdates != null)
             {

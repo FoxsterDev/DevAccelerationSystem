@@ -66,6 +66,14 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
+        public void BuildMessagePayload_WithDefaultEmptyAttributes_ReturnsMessageWithoutDecoration()
+        {
+            var result = AppleSystemLogTarget.BuildMessagePayload("hello", new LogAttributes());
+
+            Assert.That(result, Is.EqualTo("hello"));
+        }
+
+        [Test]
         public void BuildExceptionPayload_AppendsMessageAttributesAndExceptionText()
         {
             var attributes = new LogAttributes(LogImportance.Important);

@@ -121,9 +121,13 @@ namespace TheBestLogger.Tests.Editor
             Assert.That(config.IndexPrefix, Is.EqualTo("legacy-v1-"));
             Assert.That(config.ApiKey, Is.EqualTo("legacy-v1-key"));
             Assert.That(config.BatchLogs.MaxCountLogs, Is.EqualTo(20));
+            Assert.That(config.OverrideCategories, Is.Not.Null);
+            Assert.That(config.OverrideCategories[0].SessionRolloutPercentage, Is.EqualTo(0f));
             Assert.That(config.DebugMode, Is.Not.Null);
             Assert.That(config.DebugMode.IDs, Is.Not.Null);
             Assert.That(config.DebugMode.IDs, Is.EquivalentTo(new[] { "legacy-debug-id" }));
+            Assert.That(config.DebugMode.OverrideCategories, Is.Not.Null);
+            Assert.That(config.DebugMode.OverrideCategories[0].SessionRolloutPercentage, Is.EqualTo(0f));
             Assert.That(config.DebugMode.SessionDebugRolloutPercentage, Is.EqualTo(0f));
             Assert.That(config.StackTraces, Is.Not.Null);
             Assert.That(config.StackTraces.Length, Is.EqualTo(5));
@@ -140,9 +144,13 @@ namespace TheBestLogger.Tests.Editor
             Assert.That(config.ApiKey, Is.EqualTo("legacy-v2-key"));
             Assert.That(config.BatchLogs.Enabled, Is.True);
             Assert.That(config.BatchLogs.MaxCountLogs, Is.EqualTo(20));
+            Assert.That(config.OverrideCategories, Is.Not.Null);
+            Assert.That(config.OverrideCategories[0].SessionRolloutPercentage, Is.EqualTo(0f));
             Assert.That(config.DebugMode, Is.Not.Null);
             Assert.That(config.DebugMode.Enabled, Is.True);
             Assert.That(config.DebugMode.IDs, Is.EquivalentTo(new[] { "debug-a", "debug-b" }));
+            Assert.That(config.DebugMode.OverrideCategories, Is.Not.Null);
+            Assert.That(config.DebugMode.OverrideCategories[0].SessionRolloutPercentage, Is.EqualTo(0f));
             Assert.That(config.DebugMode.SessionDebugRolloutPercentage, Is.EqualTo(0f));
             Assert.That(config.StackTraces, Is.Not.Null);
             Assert.That(config.StackTraces.Length, Is.EqualTo(5));
@@ -166,6 +174,15 @@ namespace TheBestLogger.Tests.Editor
                     UpdatePeriodMs = 1000,
                     MaxCountLogs = 20
                 },
+                OverrideCategories = new[]
+                {
+                    new LogTargetCategory
+                    {
+                        Category = "Gameplay",
+                        MinLevel = LogLevel.Debug,
+                        SessionRolloutPercentage = 10f
+                    }
+                },
                 DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration
                 {
                     Enabled = true,
@@ -183,6 +200,7 @@ namespace TheBestLogger.Tests.Editor
             StringAssert.Contains("\"DispatchingLogsToMainThread\"", json);
             StringAssert.Contains("\"SingleLogDispatchEnabled\"", json);
             StringAssert.Contains("\"BatchLogsDispatchEnabled\"", json);
+            StringAssert.Contains("\"SessionRolloutPercentage\"", json);
         }
 
         [Test]
