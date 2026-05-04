@@ -12,20 +12,30 @@ namespace StabilityHub.Monitoring.CrashReporting.Editor
 
         public void OnPreprocessBuild(BuildReport report)
         {
-            if (report.summary.platform == BuildTarget.iOS)
+            if (report.summary.platform != BuildTarget.iOS)
             {
-                var config = StabilityHub.StabilityHubService.MonitoringConfig;
-                var crashReporterModuleConfiguration = config.CrashReporterModule;
-                if (crashReporterModuleConfiguration.AutoProjectSettingsSetup)
-                {
-                    Debug.Log(
-                        "OnPreprocessBuild " + nameof(CrashReportingPreprocessBuildStep) + " " + report.summary.platform + " at path "
-                        + report.summary.outputPath);
-
-                    var enabled = crashReporterModuleConfiguration.Enabled && crashReporterModuleConfiguration.IOS.Enabled;
-                    EnableCrashReporting(enabled);
-                }
+                return;
             }
+
+            var config = StabilityHub.StabilityHubService.MonitoringConfig;
+            if (config == null)
+            {
+                Debug.LogWarning(nameof(CrashReportingPreprocessBuildStep) +
+                                 " skipped crash reporter auto setup because no MonitoringConfiguration asset was loaded.");
+                return;
+            }
+
+            var crashReporterModuleConfiguration = config.CrashReporterModule;
+            if (!crashReporterModuleConfiguration.AutoProjectSettingsSetup)
+            {
+                return;
+            }
+
+            Debug.Log(
+                "OnPreprocessBuild " + nameof(CrashReportingPreprocessBuildStep) + " " + report.summary.platform + " at path "
+                + report.summary.outputPath);
+
+            EnableCrashReporting(config.IsIOSCrashReporterModuleEnabled);
         }
 
         public static void EnableCrashReporting(bool enabled)

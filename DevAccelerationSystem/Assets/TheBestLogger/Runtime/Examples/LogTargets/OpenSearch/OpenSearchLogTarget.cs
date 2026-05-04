@@ -209,7 +209,9 @@ namespace TheBestLogger.Examples.LogTargets
 #if UNITY_EDITOR || THEBESTLOGGER_DIAGNOSTICS_ENABLED
                     var payloadString = Utf8NoBom.GetString(jsonData, 0, jsonData.Length);
                     var messageError = $"Can not write log into opensearchtarget because error result: {request.result}, error: {request.error}, response: {request.downloadHandler?.text}\nsent:{payloadString}";
+#if UNITY_EDITOR
                     ReflectiveUnityEditorConsoleLogger.LogToConsoleDirectly(messageError, LogType.Error);
+#endif
                     Diagnostics.Write(messageError);
 #endif
                 }

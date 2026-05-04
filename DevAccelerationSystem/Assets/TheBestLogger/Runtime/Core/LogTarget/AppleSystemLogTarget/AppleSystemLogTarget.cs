@@ -52,6 +52,31 @@ namespace TheBestLogger
             TheBestLogger_AppleSystemLogError(category, message);
 #endif
         }
+
+#if (UNITY_IOS || UNITY_STANDALONE_OSX) && !UNITY_EDITOR
+        [DllImport("__Internal")]
+        private static extern void TheBestLogger_initAppleSystemLogger(string subsystem, string category);
+
+        [DllImport("__Internal")]
+        private static extern void TheBestLogger_AppleSystemLogDefault(string category, string message);
+
+        [DllImport("__Internal")]
+        private static extern void TheBestLogger_AppleSystemLogInfo(string category, string message);
+
+        [DllImport("__Internal")]
+        private static extern void TheBestLogger_AppleSystemLogDebug(string category, string message);
+
+        [DllImport("__Internal")]
+        private static extern void TheBestLogger_AppleSystemLogError(string category, string message);
+
+        [DllImport("__Internal")]
+        private static extern void TheBestLogger_AppleSystemLogFault(string category, string message);
+
+        [DllImport("__Internal")]
+        private static extern void TheBestLogger_AppleSystemLogFormatted(string category,
+                                                                         string format,
+                                                                         string arg1);
+#endif
     }
 
     internal enum AppleSystemLogMethod
@@ -208,31 +233,5 @@ namespace TheBestLogger
         {
             Bridge = DefaultBridge;
         }
-
-#if (UNITY_IOS || UNITY_STANDALONE_OSX)  && !UNITY_EDITOR
-        [DllImport("__Internal")]
-        private static extern void TheBestLogger_initAppleSystemLogger(string subsystem, string category);
-
-        [DllImport("__Internal")]
-        private static extern void TheBestLogger_AppleSystemLogDefault(string category, string message);
-
-        [DllImport("__Internal")]
-        private static extern void TheBestLogger_AppleSystemLogInfo(string category, string message);
-
-        [DllImport("__Internal")]
-        private static extern void TheBestLogger_AppleSystemLogDebug(string category, string message);
-
-        [DllImport("__Internal")]
-        private static extern void TheBestLogger_AppleSystemLogError(string category, string message);
-
-        [DllImport("__Internal")]
-        private static extern void TheBestLogger_AppleSystemLogFault(string category, string message);
-
-        [DllImport("__Internal")]
-        private static extern void TheBestLogger_AppleSystemLogFormatted(string category,
-                                                                         string format,
-                                                                         string arg1);
-#endif
-
     }
 }

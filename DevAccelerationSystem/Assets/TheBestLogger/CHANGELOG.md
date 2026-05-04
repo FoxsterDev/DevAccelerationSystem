@@ -3,6 +3,12 @@
 ## [Unreleased]
 - No unreleased entries yet.
 
+## [3.0.1] - 2026-05-04
+- Fixed Apple-system logger native bridge compilation on Apple player targets by restoring valid access to the imported native entry points.
+- Fixed `OpenSearchLogTarget` diagnostics error logging so player builds no longer reference the editor-only reflective Unity Console logger.
+- Fixed the `StabilityHub` iOS crash-reporting preprocess build step so builds no longer throw when the monitoring configuration asset is missing.
+- Fixed tracked demo-project sample assembly wiring so the crash-reporting postprocess script stays editor-only and the `UniTask` exception sample resolves the `UniTask` assembly correctly.
+
 ## [3.0.0] - 2026-05-03
 - Breaking change: removed the public `GetCurrentLogTargetConfigurations()` API.
 - Breaking change: removed the public typed runtime-update APIs based on `LogTargetConfiguration` objects.
