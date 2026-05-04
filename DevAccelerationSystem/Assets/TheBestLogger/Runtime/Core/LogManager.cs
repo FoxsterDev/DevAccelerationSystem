@@ -98,13 +98,35 @@ namespace TheBestLogger
                 return null;
             }
 
-            var json = JsonUtility.ToJson(configuration);
-            return JsonUtility.FromJson(json, configuration.GetType()) as LogTargetConfiguration;
+            try
+            {
+                var json = JsonUtility.ToJson(configuration);
+                return JsonUtility.FromJson(json, configuration.GetType()) as LogTargetConfiguration;
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Write($"Failed to clone logger configuration {configuration.GetType().Name}: {ex.Message}", LogLevel.Warning);
+                return null;
+            }
         }
 
-        private static void NormalizeConfigurationForRuntime(LogTargetConfiguration configuration)
+        private static bool NormalizeConfigurationForRuntime(LogTargetConfiguration configuration)
         {
-            configuration?.ApplyRuntimeDefaults();
+            if (configuration == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                configuration.ApplyRuntimeDefaults();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Write($"Failed to normalize logger configuration {configuration.GetType().Name}: {ex.Message}", LogLevel.Warning);
+                return false;
+            }
         }
 
         /// <summary>
@@ -131,12 +153,18 @@ namespace TheBestLogger
 #if LOGGER_NOT_UNITY_EDITOR
                     var sourceConfiguration = logTargetConfigSo.Configuration;
                     var runtimeConfiguration = CloneConfiguration(sourceConfiguration) ?? sourceConfiguration;
-                    NormalizeConfigurationForRuntime(runtimeConfiguration);
+                    if (!NormalizeConfigurationForRuntime(runtimeConfiguration))
+                    {
+                        continue;
+                    }
                     logTargetConfigurationsData[key] = runtimeConfiguration;
 #else
                     var config = logTargetConfigSo.Configuration;
                     var logTargetConfigurationNew = DeepCopyInUnityEditor(config);
-                    NormalizeConfigurationForRuntime(logTargetConfigurationNew);
+                    if (!NormalizeConfigurationForRuntime(logTargetConfigurationNew))
+                    {
+                        continue;
+                    }
                     logTargetConfigurationsData[key] = logTargetConfigurationNew;
 #endif
                 }
@@ -289,28 +317,35 @@ namespace TheBestLogger
         /// <param name="logTargetConfigurations"></param>
         /// <param name="logTargets"></param>
         /// <param name="debugId"></param>
-        private static void TryApplyConfigurations(Dictionary<string, LogTargetConfiguration> logTargetConfigurations,
-                                                   IReadOnlyList<ILogTarget> logTargets)
+        private static bool TryApplyConfigurations(Dictionary<string, LogTargetConfiguration> logTargetConfigurations,
+                                                   IReadOnlyList<ILogTarget> logTargets,
+                                                   out string error)
         {
+            error = null;
             Diagnostics.Write("begin");
+            var errors = new List<string>();
 
             if (logTargetConfigurations == null || logTargetConfigurations.Count < 1)
             {
-                Diagnostics.Write("logTargetConfigurations is null or empty", LogLevel.Warning);
-                return;
+                error = "logTargetConfigurations is null or empty";
+                Diagnostics.Write(error, LogLevel.Warning);
+                return false;
             }
 
             if (logTargets == null || logTargets.Count < 1)
             {
-                Diagnostics.Write("logTargets is null or empty", LogLevel.Warning);
-                return;
+                error = "logTargets is null or empty";
+                Diagnostics.Write(error, LogLevel.Warning);
+                return false;
             }
 
             foreach (var logTarget in logTargets)
             {
                 if (logTarget == null)
                 {
-                    Diagnostics.Write("Log target is null", LogLevel.Error);
+                    const string nullLogTargetError = "Log target is null";
+                    Diagnostics.Write(nullLogTargetError, LogLevel.Error);
+                    errors.Add(nullLogTargetError);
                     continue;
                 }
 
@@ -320,18 +355,82 @@ namespace TheBestLogger
                 logTargetConfigurations.TryGetValue(logTargetConfigurationName, out var logTargetConfiguration);
                 if (logTargetConfiguration == null)
                 {
-                    Diagnostics.Write(
-                        $"Can not match {logTargetConfigurationName} with configurations files. LogTargetConfigurationDefault was applied!", LogLevel.Error);
-                    logTarget.ApplyConfiguration(new LogTargetConfigurationDefault(logTarget.GetType().ToString()));
+                    var missingConfigurationError =
+                        $"Can not match {logTargetConfigurationName} with configurations files. LogTargetConfigurationDefault was applied!";
+                    Diagnostics.Write(missingConfigurationError, LogLevel.Error);
+                    errors.Add(missingConfigurationError);
+                    TryApplyMutedFallbackConfiguration(logTarget);
                     continue;
                 }
 
-                logTarget.ApplyConfiguration(logTargetConfiguration);
-                Diagnostics.Write(
-                    "For LogTarget:" + logTarget.GetType() + " was applied logtargetconfiguration:" + logTargetConfiguration.GetType());
+                var previousConfigurationSnapshot = CloneConfiguration(logTarget.Configuration) ?? logTarget.Configuration;
+                try
+                {
+                    logTarget.ApplyConfiguration(logTargetConfiguration);
+                    Diagnostics.Write(
+                        "For LogTarget:" + logTarget.GetType() + " was applied logtargetconfiguration:" + logTargetConfiguration.GetType());
+                }
+                catch (Exception ex)
+                {
+                    var applyError = $"Failed to apply {logTargetConfiguration.GetType().Name} to {logTarget.GetType().Name}: {ex.Message}";
+                    Diagnostics.Write(applyError, LogLevel.Error);
+                    errors.Add(applyError);
+
+                    if (TryRestorePreviousConfiguration(logTarget, previousConfigurationSnapshot))
+                    {
+                        continue;
+                    }
+
+                    TryApplyMutedFallbackConfiguration(logTarget);
+                }
             }
 
             Diagnostics.Write("end");
+            if (errors.Count > 0)
+            {
+                error = string.Join("\n", errors);
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryRestorePreviousConfiguration(ILogTarget logTarget, LogTargetConfiguration previousConfigurationSnapshot)
+        {
+            if (logTarget == null || previousConfigurationSnapshot == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                logTarget.ApplyConfiguration(previousConfigurationSnapshot);
+                Diagnostics.Write($"Restored previous logger configuration for {logTarget.GetType().Name}", LogLevel.Warning);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Write($"Failed to restore previous logger configuration for {logTarget.GetType().Name}: {ex.Message}",
+                                  LogLevel.Error);
+                return false;
+            }
+        }
+
+        private static void TryApplyMutedFallbackConfiguration(ILogTarget logTarget)
+        {
+            if (logTarget == null)
+            {
+                return;
+            }
+
+            try
+            {
+                logTarget.ApplyConfiguration(new LogTargetConfigurationDefault(logTarget.GetType().ToString()));
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Write($"Failed to quarantine logger target {logTarget.GetType().Name}: {ex.Message}", LogLevel.Error);
+            }
         }
 
         private static void ReapplyCurrentDebugModeState()
@@ -372,84 +471,116 @@ namespace TheBestLogger
             return settings == null || settings.Enabled;
         }
 
-        private static Dictionary<string, LogTargetConfiguration> BuildEffectiveLogTargetConfigurationsForUpdate(
-            Dictionary<string, LogTargetConfiguration> incomingLogTargetConfigurations)
+        internal static Dictionary<string, LogTargetConfiguration> GetCurrentLogTargetConfigurationsSnapshot()
         {
-            var effectiveLogTargetConfigurations = GetCurrentLogTargetConfigurations();
-            if (incomingLogTargetConfigurations == null || incomingLogTargetConfigurations.Count < 1)
+            Diagnostics.Write("begin");
+
+            var logTargetConfigurations = new Dictionary<string, LogTargetConfiguration>(3);
+
+            if (IsNotProperlyConfigured())
             {
-                return effectiveLogTargetConfigurations;
+                return logTargetConfigurations;
             }
 
-            foreach (var pair in incomingLogTargetConfigurations)
+            foreach (var logTarget in _decoratedLogTargets)
             {
-                if (string.IsNullOrEmpty(pair.Key) || pair.Value == null)
+                var configurationSnapshot = CloneConfiguration(logTarget.Configuration);
+                if (!NormalizeConfigurationForRuntime(configurationSnapshot))
                 {
+                    Diagnostics.Write($"Failed to snapshot logger configuration for {logTarget.LogTargetConfigurationName}", LogLevel.Warning);
                     continue;
                 }
 
-                if (effectiveLogTargetConfigurations.TryGetValue(pair.Key, out var currentConfiguration) &&
-                    currentConfiguration != null &&
-                    currentConfiguration.GetType() == pair.Value.GetType())
-                {
-                    var mergedConfiguration = CloneConfiguration(currentConfiguration);
-                    mergedConfiguration?.Merge(pair.Value);
-                    NormalizeConfigurationForRuntime(mergedConfiguration);
-                    effectiveLogTargetConfigurations[pair.Key] = mergedConfiguration ?? pair.Value;
-                    continue;
-                }
-
-                NormalizeConfigurationForRuntime(pair.Value);
-                effectiveLogTargetConfigurations[pair.Key] = pair.Value;
+                logTargetConfigurations[logTarget.LogTargetConfigurationName] = configurationSnapshot;
             }
 
-            return effectiveLogTargetConfigurations;
+            Diagnostics.Write("end");
+
+            return logTargetConfigurations;
         }
 
-        private static Dictionary<string, LogTargetConfiguration> BuildEffectiveLogTargetConfigurationsForRawJsonUpdate(
-            Dictionary<string, string> incomingRawJsonLogTargetConfigurations)
+        private static bool TryBuildEffectiveLogTargetConfigurationsForRawJsonUpdate(
+            Dictionary<string, string> incomingRawJsonLogTargetConfigurations,
+            out Dictionary<string, LogTargetConfiguration> effectiveLogTargetConfigurations,
+            out Dictionary<string, string> acceptedRawJsonLogTargetConfigurations,
+            out string error)
         {
-            var effectiveLogTargetConfigurations = GetCurrentLogTargetConfigurations();
+            error = null;
+            acceptedRawJsonLogTargetConfigurations = null;
+            effectiveLogTargetConfigurations = GetCurrentLogTargetConfigurationsSnapshot();
+            var errors = new List<string>();
             if (incomingRawJsonLogTargetConfigurations == null || incomingRawJsonLogTargetConfigurations.Count < 1)
             {
-                return effectiveLogTargetConfigurations;
+                error = "The remote configuration document is null or empty.";
+                return false;
             }
 
             foreach (var pair in incomingRawJsonLogTargetConfigurations)
             {
                 if (string.IsNullOrEmpty(pair.Key) || string.IsNullOrEmpty(pair.Value))
                 {
+                    errors.Add("Remote configuration patch contains an empty target name or empty raw JSON payload.");
                     continue;
                 }
 
                 if (!effectiveLogTargetConfigurations.TryGetValue(pair.Key, out var currentConfiguration) || currentConfiguration == null)
                 {
-                    Diagnostics.Write($"Can not find current log target configuration for raw json patch {pair.Key}", LogLevel.Warning);
+                    var targetMissingError = $"Can not find current log target configuration for raw json patch {pair.Key}";
+                    Diagnostics.Write(targetMissingError, LogLevel.Warning);
+                    errors.Add(targetMissingError);
+                    continue;
+                }
+
+                if (currentConfiguration is LogTargetConfigurationDefault)
+                {
+                    var defaultFallbackError =
+                        $"Ignoring raw json logger configuration patch {pair.Key} because the target currently has only a default fallback configuration";
+                    Diagnostics.Write(defaultFallbackError, LogLevel.Warning);
+                    errors.Add(defaultFallbackError);
                     continue;
                 }
 
                 var mergedConfiguration = CloneConfiguration(currentConfiguration);
                 if (mergedConfiguration == null)
                 {
+                    errors.Add($"Failed to clone current logger configuration for raw json patch {pair.Key}");
                     continue;
                 }
 
-                if (!TryApplyRawJsonPatch(mergedConfiguration, pair.Key, pair.Value))
+                if (!TryApplyRawJsonPatch(mergedConfiguration, pair.Key, pair.Value, out var patchError))
                 {
+                    errors.Add(patchError);
                     continue;
                 }
 
-                NormalizeConfigurationForRuntime(mergedConfiguration);
+                if (!NormalizeConfigurationForRuntime(mergedConfiguration))
+                {
+                    errors.Add($"Failed to normalize logger configuration after raw json patch {pair.Key}");
+                    continue;
+                }
+
                 effectiveLogTargetConfigurations[pair.Key] = mergedConfiguration;
+                acceptedRawJsonLogTargetConfigurations ??= new Dictionary<string, string>();
+                acceptedRawJsonLogTargetConfigurations[pair.Key] = pair.Value;
             }
 
-            return effectiveLogTargetConfigurations;
+            if (errors.Count > 0)
+            {
+                error = string.Join("\n", errors);
+                acceptedRawJsonLogTargetConfigurations = null;
+                effectiveLogTargetConfigurations = null;
+                return false;
+            }
+
+            return true;
         }
 
         private static bool TryApplyRawJsonPatch(LogTargetConfiguration targetConfiguration,
                                                  string logTargetConfigurationName,
-                                                 string rawJsonPatch)
+                                                 string rawJsonPatch,
+                                                 out string error)
         {
+            error = null;
             try
             {
                 JsonUtility.FromJsonOverwrite(rawJsonPatch, targetConfiguration);
@@ -457,52 +588,10 @@ namespace TheBestLogger
             }
             catch (Exception ex)
             {
-                Diagnostics.Write($"Failed to apply raw json logger configuration patch for {logTargetConfigurationName}: {ex.Message}", LogLevel.Warning);
+                error = $"Failed to apply raw json logger configuration patch for {logTargetConfigurationName}: {ex.Message}";
+                Diagnostics.Write(error, LogLevel.Warning);
                 return false;
             }
-        }
-
-        private static Dictionary<string, string> ConvertConfigurationsToRawJsonPatches(
-            Dictionary<string, LogTargetConfiguration> logTargetConfigurations)
-        {
-            if (logTargetConfigurations == null || logTargetConfigurations.Count < 1)
-            {
-                return null;
-            }
-
-            var rawJsonPatches = new Dictionary<string, string>(logTargetConfigurations.Count);
-            foreach (var pair in logTargetConfigurations)
-            {
-                if (string.IsNullOrEmpty(pair.Key) || pair.Value == null)
-                {
-                    continue;
-                }
-
-                rawJsonPatches[pair.Key] = JsonUtility.ToJson(pair.Value);
-            }
-
-            return rawJsonPatches;
-        }
-
-        private static Dictionary<string, string> FilterValidRawJsonPatches(Dictionary<string, string> rawJsonLogTargetConfigurations)
-        {
-            if (rawJsonLogTargetConfigurations == null || rawJsonLogTargetConfigurations.Count < 1)
-            {
-                return null;
-            }
-
-            var filteredPatches = new Dictionary<string, string>(rawJsonLogTargetConfigurations.Count);
-            foreach (var pair in rawJsonLogTargetConfigurations)
-            {
-                if (string.IsNullOrEmpty(pair.Key) || string.IsNullOrEmpty(pair.Value))
-                {
-                    continue;
-                }
-
-                filteredPatches[pair.Key] = pair.Value;
-            }
-
-            return filteredPatches.Count > 0 ? filteredPatches : null;
         }
 
         private static Dictionary<string, string> _lastIncomingLogTargetConfigurationPatchesForCache;

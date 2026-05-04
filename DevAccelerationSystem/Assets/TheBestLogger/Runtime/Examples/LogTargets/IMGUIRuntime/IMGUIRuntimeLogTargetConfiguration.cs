@@ -10,5 +10,13 @@ namespace TheBestLogger.Examples.LogTargets
         public KeyCode KeyboardKeyDownToActivateConsole = KeyCode.Space;
         public int CountOfScreenTouchesToActivateConsole = 3;
         public int MaxStringLengthForOneMessage = 100;
+
+        public override void ApplyRuntimeDefaults()
+        {
+            base.ApplyRuntimeDefaults();
+            CountLogsToPick = Math.Max(1, CountLogsToPick);
+            CountOfScreenTouchesToActivateConsole = Math.Max(1, CountOfScreenTouchesToActivateConsole);
+            MaxStringLengthForOneMessage = Math.Max(1, MaxStringLengthForOneMessage);
+        }
     }
 }

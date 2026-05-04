@@ -3,6 +3,24 @@
 ## [Unreleased]
 - No unreleased entries yet.
 
+## [3.0.0] - 2026-05-03
+- Breaking change: removed the public `GetCurrentLogTargetConfigurations()` API.
+- Breaking change: removed the public typed runtime-update APIs based on `LogTargetConfiguration` objects.
+- Added `TryApplyRemoteConfigurationPatch(string targetName, string rawJsonPatch, out string error)` as the single-target public remote-config entrypoint.
+- Added `TryApplyRemoteConfigurationDocument(IReadOnlyDictionary<string, string> rawJsonPatches, out string error)` as the batch public remote-config entrypoint.
+- Added explicit client-facing error reporting for remote-config application through `bool` + `out string error`.
+- Made batch remote-config document application atomic so mixed valid/invalid batches are rejected without partial apply.
+- Added package-owned generic integration examples for:
+  - app-level logger facade
+  - remote-config normalization into `targetName -> rawJsonPatch`
+- Added `MIGRATION_3_0_0.md` as a human-readable upgrade guide for existing project integrations.
+- Added a package-owned AI prompt for upgrading project integrations to `3.0.0` and reviewing log usage against package best practices.
+- Updated `README.md` with generic integration wiring examples and references to both the human migration guide and the package-owned AI migration/review prompt.
+- Hardened remote-config application so malformed or rejected public patches are not persisted into startup cache.
+- Hardened target apply flow so one bad applied config restores the previous target state or falls back to a muted quarantine configuration instead of poisoning logger runtime state.
+- Hardened `IMGUIRuntimeLogTargetConfiguration` numeric inputs and `IMGUIRuntimeLogTarget` fallback behavior against semantically invalid external config values.
+- Added regression coverage for public-API hardening, cache behavior, snapshot isolation, and invalid remote-config inputs.
+
 ## [2.2.15] - 2026-05-03
 - Added broad hardening coverage across editor, playmode, performance, and tracked consumer-validation surfaces.
 - Added production-oriented regression coverage for logger lifecycle, concurrency, batching, main-thread dispatch, target fault isolation, `OpenSearch` config compatibility, delivery behavior, and `StabilityHub`.

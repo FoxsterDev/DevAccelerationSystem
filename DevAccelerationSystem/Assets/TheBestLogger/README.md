@@ -5,7 +5,7 @@ Configurable logging package for Unity projects with runtime logging, structured
 ## Current Package Baseline
 
 - Package id: `com.foxsterdev.thebestlogger`
-- Latest tagged release: `2.2.15`
+- Latest tagged release: `3.0.0`
 - Declared Unity baseline: `2022.3`
 - This workspace currently resolves `com.cysharp.zstring` from `Packages/ZString.Unity.2.6.0.tgz`
 - This workspace also includes `com.unity.test-framework.performance@3.1.0` for package performance measurements
@@ -17,7 +17,7 @@ Configurable logging package for Unity projects with runtime logging, structured
 Use the tagged package path:
 
 ```text
-https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/TheBestLogger#2.2.15
+https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/TheBestLogger#3.0.0
 ```
 
 ### Install manually via `manifest.json`
@@ -25,7 +25,7 @@ https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSyst
 ```json
 {
   "dependencies": {
-    "com.foxsterdev.thebestlogger": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/TheBestLogger#2.2.15"
+    "com.foxsterdev.thebestlogger": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/TheBestLogger#3.0.0"
   }
 }
 ```
@@ -77,6 +77,10 @@ Important constraint:
   - `DevAccelerationSystem/Docs/TheBestLogger_Integration_Best_Practices.md`
 - Repository-level audit prompt:
   - `DevAccelerationSystem/Docs/TheBestLogger_AI_Integration_Audit_Prompt.md`
+- Package-level `3.0.0` migration and log-review prompt:
+  - `Assets/TheBestLogger/AI_Upgrade_And_Log_Review_Prompt_3_0_0.md`
+- Package-level human migration guide:
+  - `Assets/TheBestLogger/MIGRATION_3_0_0.md`
 - Current package changelog:
   - `CHANGELOG.md`
 
@@ -107,6 +111,11 @@ Important constraint:
   - formatting improvements and allocation-aware `LogFormat` overloads
 - `2.2.14`
   - `[HideInCallstack]` on `LogTrace` extension method for cleaner Unity Console navigation
+- `3.0.0`
+  - breaking public API simplification for remote config
+  - removed public typed runtime-config updates
+  - removed public current-config getter
+  - added raw remote patch APIs only
 - `2.2.15`
   - target-specific `DebugMode.SessionDebugRolloutPercentage`
   - per-category `LogTargetCategory.SessionRolloutPercentage`
@@ -175,6 +184,58 @@ At runtime the sample also generates a tabbed control screen with:
 - runtime target patching and debug-mode toggling
 - `StabilityHub` previous-session retrieval flow
 - a safe mock `OpenSearch` delivery path that captures payload previews without talking to a real backend
+
+## Generic Integration Examples
+
+The package now includes two generic integration examples under `Runtime/Examples/Integration/`:
+
+- `GenericProjectLoggerExample.cs`
+  - app-level cached category facade
+  - persisted debug id handling
+  - `TryApplyRemoteConfigurationPatch(...)` and `TryApplyRemoteConfigurationDocument(...)` wrappers
+- `GenericRemoteConfigAdapterExample.cs`
+  - app-level normalization from external remote-config provider keys into:
+    - `targetName -> rawJsonPatch`
+
+Use them together when your project needs one logger facade plus one remote-config normalization layer.
+
+Example shape:
+
+```csharp
+using TheBestLogger;
+using TheBestLogger.Examples;
+
+public sealed class MyRemoteConfigProvider : GenericRemoteConfigAdapterExample.IRemoteConfigStringProvider
+{
+    public bool TryGetString(string key, out string value)
+    {
+        // Replace with your real provider lookup.
+        value = string.Empty;
+        return false;
+    }
+}
+
+var statusLogger = GenericProjectLoggerExample.Technical;
+GenericProjectLoggerExample.StoreDebugId("player-1234");
+GenericProjectLoggerExample.TryEnableStoredDebugMode(statusLogger);
+
+var mappings = GenericRemoteConfigAdapterExample.CreateDefaultMappings();
+var provider = new MyRemoteConfigProvider();
+GenericRemoteConfigAdapterExample.TryApplyMappedLoggerPatches(mappings, provider, statusLogger);
+```
+
+Best-practice split:
+
+- project logger facade owns category access and persisted debug-id usage
+- project remote-config adapter owns provider-specific key lookup
+- `LogManager` sees only normalized raw JSON patches
+
+If you are upgrading an existing project integration, start here:
+
+- human migration guide:
+  - `Assets/TheBestLogger/MIGRATION_3_0_0.md`
+- AI-assisted migration and log review:
+  - `Assets/TheBestLogger/AI_Upgrade_And_Log_Review_Prompt_3_0_0.md`
 
 ## How DebugMode Works
 
@@ -334,19 +395,27 @@ There are two layers of config in runtime:
 
 The logger starts from the built-in config first. After that it can overlay cached runtime patches from the previous session if startup cache is enabled.
 
-At runtime you can update config in two ways:
+At runtime the public remote-config boundary is raw JSON only:
 
-- typed config objects: `UpdateLogTargetsConfigurations(Dictionary<string, LogTargetConfiguration>)`
-- raw JSON patches: `UpdateLogTargetsConfigurations(Dictionary<string, string>)`
+- single-target patch:
+  - `TryApplyRemoteConfigurationPatch(string targetName, string rawJsonPatch, out string error)`
+- multi-target document:
+  - `TryApplyRemoteConfigurationDocument(IReadOnlyDictionary<string, string> rawJsonPatches, out string error)`
 
-Recommended rule:
+The logger no longer exposes public typed runtime-config mutation APIs and no longer exposes the current effective configs through a public getter.
 
-- use the raw JSON overload for remote config whenever you can
+Try-contract behavior:
 
-Why:
+- both methods return `true` and `error = null` when the update is accepted
+- both methods return `false` and a non-empty `error` string when validation or apply fails
+- `TryApplyRemoteConfigurationDocument(...)` is atomic: if any patch in the batch is invalid, the whole batch is rejected
+
+Why this shape:
 
 - raw JSON preserves "field was absent" semantics
-- typed objects are already deserialized before they reach the logger, so omitted primitive fields can no longer be distinguished from default values
+- the logger boundary stays smaller and easier to harden
+- runtime config classes stay internal implementation detail instead of public mutation surface
+- the app-level remote-config layer can normalize any vendor-specific document format into `targetName -> rawJsonPatch` before calling the logger
 
 What happens when a runtime update is applied:
 
@@ -373,7 +442,8 @@ Practical guidance:
 - use built-in config for safe defaults
 - use remote config for temporary overrides and targeted diagnostics
 - prefer raw JSON patches for partial remote updates
-- if you send only one target update, use the single-target overloads
+- if your remote source updates only one target, use `TryApplyRemoteConfigurationPatch(...)`
+- if your remote source produces a batch of target patches, normalize it in your app and pass the batch to `TryApplyRemoteConfigurationDocument(...)`
 - if startup cache should not survive restarts for a given product flow, disable `RemoteOverrideStartupCache`
 - do not treat `OpenSearch.ApiKey` as a supported remote-config field; it should come from the client build or another local secure source
 

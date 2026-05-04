@@ -13,6 +13,13 @@ namespace TheBestLogger.Examples.LogTargets
 
         private readonly ConcurrentQueue<string> _logEntries = new();
 
+        private static IMGUIRuntimeLogTargetConfiguration CreateSafeConfiguration()
+        {
+            var configuration = new IMGUIRuntimeLogTargetConfiguration();
+            configuration.ApplyRuntimeDefaults();
+            return configuration;
+        }
+
         [Preserve]
         public IMGUIRuntimeLogTarget()
         {
@@ -30,18 +37,21 @@ namespace TheBestLogger.Examples.LogTargets
                                  Exception exception = null
         )
         {
-            var messageFormatted = "";
-            messageFormatted = string.Concat("[", logAttributes.TimeStampFormatted, "] ", "[", category, "] ", message);
+            _configuration ??= CreateSafeConfiguration();
 
-            if (messageFormatted.Length > _configuration.MaxStringLengthForOneMessage)
+            var messageFormatted = string.Concat("[", logAttributes?.TimeStampFormatted ?? string.Empty, "] ", "[", category, "] ", message);
+
+            var maxStringLengthForOneMessage = Math.Max(1, _configuration.MaxStringLengthForOneMessage);
+            if (messageFormatted.Length > maxStringLengthForOneMessage)
             {
-                messageFormatted = messageFormatted.Substring(0, _configuration.MaxStringLengthForOneMessage);
+                messageFormatted = messageFormatted.Substring(0, maxStringLengthForOneMessage);
             }
 
             _logEntries.Enqueue(messageFormatted);
 
             // Keep only the last 100 logs to avoid too much memory usage
-            if (_logEntries.Count > (_configuration?.CountLogsToPick ?? 100))
+            var countLogsToPick = Math.Max(1, _configuration.CountLogsToPick);
+            if (_logEntries.Count > countLogsToPick)
             {
                 _logEntries.TryDequeue(out var result);
             }
@@ -56,6 +66,14 @@ namespace TheBestLogger.Examples.LogTargets
         {
             base.ApplyConfiguration(configuration);
             _configuration = configuration as IMGUIRuntimeLogTargetConfiguration;
+            if (_configuration == null)
+            {
+                Diagnostics.Write(
+                    $"Expected {nameof(IMGUIRuntimeLogTargetConfiguration)} for {GetType().Name}, but received {configuration?.GetType().Name ?? "null"}. Applying safe defaults instead.",
+                    LogLevel.Warning);
+                _configuration = CreateSafeConfiguration();
+            }
+
             if (_drawer != null)
             {
                 _drawer.Initialize(_configuration, _logEntries);

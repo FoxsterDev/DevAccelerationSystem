@@ -85,23 +85,21 @@ namespace TheBestLogger.Tests.Editor
         [Test]
         public void GetCurrentLogTargetConfigurations_BeforeInitialize_ReturnsEmptyDictionary()
         {
-            var configs = LogManager.GetCurrentLogTargetConfigurations();
+            var configs = LogManager.GetCurrentLogTargetConfigurationsSnapshot();
 
             Assert.That(configs, Is.Empty);
         }
 
         [Test]
-        public void UpdateLogTargetsConfigurations_BeforeInitialize_DoesNothing()
+        public void ApplyRemoteConfigurationPatch_BeforeInitialize_DoesNothing()
         {
-            Assert.DoesNotThrow(() =>
-            {
-                LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
-                {
-                    [nameof(TrackingLogTargetConfiguration)] = new TrackingLogTargetConfiguration()
-                });
-            });
+            var applied = LogManager.TryApplyRemoteConfigurationPatch(nameof(TrackingLogTargetConfiguration),
+                                                                      JsonUtility.ToJson(new TrackingLogTargetConfiguration()),
+                                                                      out var error);
 
-            Assert.That(LogManager.GetCurrentLogTargetConfigurations(), Is.Empty);
+            Assert.That(applied, Is.False);
+            Assert.That(error, Is.Not.Null.And.Not.Empty);
+            Assert.That(LogManager.GetCurrentLogTargetConfigurationsSnapshot(), Is.Empty);
         }
 
         [Test]
@@ -161,8 +159,8 @@ namespace TheBestLogger.Tests.Editor
             LogManager.Initialize(new LogTarget[] { _trackingTarget }, configuration, CancellationToken.None, "debug-user");
 
             Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Error));
-            Assert.That(LogManager.GetCurrentLogTargetConfigurations(), Contains.Key(nameof(TrackingLogTargetConfiguration)));
-            Assert.That(LogManager.GetCurrentLogTargetConfigurations(), Contains.Key(nameof(UnityEditorConsoleLogTargetConfiguration)));
+            Assert.That(LogManager.GetCurrentLogTargetConfigurationsSnapshot(), Contains.Key(nameof(TrackingLogTargetConfiguration)));
+            Assert.That(LogManager.GetCurrentLogTargetConfigurationsSnapshot(), Contains.Key(nameof(UnityEditorConsoleLogTargetConfiguration)));
 
             UnityEngine.Object.DestroyImmediate(trackingConfigSo);
             UnityEngine.Object.DestroyImmediate(unityEditorConfigSo);
@@ -372,14 +370,29 @@ namespace TheBestLogger.Tests.Editor
         {
             InitializeForTests("debug-user");
 
-            var configs = LogManager.GetCurrentLogTargetConfigurations();
+            var configs = LogManager.GetCurrentLogTargetConfigurationsSnapshot();
 
             Assert.That(configs.ContainsKey(nameof(TrackingLogTargetConfiguration)), Is.True);
             Assert.That(configs[nameof(TrackingLogTargetConfiguration)].MinLogLevel, Is.EqualTo(LogLevel.Warning));
         }
 
         [Test]
-        public void UpdateLogTargetsConfigurations_AppliesNewConfigurationToExistingTarget()
+        public void GetCurrentLogTargetConfigurations_AfterInitialize_ReturnsConfigurationSnapshots()
+        {
+            InitializeForTests("debug-user");
+
+            var configs = LogManager.GetCurrentLogTargetConfigurationsSnapshot();
+            var trackingConfig = configs[nameof(TrackingLogTargetConfiguration)];
+
+            trackingConfig.MinLogLevel = LogLevel.Debug;
+            trackingConfig.Muted = true;
+
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Warning));
+            Assert.That(_trackingTarget.Configuration.Muted, Is.False);
+        }
+
+        [Test]
+        public void ApplyRemoteConfigurationPatch_AppliesNewConfigurationToExistingTarget()
         {
             InitializeForTests("debug-user");
 
@@ -393,20 +406,14 @@ namespace TheBestLogger.Tests.Editor
                 DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
             };
 
-            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
-
-            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
-            {
-                [nameof(TrackingLogTargetConfiguration)] = updatedConfig,
-                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
-            });
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(TrackingLogTargetConfiguration), JsonUtility.ToJson(updatedConfig));
 
             Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Error));
             Assert.That(_trackingTarget.Configuration.Muted, Is.True);
         }
 
         [Test]
-        public void UpdateLogTargetsConfigurations_WithPartialTargetDictionary_PreservesOmittedTargetsAndPersistsThem()
+        public void ApplyRemoteConfigurationPatch_PreservesOmittedTargetsAndPersistsThem()
         {
             var unityEditorConsoleTarget = new UnityEditorConsoleLogTarget();
             LogManager.Initialize(new LogTarget[] { _trackingTarget, unityEditorConsoleTarget },
@@ -414,17 +421,15 @@ namespace TheBestLogger.Tests.Editor
                                   CancellationToken.None,
                                   "debug-user");
 
-            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
-            {
-                [nameof(TrackingLogTargetConfiguration)] = new TrackingLogTargetConfiguration
-                {
-                    MinLogLevel = LogLevel.Error,
-                    IsThreadSafe = true,
-                    DebugMode = new DebugModeConfiguration(),
-                    BatchLogs = new LogTargetBatchLogsConfiguration(),
-                    DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
-                }
-            });
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(TrackingLogTargetConfiguration),
+                                                           JsonUtility.ToJson(new TrackingLogTargetConfiguration
+                                                           {
+                                                               MinLogLevel = LogLevel.Error,
+                                                               IsThreadSafe = true,
+                                                               DebugMode = new DebugModeConfiguration(),
+                                                               BatchLogs = new LogTargetBatchLogsConfiguration(),
+                                                               DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                                                           }));
 
             Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Error));
             Assert.That(unityEditorConsoleTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Debug));
@@ -444,7 +449,74 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
-        public void UpdateLogTargetsConfigurations_ReappliesDebugModeStateUsingCurrentDebugId()
+        public void ApplyRemoteConfigurationPatch_WithUnknownTargetName_IgnoresInvalidPatchAndDoesNotPersistIt()
+        {
+            InitializeForTests("debug-user");
+
+            var applied = LogManager.TryApplyRemoteConfigurationPatch("UnknownTargetConfiguration",
+                                                                      "{\"MinLogLevel\":4}",
+                                                                      out var error);
+
+            Assert.That(applied, Is.False);
+            Assert.That(error, Does.Contain("UnknownTargetConfiguration"));
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Warning));
+            Assert.That(_trackingTarget.Configuration.Muted, Is.False);
+            Assert.That(File.Exists(LogTargetConfigurationCacheStore.CacheDocumentFilePath), Is.False);
+        }
+
+        [Test]
+        public void ApplyRemoteConfigurationDocument_WithInvalidRawJsonPatch_DoesNotPersistItToCache()
+        {
+            InitializeForTests("debug-user");
+
+            var applied = LogManager.TryApplyRemoteConfigurationDocument(new Dictionary<string, string>
+            {
+                [nameof(TrackingLogTargetConfiguration)] = "{ not-valid-json"
+            }, out var error);
+
+            Assert.That(applied, Is.False);
+            Assert.That(error, Does.Contain(nameof(TrackingLogTargetConfiguration)));
+            Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Warning));
+            Assert.That(_trackingTarget.Configuration.Muted, Is.False);
+            Assert.That(File.Exists(LogTargetConfigurationCacheStore.CacheDocumentFilePath), Is.False);
+        }
+
+        [Test]
+        public void TryApplyRemoteConfigurationDocument_WithMixedValidAndInvalidPatches_DoesNotApplyAnyPatch()
+        {
+            InitializeForTests("debug-user");
+
+            var applied = LogManager.TryApplyRemoteConfigurationDocument(new Dictionary<string, string>
+            {
+                [nameof(TrackingLogTargetConfiguration)] = "{\"Muted\":true}",
+                ["UnknownTargetConfiguration"] = "{\"MinLogLevel\":4}"
+            }, out var error);
+
+            Assert.That(applied, Is.False);
+            Assert.That(error, Does.Contain("UnknownTargetConfiguration"));
+            Assert.That(_trackingTarget.Configuration.Muted, Is.False);
+            Assert.That(File.Exists(LogTargetConfigurationCacheStore.CacheDocumentFilePath), Is.False);
+        }
+
+        [Test]
+        public void IMGUIRuntimeLogTargetConfiguration_ApplyRuntimeDefaults_ClampsSemanticallyInvalidValues()
+        {
+            var configuration = new IMGUIRuntimeLogTargetConfiguration
+            {
+                CountLogsToPick = 0,
+                CountOfScreenTouchesToActivateConsole = 0,
+                MaxStringLengthForOneMessage = -1
+            };
+
+            configuration.ApplyRuntimeDefaults();
+
+            Assert.That(configuration.MaxStringLengthForOneMessage, Is.EqualTo(1));
+            Assert.That(configuration.CountLogsToPick, Is.EqualTo(1));
+            Assert.That(configuration.CountOfScreenTouchesToActivateConsole, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void ApplyRemoteConfigurationPatch_ReappliesDebugModeStateUsingCurrentDebugId()
         {
             InitializeForTests("other-user");
 
@@ -464,19 +536,13 @@ namespace TheBestLogger.Tests.Editor
                 DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
             };
 
-            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
-
-            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
-            {
-                [nameof(TrackingLogTargetConfiguration)] = updatedConfig,
-                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
-            });
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(TrackingLogTargetConfiguration), JsonUtility.ToJson(updatedConfig));
 
             Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.True);
         }
 
         [Test]
-        public void UpdateLogTargetsConfigurations_DoesNotResetSessionRolloutState()
+        public void ApplyRemoteConfigurationPatch_DoesNotResetSessionRolloutState()
         {
             var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_RolloutUpdate");
             var openSearchTarget = new MockOpenSearchLogTarget();
@@ -492,20 +558,15 @@ namespace TheBestLogger.Tests.Editor
 
             Assert.That(((ILogTarget) openSearchTarget).DebugModeEnabled, Is.True);
 
-            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
             var updatedConfig = CreateOpenSearchTargetConfiguration(sessionDebugRolloutPercentage: 0f);
-            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
-            {
-                [nameof(OpenSearchLogTargetConfiguration)] = updatedConfig,
-                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
-            });
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(OpenSearchLogTargetConfiguration), JsonUtility.ToJson(updatedConfig));
 
             Assert.That(((ILogTarget) openSearchTarget).DebugModeEnabled, Is.True);
             Assert.That(openSearchTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.True);
         }
 
         [Test]
-        public void UpdateLogTargetsConfigurations_WhenRemoteConfigDisablesDebugMode_TurnsOffTargetImmediately()
+        public void ApplyRemoteConfigurationPatch_WhenRemoteConfigDisablesDebugMode_TurnsOffTargetImmediately()
         {
             var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_RolloutSurvivesRemoteDisable");
             var openSearchTarget = new MockOpenSearchLogTarget();
@@ -521,14 +582,9 @@ namespace TheBestLogger.Tests.Editor
 
             Assert.That(((ILogTarget) openSearchTarget).DebugModeEnabled, Is.True);
 
-            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
             var updatedConfig = CreateOpenSearchTargetConfiguration(sessionDebugRolloutPercentage: 100f, debugModeEnabled: false);
 
-            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
-            {
-                [nameof(OpenSearchLogTargetConfiguration)] = updatedConfig,
-                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
-            });
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(OpenSearchLogTargetConfiguration), JsonUtility.ToJson(updatedConfig));
 
             Assert.That(((ILogTarget) openSearchTarget).DebugModeEnabled, Is.False);
             Assert.That(openSearchTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.False);
@@ -592,7 +648,7 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
-        public void UpdateLogTargetsConfigurations_WhenDebugModeStopsMatchingCurrentId_RestoresBaseFiltering()
+        public void ApplyRemoteConfigurationPatch_WhenDebugModeStopsMatchingCurrentId_RestoresBaseFiltering()
         {
             const string resourceSubFolderName = "LogManagerLifecycleTests_DebugDisabledByConfigUpdate";
 
@@ -633,7 +689,6 @@ namespace TheBestLogger.Tests.Editor
             Assert.That(((ILogTarget) _trackingTarget).DebugModeEnabled, Is.True);
             Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.True);
 
-            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
             var updatedConfig = new TrackingLogTargetConfiguration
             {
                 MinLogLevel = LogLevel.Warning,
@@ -664,11 +719,7 @@ namespace TheBestLogger.Tests.Editor
                 DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
             };
 
-            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
-            {
-                [nameof(TrackingLogTargetConfiguration)] = updatedConfig,
-                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
-            });
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(TrackingLogTargetConfiguration), JsonUtility.ToJson(updatedConfig));
 
             Assert.That(((ILogTarget) _trackingTarget).DebugModeEnabled, Is.False);
             Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.False);
@@ -678,7 +729,7 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
-        public void UpdateLogTargetsConfigurations_WhenRemoteConfigDisablesDebugMode_RestoresBaseFilteringForExplicitDebug()
+        public void ApplyRemoteConfigurationPatch_WhenRemoteConfigDisablesDebugMode_RestoresBaseFilteringForExplicitDebug()
         {
             var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_ExplicitDebugDisabledByRemoteFlag");
 
@@ -706,7 +757,6 @@ namespace TheBestLogger.Tests.Editor
             Assert.That(((ILogTarget) _trackingTarget).DebugModeEnabled, Is.True);
             Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.True);
 
-            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
             var updatedConfig = new TrackingLogTargetConfiguration
             {
                 MinLogLevel = LogLevel.Warning,
@@ -721,11 +771,7 @@ namespace TheBestLogger.Tests.Editor
                 DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
             };
 
-            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
-            {
-                [nameof(TrackingLogTargetConfiguration)] = updatedConfig,
-                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
-            });
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(TrackingLogTargetConfiguration), JsonUtility.ToJson(updatedConfig));
 
             Assert.That(((ILogTarget) _trackingTarget).DebugModeEnabled, Is.False);
             Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.False);
@@ -733,7 +779,7 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
-        public void UpdateLogTargetsConfigurations_WhenCategorySessionRolloutChanges_ReRollsCategoryDecision()
+        public void ApplyRemoteConfigurationPatch_WhenCategorySessionRolloutChanges_ReRollsCategoryDecision()
         {
             var categoryName = FindTrackingCategoryNameForReapplyDecisionChange(_trackingTarget);
             var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_CategorySessionRolloutUpdate");
@@ -749,21 +795,16 @@ namespace TheBestLogger.Tests.Editor
 
             Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, categoryName), Is.False);
 
-            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
             var updatedRolloutPercentage = CreateTrackingRolloutPercentageForDecision(_trackingTarget, categoryName, expectedAllowed: true);
-            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
-            {
-                [nameof(TrackingLogTargetConfiguration)] =
-                    CreateTrackingTargetConfigurationWithCategorySessionRollout(categoryName, updatedRolloutPercentage),
-                [nameof(UnityEditorConsoleLogTargetConfiguration)] =
-                    currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
-            });
+            AssertTryApplyRemoteConfigurationPatchSucceeds(
+                nameof(TrackingLogTargetConfiguration),
+                JsonUtility.ToJson(CreateTrackingTargetConfigurationWithCategorySessionRollout(categoryName, updatedRolloutPercentage)));
 
             Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, categoryName), Is.True);
         }
 
         [Test]
-        public void UpdateLogTargetConfiguration_WithRawJsonPatchForCategorySessionRollout_ReRollsCategoryDecision()
+        public void ApplyRemoteConfigurationPatch_WithRawJsonPatchForCategorySessionRollout_ReRollsCategoryDecision()
         {
             var categoryName = FindTrackingCategoryNameForReapplyDecisionChange(_trackingTarget);
             var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_CategorySessionRolloutRawJsonUpdate");
@@ -783,17 +824,17 @@ namespace TheBestLogger.Tests.Editor
             var rawJsonPatch =
                 $"{{\"OverrideCategories\":[{{\"Category\":\"{categoryName}\",\"MinLevel\":0,\"SessionRolloutPercentage\":{updatedRolloutPercentage.ToString(CultureInfo.InvariantCulture)}}}]}}";
 
-            LogManager.UpdateLogTargetConfiguration(nameof(TrackingLogTargetConfiguration), rawJsonPatch);
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(TrackingLogTargetConfiguration), rawJsonPatch);
 
             Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, categoryName), Is.True);
         }
 
         [Test]
-        public void UpdateLogTargetConfiguration_WithRawJsonPatch_PreservesAbsentPrimitiveFieldsAndPersistsAcrossRestart()
+        public void ApplyRemoteConfigurationPatch_WithRawJsonPatch_PreservesAbsentPrimitiveFieldsAndPersistsAcrossRestart()
         {
             InitializeForTests("debug-user");
 
-            LogManager.UpdateLogTargetConfiguration(nameof(TrackingLogTargetConfiguration), "{\"Muted\":true}");
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(TrackingLogTargetConfiguration), "{\"Muted\":true}");
 
             Assert.That(_trackingTarget.Configuration.Muted, Is.True);
             Assert.That(_trackingTarget.Configuration.MinLogLevel, Is.EqualTo(LogLevel.Warning));
@@ -808,7 +849,7 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
-        public void UpdateLogTargetConfiguration_WithRawJsonPatchWithoutDebugModeSection_PreservesActiveSessionRollout()
+        public void ApplyRemoteConfigurationPatch_WithRawJsonPatchWithoutDebugModeSection_PreservesActiveSessionRollout()
         {
             var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_RawJsonPreservesSessionRollout");
             var openSearchTarget = new MockOpenSearchLogTarget();
@@ -822,7 +863,7 @@ namespace TheBestLogger.Tests.Editor
 
             Assert.That(((ILogTarget) openSearchTarget).DebugModeEnabled, Is.True);
 
-            LogManager.UpdateLogTargetConfiguration(nameof(OpenSearchLogTargetConfiguration), "{\"ApiKey\":\"updated-key\"}");
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(OpenSearchLogTargetConfiguration), "{\"ApiKey\":\"updated-key\"}");
 
             Assert.That(((ILogTarget) openSearchTarget).DebugModeEnabled, Is.True);
             Assert.That(((OpenSearchLogTargetConfiguration) openSearchTarget.Configuration).ApiKey, Is.EqualTo("updated-key"));
@@ -830,7 +871,7 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
-        public void UpdateLogTargetConfiguration_WithRawJsonPatch_PreservesAbsentNestedBatchLogsFields()
+        public void ApplyRemoteConfigurationPatch_WithRawJsonPatch_PreservesAbsentNestedBatchLogsFields()
         {
             const string resourceSubFolderName = "LogManagerLifecycleTests_RawJsonBatchLogs";
 
@@ -852,7 +893,7 @@ namespace TheBestLogger.Tests.Editor
 
             LogManager.Initialize(new LogTarget[] { _trackingTarget }, resourceSubFolderName + "/", CancellationToken.None, "debug-user");
 
-            LogManager.UpdateLogTargetConfiguration(nameof(TrackingLogTargetConfiguration), "{\"BatchLogs\":{\"Enabled\":true}}");
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(TrackingLogTargetConfiguration), "{\"BatchLogs\":{\"Enabled\":true}}");
 
             Assert.That(_trackingTarget.Configuration.BatchLogs.Enabled, Is.True);
             Assert.That(_trackingTarget.Configuration.BatchLogs.UpdatePeriodMs, Is.EqualTo(333));
@@ -860,11 +901,10 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
-        public void Initialize_AfterPersistedRuntimeUpdate_BootstrapsFromCachedConfiguration()
+        public void Initialize_AfterPersistedRemotePatch_BootstrapsFromCachedConfiguration()
         {
             InitializeForTests("debug-user");
 
-            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
             var updatedConfig = new TrackingLogTargetConfiguration
             {
                 MinLogLevel = LogLevel.Error,
@@ -879,11 +919,7 @@ namespace TheBestLogger.Tests.Editor
                 DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
             };
 
-            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
-            {
-                [nameof(TrackingLogTargetConfiguration)] = updatedConfig,
-                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
-            });
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(TrackingLogTargetConfiguration), JsonUtility.ToJson(updatedConfig));
 
             LogManager.Dispose();
 
@@ -894,7 +930,7 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
-        public void Initialize_AfterPersistedRuntimeDebugUpdate_WithMatchingExplicitDebugId_ReenablesDebugModeOnRestart()
+        public void Initialize_AfterPersistedRemotePatch_WithMatchingExplicitDebugId_ReenablesDebugModeOnRestart()
         {
             const string resourceSubFolderName = "LogManagerLifecycleTests_PersistedDebugStartup";
 
@@ -918,7 +954,6 @@ namespace TheBestLogger.Tests.Editor
 
             Assert.That(((ILogTarget) _trackingTarget).DebugModeEnabled, Is.False);
 
-            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
             var updatedConfig = new TrackingLogTargetConfiguration
             {
                 MinLogLevel = LogLevel.Error,
@@ -933,11 +968,7 @@ namespace TheBestLogger.Tests.Editor
                 DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
             };
 
-            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
-            {
-                [nameof(TrackingLogTargetConfiguration)] = updatedConfig,
-                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
-            });
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(TrackingLogTargetConfiguration), JsonUtility.ToJson(updatedConfig));
 
             LogManager.Dispose();
 
@@ -950,7 +981,7 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
-        public void Initialize_AfterPersistedRuntimeDebugUpdate_WithoutExplicitDebugId_KeepsDebugModeDisabled()
+        public void Initialize_AfterPersistedRemotePatch_WithoutExplicitDebugId_KeepsDebugModeDisabled()
         {
             const string resourceSubFolderName = "LogManagerLifecycleTests_PersistedDebugStartupWithoutExplicitId";
 
@@ -972,7 +1003,6 @@ namespace TheBestLogger.Tests.Editor
 
             LogManager.Initialize(new LogTarget[] { _trackingTarget }, resourceSubFolderName + "/", CancellationToken.None, "debug-user");
 
-            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
             var updatedConfig = new TrackingLogTargetConfiguration
             {
                 MinLogLevel = LogLevel.Error,
@@ -987,11 +1017,7 @@ namespace TheBestLogger.Tests.Editor
                 DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
             };
 
-            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
-            {
-                [nameof(TrackingLogTargetConfiguration)] = updatedConfig,
-                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
-            });
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(TrackingLogTargetConfiguration), JsonUtility.ToJson(updatedConfig));
 
             LogManager.Dispose();
 
@@ -1042,13 +1068,7 @@ namespace TheBestLogger.Tests.Editor
                 DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
             };
 
-            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
-
-            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
-            {
-                [nameof(TrackingLogTargetConfiguration)] = updatedConfig,
-                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
-            });
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(TrackingLogTargetConfiguration), JsonUtility.ToJson(updatedConfig));
 
             LogManager.Dispose();
 
@@ -1089,24 +1109,24 @@ namespace TheBestLogger.Tests.Editor
                                   CancellationToken.None,
                                   "debug-user");
 
-            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
+            AssertTryApplyRemoteConfigurationDocumentSucceeds(new Dictionary<string, string>
             {
-                [nameof(TrackingLogTargetConfiguration)] = new TrackingLogTargetConfiguration
+                [nameof(TrackingLogTargetConfiguration)] = JsonUtility.ToJson(new TrackingLogTargetConfiguration
                 {
                     MinLogLevel = LogLevel.Error,
                     IsThreadSafe = true,
                     DebugMode = new DebugModeConfiguration(),
                     BatchLogs = new LogTargetBatchLogsConfiguration(),
                     DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
-                },
-                [nameof(UnityEditorConsoleLogTargetConfiguration)] = new UnityEditorConsoleLogTargetConfiguration
+                }),
+                [nameof(UnityEditorConsoleLogTargetConfiguration)] = JsonUtility.ToJson(new UnityEditorConsoleLogTargetConfiguration
                 {
                     MinLogLevel = LogLevel.Warning,
                     IsThreadSafe = true,
                     DebugMode = new DebugModeConfiguration(),
                     BatchLogs = new LogTargetBatchLogsConfiguration(),
                     DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
-                }
+                })
             });
 
             CorruptRawPatchInExistingCacheDocumentForTests(nameof(TrackingLogTargetConfiguration), "{ not-valid-json");
@@ -1187,7 +1207,7 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
-        public void UpdateLogTargetsConfigurations_WhenConfigCacheDisabled_DoesNotPersistRuntimeChanges()
+        public void ApplyRemoteConfigurationPatch_WhenConfigCacheDisabled_DoesNotPersistRuntimeChanges()
         {
             const string resourceSubFolderName = "LogManagerLifecycleTests_ConfigCacheDisabled_NoPersist";
             CreateConfigurationAssets(_tempRootAssetPath,
@@ -1209,7 +1229,6 @@ namespace TheBestLogger.Tests.Editor
 
             LogManager.Initialize(new LogTarget[] { _trackingTarget }, resourceSubFolderName + "/", CancellationToken.None, "debug-user");
 
-            var currentConfigs = LogManager.GetCurrentLogTargetConfigurations();
             var updatedConfig = new TrackingLogTargetConfiguration
             {
                 MinLogLevel = LogLevel.Error,
@@ -1224,11 +1243,7 @@ namespace TheBestLogger.Tests.Editor
                 DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
             };
 
-            LogManager.UpdateLogTargetsConfigurations(new Dictionary<string, LogTargetConfiguration>
-            {
-                [nameof(TrackingLogTargetConfiguration)] = updatedConfig,
-                [nameof(UnityEditorConsoleLogTargetConfiguration)] = currentConfigs[nameof(UnityEditorConsoleLogTargetConfiguration)]
-            });
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(TrackingLogTargetConfiguration), JsonUtility.ToJson(updatedConfig));
 
             Assert.That(File.Exists(LogTargetConfigurationCacheStore.CacheDocumentFilePath), Is.False);
 
@@ -1435,7 +1450,7 @@ namespace TheBestLogger.Tests.Editor
                                   CancellationToken.None,
                                   "debug-user");
 
-            var configs = LogManager.GetCurrentLogTargetConfigurations();
+            var configs = LogManager.GetCurrentLogTargetConfigurationsSnapshot();
 
             Assert.That(configs.Count, Is.EqualTo(2));
             Assert.That(configs, Contains.Key(nameof(TrackingLogTargetConfiguration)));
@@ -1512,7 +1527,7 @@ namespace TheBestLogger.Tests.Editor
             var logger = LogManager.CreateLogger("Gameplay");
 
             Assert.That(logger, Is.TypeOf<FallbackLogger>());
-            Assert.That(LogManager.GetCurrentLogTargetConfigurations(), Is.Empty);
+            Assert.That(LogManager.GetCurrentLogTargetConfigurationsSnapshot(), Is.Empty);
         }
 
         [Test]
@@ -1526,7 +1541,7 @@ namespace TheBestLogger.Tests.Editor
             var logger = LogManager.CreateLogger("Gameplay");
 
             Assert.That(logger, Is.TypeOf<FallbackLogger>());
-            Assert.That(LogManager.GetCurrentLogTargetConfigurations(), Is.Empty);
+            Assert.That(LogManager.GetCurrentLogTargetConfigurationsSnapshot(), Is.Empty);
         }
 
         [Test]
@@ -1561,7 +1576,7 @@ namespace TheBestLogger.Tests.Editor
             Assert.That(capturedError, Does.Contain("configuration"),
                         $"Expected fallback initialization error to mention configuration. Actual: {capturedError}");
             Assert.That(logger, Is.TypeOf<FallbackLogger>());
-            Assert.That(LogManager.GetCurrentLogTargetConfigurations(), Is.Empty);
+            Assert.That(LogManager.GetCurrentLogTargetConfigurationsSnapshot(), Is.Empty);
         }
 
         [Test]
@@ -1659,6 +1674,21 @@ namespace TheBestLogger.Tests.Editor
             };
         }
 
+        private static IMGUIRuntimeLogTargetConfiguration CreateDefaultIMGUIRuntimeTargetConfiguration()
+        {
+            return new IMGUIRuntimeLogTargetConfiguration
+            {
+                MinLogLevel = LogLevel.Debug,
+                IsThreadSafe = true,
+                CountLogsToPick = 50,
+                CountOfScreenTouchesToActivateConsole = 3,
+                MaxStringLengthForOneMessage = 120,
+                DebugMode = new DebugModeConfiguration(),
+                BatchLogs = new LogTargetBatchLogsConfiguration(),
+                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+            };
+        }
+
         private static TrackingLogTargetConfiguration CreateTrackingTargetConfigurationWithCategorySessionRollout(string categoryName,
                                                                                                                   float sessionRolloutPercentage)
         {
@@ -1686,7 +1716,8 @@ namespace TheBestLogger.Tests.Editor
                                                       TrackingLogTargetConfiguration trackingConfig,
                                                       Action<LogManagerConfiguration> configureLogManager = null,
                                                       UnityEditorConsoleLogTargetConfiguration unityEditorConsoleConfig = null,
-                                                      OpenSearchLogTargetConfiguration openSearchConfig = null)
+                                                      OpenSearchLogTargetConfiguration openSearchConfig = null,
+                                                      IMGUIRuntimeLogTargetConfiguration imguiConfig = null)
         {
             var absoluteResourcesPath = Path.Combine(Application.dataPath,
                                                      tempRootAssetPath.Replace("Assets/", string.Empty),
@@ -1714,6 +1745,15 @@ namespace TheBestLogger.Tests.Editor
                 AssetDatabase.CreateAsset(openSearchConfigSo,
                                           $"{tempRootAssetPath}/OpenSearchLogTargetConfigurationSO_{resourceSubFolderName}.asset");
                 logTargetConfigs.Add(openSearchConfigSo);
+            }
+
+            if (imguiConfig != null)
+            {
+                var imguiConfigSo = ScriptableObject.CreateInstance<IMGUIRuntimeLogTargetConfigurationSO>();
+                imguiConfigSo.SpecificConfiguration = imguiConfig;
+                AssetDatabase.CreateAsset(imguiConfigSo,
+                                          $"{tempRootAssetPath}/IMGUIRuntimeLogTargetConfigurationSO_{resourceSubFolderName}.asset");
+                logTargetConfigs.Add(imguiConfigSo);
             }
 
             var logManagerConfiguration = ScriptableObject.CreateInstance<LogManagerConfiguration>();
@@ -1759,6 +1799,20 @@ namespace TheBestLogger.Tests.Editor
             {
                 Enabled = enabled
             };
+        }
+
+        private static void AssertTryApplyRemoteConfigurationPatchSucceeds(string targetName, string rawJsonPatch)
+        {
+            var applied = LogManager.TryApplyRemoteConfigurationPatch(targetName, rawJsonPatch, out var error);
+            Assert.That(applied, Is.True, error);
+            Assert.That(error, Is.Null.Or.Empty);
+        }
+
+        private static void AssertTryApplyRemoteConfigurationDocumentSucceeds(IReadOnlyDictionary<string, string> rawJsonPatches)
+        {
+            var applied = LogManager.TryApplyRemoteConfigurationDocument(rawJsonPatches, out var error);
+            Assert.That(applied, Is.True, error);
+            Assert.That(error, Is.Null.Or.Empty);
         }
 
         private static Dictionary<string, string> ToRawJsonPatches(Dictionary<string, LogTargetConfiguration> configurations)

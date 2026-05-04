@@ -288,7 +288,11 @@ namespace TheBestLogger.Tests.Editor
             var target = new OpenSearchLogTarget();
             LogManager.Initialize(new LogTarget[] { target }, resourceSubFolderName + "/", CancellationToken.None, "debug-user");
 
-            LogManager.UpdateLogTargetConfiguration(nameof(OpenSearchLogTargetConfiguration), "{\"ApiKey\":\"new-key\"}");
+            var applied = LogManager.TryApplyRemoteConfigurationPatch(nameof(OpenSearchLogTargetConfiguration),
+                                                                      "{\"ApiKey\":\"new-key\"}",
+                                                                      out var error);
+            Assert.That(applied, Is.True, error);
+            Assert.That(error, Is.Null.Or.Empty);
             LogManager.CreateLogger("Gameplay").LogWarning("after-raw-json-update");
 
             var request = server.WaitForRequestOrThrow();
