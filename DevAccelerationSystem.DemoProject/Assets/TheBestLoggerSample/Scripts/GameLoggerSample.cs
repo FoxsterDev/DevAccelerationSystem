@@ -40,6 +40,8 @@ public class GameLoggerSample : MonoBehaviour
     public bool UseOpenSearchMockTarget => _useOpenSearchMockTarget;
     public bool SampleDebugModeEnabled { get; private set; }
     public string LastActionStatus { get; private set; } = "Ready";
+    private LogLevel? _lastRequestedGlobalMinLevel;
+    private OpenSearchLogTargetConfiguration _lastRequestedOpenSearchMockConfiguration;
 
     private readonly AggregateExceptionExample _aggregateExceptionExample = new();
     private readonly InnerExceptionExample _innerExceptionExample = new();
@@ -51,6 +53,7 @@ public class GameLoggerSample : MonoBehaviour
                          _useRuntimeConsoleTarget,
                          _retrievePreviousSessionIssuesOnStart,
                          _useOpenSearchMockTarget);
+        ResetLocalRuntimePatchState();
         SampleDebugModeEnabled = LogManager.SetDebugMode(GameLoggerExampleBootstrap.DefaultDebugId, true);
         NotifyStateChanged();
     }
@@ -230,13 +233,8 @@ public class GameLoggerSample : MonoBehaviour
 
     public void LogCurrentConfigurationSummary()
     {
-        Dictionary<string, LogTargetConfiguration> configurations = LogManager.GetCurrentLogTargetConfigurations();
-        foreach (KeyValuePair<string, LogTargetConfiguration> pair in configurations)
-        {
-            Debug.Log($"{pair.Key}: MinLevel={pair.Value.MinLogLevel}, Muted={pair.Value.Muted}, ThreadSafe={pair.Value.IsThreadSafe}");
-        }
-
-        SetStatus($"Logged {configurations.Count} target configurations");
+        Debug.Log(GetRuntimePatchSummary());
+        SetStatus("Logged sample runtime patch summary");
     }
 
     public void RetrievePreviousSessionIssues()
@@ -309,11 +307,16 @@ public class GameLoggerSample : MonoBehaviour
             return;
         }
 
-        LogManager.UpdateLogTargetConfiguration(nameof(OpenSearchLogTargetConfiguration),
-                                                CreateOpenSearchMockConfiguration(LogLevel.Debug,
-                                                                                  "mock://qa-opensearch",
-                                                                                  "thebestlogger-qa-",
-                                                                                  "qa-demo-key"));
+        var configuration = CreateOpenSearchMockConfiguration(LogLevel.Debug,
+                                                              "mock://qa-opensearch",
+                                                              "thebestlogger-qa-",
+                                                              "qa-demo-key");
+        if (!TryApplyRemotePatch(nameof(OpenSearchLogTargetConfiguration), configuration))
+        {
+            return;
+        }
+
+        _lastRequestedOpenSearchMockConfiguration = configuration;
         SetStatus("OpenSearch mock QA patch applied");
     }
 
@@ -324,11 +327,16 @@ public class GameLoggerSample : MonoBehaviour
             return;
         }
 
-        LogManager.UpdateLogTargetConfiguration(nameof(OpenSearchLogTargetConfiguration),
-                                                CreateOpenSearchMockConfiguration(LogLevel.Warning,
-                                                                                  "mock://prod-opensearch",
-                                                                                  "thebestlogger-prod-",
-                                                                                  "prod-demo-key"));
+        var configuration = CreateOpenSearchMockConfiguration(LogLevel.Warning,
+                                                              "mock://prod-opensearch",
+                                                              "thebestlogger-prod-",
+                                                              "prod-demo-key");
+        if (!TryApplyRemotePatch(nameof(OpenSearchLogTargetConfiguration), configuration))
+        {
+            return;
+        }
+
+        _lastRequestedOpenSearchMockConfiguration = configuration;
         SetStatus("OpenSearch mock production patch applied");
     }
 
@@ -349,36 +357,25 @@ public class GameLoggerSample : MonoBehaviour
 
     public string GetRuntimePatchSummary()
     {
-        Dictionary<string, LogTargetConfiguration> configurations = LogManager.GetCurrentLogTargetConfigurations();
-        if (configurations.Count == 0)
-        {
-            return "No active log target configurations.";
-        }
-
         var builder = new StringBuilder(256);
-        builder.AppendLine("Active targets:");
-        foreach (KeyValuePair<string, LogTargetConfiguration> pair in configurations)
+        builder.AppendLine("Runtime patch state:");
+        builder.AppendLine($"- Last requested global min level: {_lastRequestedGlobalMinLevel?.ToString() ?? "None"}");
+        builder.AppendLine($"- OpenSearch mock patch active: {FormatEnabled(_lastRequestedOpenSearchMockConfiguration != null)}");
+        if (_lastRequestedOpenSearchMockConfiguration != null)
         {
-            builder.Append("- ");
-            builder.Append(pair.Key);
-            builder.Append(": MinLevel=");
-            builder.Append(pair.Value.MinLogLevel);
-            builder.Append(", Muted=");
-            builder.Append(pair.Value.Muted);
-            builder.Append(", ThreadSafe=");
-            builder.Append(pair.Value.IsThreadSafe);
-            builder.AppendLine();
+            builder.AppendLine($"- OpenSearch mock min level: {_lastRequestedOpenSearchMockConfiguration.MinLogLevel}");
+            builder.AppendLine(
+                $"- OpenSearch mock endpoint: {_lastRequestedOpenSearchMockConfiguration.OpenSearchHostUrl}{_lastRequestedOpenSearchMockConfiguration.OpenSearchSingleLogMethod}");
+            builder.AppendLine($"- OpenSearch mock index prefix: {_lastRequestedOpenSearchMockConfiguration.IndexPrefix}");
         }
-
         return builder.ToString().TrimEnd();
     }
 
     public string GetLiveOverviewSummary()
     {
-        Dictionary<string, LogTargetConfiguration> configurations = LogManager.GetCurrentLogTargetConfigurations();
         return $"Preset: {_bootstrapMode}\n" +
                $"Source: {GetBootstrapSourceLabel()}\n" +
-               $"Targets: {configurations.Count}  |  Runtime console: {FormatEnabled(_useRuntimeConsoleTarget)}\n" +
+               $"Runtime console: {FormatEnabled(_useRuntimeConsoleTarget)}\n" +
                $"Debug mode: {FormatEnabled(SampleDebugModeEnabled)}  |  OpenSearch: {FormatEnabled(_useOpenSearchMockTarget)}";
     }
 
@@ -403,7 +400,8 @@ public class GameLoggerSample : MonoBehaviour
         }
 
         var builder = new StringBuilder(256);
-        if (TryGetTargetConfiguration(nameof(OpenSearchLogTargetConfiguration), out OpenSearchLogTargetConfiguration configuration))
+        var configuration = _lastRequestedOpenSearchMockConfiguration;
+        if (configuration != null)
         {
             builder.AppendLine($"Min level: {configuration.MinLogLevel}");
             builder.AppendLine($"Endpoint: {configuration.OpenSearchHostUrl}{configuration.OpenSearchSingleLogMethod}");
@@ -488,13 +486,15 @@ public class GameLoggerSample : MonoBehaviour
 
     private void ApplyGlobalMinLevel(LogLevel minLevel)
     {
-        Dictionary<string, LogTargetConfiguration> configurations = LogManager.GetCurrentLogTargetConfigurations();
-        foreach (KeyValuePair<string, LogTargetConfiguration> pair in configurations)
+        if (!TryApplyRemotePatch(nameof(UnityEditorConsoleLogTargetConfiguration), new UnityEditorConsoleLogTargetConfiguration
         {
-            pair.Value.MinLogLevel = minLevel;
+            MinLogLevel = minLevel
+        }))
+        {
+            return;
         }
 
-        LogManager.UpdateLogTargetsConfigurations(configurations);
+        _lastRequestedGlobalMinLevel = minLevel;
     }
 
     private void ReinitializeLoggerInternal(string status)
@@ -505,6 +505,7 @@ public class GameLoggerSample : MonoBehaviour
                          _useRuntimeConsoleTarget,
                          _retrievePreviousSessionIssuesOnStart,
                          _useOpenSearchMockTarget);
+        ResetLocalRuntimePatchState();
         SampleDebugModeEnabled = LogManager.SetDebugMode(GameLoggerExampleBootstrap.DefaultDebugId, true);
         SetStatus(status);
     }
@@ -535,7 +536,7 @@ public class GameLoggerSample : MonoBehaviour
             return false;
         }
 
-        if (TryGetTargetConfiguration(nameof(OpenSearchLogTargetConfiguration), out OpenSearchLogTargetConfiguration _))
+        if (_useOpenSearchMockTarget)
         {
             return true;
         }
@@ -563,19 +564,24 @@ public class GameLoggerSample : MonoBehaviour
         };
     }
 
-    private static bool TryGetTargetConfiguration<TConfiguration>(string configurationName, out TConfiguration configuration)
-        where TConfiguration : LogTargetConfiguration
+    private bool TryApplyRemotePatch(string configurationName, LogTargetConfiguration configuration)
     {
-        Dictionary<string, LogTargetConfiguration> configurations = LogManager.GetCurrentLogTargetConfigurations();
-        if (configurations.TryGetValue(configurationName, out LogTargetConfiguration currentConfiguration) &&
-            currentConfiguration is TConfiguration typedConfiguration)
+        var rawJsonPatch = JsonUtility.ToJson(configuration);
+        if (LogManager.TryApplyRemoteConfigurationPatch(configurationName, rawJsonPatch, out var error))
         {
-            configuration = typedConfiguration;
             return true;
         }
 
-        configuration = null;
+        SetStatus($"Remote patch failed for {configurationName}: {error}");
         return false;
+    }
+
+    private void ResetLocalRuntimePatchState()
+    {
+        _lastRequestedGlobalMinLevel = null;
+        _lastRequestedOpenSearchMockConfiguration = _useOpenSearchMockTarget
+            ? CreateOpenSearchMockConfiguration(LogLevel.Info, "mock://sample-opensearch", "thebestlogger-sample-", "sample-demo-key")
+            : null;
     }
 
     private string GetBootstrapSourceLabel()

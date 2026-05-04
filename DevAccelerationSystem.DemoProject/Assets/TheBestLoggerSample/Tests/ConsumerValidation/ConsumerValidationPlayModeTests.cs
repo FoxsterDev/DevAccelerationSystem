@@ -43,10 +43,6 @@ namespace TheBestLoggerSample.Tests
             GameLoggerSample.InitializeLogger();
             yield return null;
 
-            var configs = LogManager.GetCurrentLogTargetConfigurations();
-            Assert.That(configs.ContainsKey(nameof(UnityEditorConsoleLogTargetConfiguration)), Is.True);
-            Assert.That(configs.Count, Is.GreaterThanOrEqualTo(1));
-
             GameLogger.GameLoading.LogInfo("consumer-main", new LogAttributes(LogImportance.Critical));
 
             var backgroundTask = Task.Run(() => GameLogger.GameLoading.LogInfo("consumer-background", new LogAttributes(LogImportance.Critical)));
@@ -64,22 +60,15 @@ namespace TheBestLoggerSample.Tests
             GameLoggerSample.InitializeLogger();
             yield return null;
 
-            var configurations = LogManager.GetCurrentLogTargetConfigurations();
-            Assert.That(configurations.TryGetValue(nameof(UnityEditorConsoleLogTargetConfiguration), out var config), Is.True);
-
-            var previousMinLogLevel = config.MinLogLevel;
-            config.MinLogLevel = LogLevel.Warning;
-            LogManager.UpdateLogTargetsConfigurations(configurations);
-            Assert.That(LogManager.GetCurrentLogTargetConfigurations()[nameof(UnityEditorConsoleLogTargetConfiguration)].MinLogLevel,
-                        Is.EqualTo(LogLevel.Warning));
+            var applied = LogManager.TryApplyRemoteConfigurationPatch(nameof(UnityEditorConsoleLogTargetConfiguration),
+                                                                      "{\"MinLogLevel\":2}",
+                                                                      out var error);
+            Assert.That(applied, Is.True, error);
 
             LogManager.CreateLogger("ConsumerValidation").LogDebug("suppressed-debug");
             LogManager.CreateLogger("ConsumerValidation").LogWarning("consumer-warning");
 
             yield return null;
-
-            config.MinLogLevel = previousMinLogLevel;
-            LogManager.UpdateLogTargetsConfigurations(configurations);
         }
 
         [UnityTest]
