@@ -13,7 +13,7 @@ Bootstrap status: seeded from `WORKSPACE.md`, repo layout, and current AI routin
 
 ## Verified Current Claims
 - Primary package identity currently present in source: `com.foxsterdev.thebestlogger`
-- Package version: `2.2.14`
+- Package version: `3.0.1`
 - Declared Unity baseline in package manifest: `2022.3`
 - Package source root currently present: `Assets/TheBestLogger/`
 - Additional source surface present under `Assets/DevAccelerationSystem/`

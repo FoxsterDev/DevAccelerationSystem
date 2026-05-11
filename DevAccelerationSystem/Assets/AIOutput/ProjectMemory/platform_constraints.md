@@ -15,6 +15,13 @@ Record durable engine and package constraints for `DevAccelerationSystem`.
 ## Source-Surface Constraints
 - `Assets/TheBestLogger/` behaves like a package-style reusable runtime surface.
 - `Assets/DevAccelerationSystem/` contains editor and tooling responsibilities that should not be merged casually into logger runtime ownership.
+- Under an asmdef-managed source tree, an `Editor/` folder name alone does not force editor-only compilation.
+  - Editor-only code under runtime asmdef ownership needs its own editor asmdef or an equivalent assembly/platform boundary.
+- `versionDefines` and scripting symbols do not create assembly references.
+  - If source behind a define uses package types such as `UniTask`, the owning asmdef must still reference that package assembly explicitly.
+- Diagnostics-enabled player branches must not reference editor-only helpers.
+  - When a diagnostics block is broader than `UNITY_EDITOR`, nest editor-only calls inside a narrower `UNITY_EDITOR` guard.
+- Build preprocess hooks that load optional `Resources` configuration must treat missing assets as disabled configuration instead of throwing during the build pipeline.
 
 ## Constraint Rules
 - Do not assume editor-test success alone proves runtime or consumer integration health.

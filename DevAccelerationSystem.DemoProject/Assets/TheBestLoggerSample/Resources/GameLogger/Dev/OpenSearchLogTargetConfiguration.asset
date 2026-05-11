@@ -18,6 +18,7 @@ MonoBehaviour:
     OverrideCategories:
     - Category: GamePlay
       MinLevel: 1
+      SessionRolloutPercentage: 10
     BatchLogs:
       Enabled: 1
       UpdatePeriodMs: 1000
@@ -25,14 +26,17 @@ MonoBehaviour:
     DebugMode:
       Enabled: 1
       MinLogLevel: 1
+      SessionDebugRolloutPercentage: 0
       IDs:
       - 4o3984u-vfdnvn843-403
       - dksmdkcmfdmk-3924i39i493
       OverrideCategories:
       - Category: Loading
         MinLevel: 0
+        SessionRolloutPercentage: 0
       - Category: Popups
         MinLevel: 1
+        SessionRolloutPercentage: 0
     StackTraces:
     - Level: 0
       Enabled: 0
