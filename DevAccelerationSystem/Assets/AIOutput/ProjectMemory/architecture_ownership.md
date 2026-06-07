@@ -31,4 +31,5 @@ Capture the durable ownership boundaries inside `DevAccelerationSystem`.
 - Canonical source lives here.
 - Representative consumers:
   - `DevAccelerationSystem.DemoProject/`
+- Optional local-only consumer:
   - `DAS.LocalProject/`

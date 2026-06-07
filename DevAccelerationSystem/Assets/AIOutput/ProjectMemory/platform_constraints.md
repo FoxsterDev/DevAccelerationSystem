@@ -32,4 +32,4 @@ Record durable engine and package constraints for `DevAccelerationSystem`.
 
 ## Consumer Constraints
 - `DevAccelerationSystem.DemoProject/` is the default tracked consumer validation target.
-- `DAS.LocalProject/` is useful local evidence but is ignored by the nested repo's `.gitignore`.
+- `DAS.LocalProject/` is optional local-only evidence when present and is ignored by the nested repo's `.gitignore`.

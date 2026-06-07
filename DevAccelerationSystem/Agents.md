@@ -18,7 +18,7 @@ After loading this router, always verify the real on-disk prompt structure befor
 ## Project Context
 - Project: `DevAccelerationSystem`
 - Engine context: Unity project
-- Project kind: `gameplay`
+- Project kind: `unity_package_and_editor_tooling_source`
 - Priority: Stability > Performance > Maintainability
 - Project memory path: `Assets/AIOutput/ProjectMemory/`
 - AI output path: `Assets/AIOutput/`

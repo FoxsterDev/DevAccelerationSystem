@@ -60,7 +60,7 @@ Capture the durable capability map for `DevAccelerationSystem` so product-facing
 ## Consumer And Validation Surface
 - Shared package source is authored in `DevAccelerationSystem/DevAccelerationSystem/`
 - Tracked consumer validation target is `DevAccelerationSystem.DemoProject/`
-- `DAS.LocalProject/` is useful local evidence but not tracked release proof by default
+- `DAS.LocalProject/` is optional local-only evidence when present and is not tracked release proof by default
 - Package validation now spans:
   - editor tests
   - playmode runtime tests

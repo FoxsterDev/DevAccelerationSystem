@@ -24,7 +24,7 @@ Define the durable release-facing rules for `DevAccelerationSystem`.
 
 ## Consumer Rules
 - Prefer `DevAccelerationSystem.DemoProject/` as tracked release evidence.
-- Use `DAS.LocalProject/` as supplementary local evidence only.
+- Use `DAS.LocalProject/` as supplementary local-only evidence only when it exists.
 
 ## Memory Rules
 - If release expectations change, update:

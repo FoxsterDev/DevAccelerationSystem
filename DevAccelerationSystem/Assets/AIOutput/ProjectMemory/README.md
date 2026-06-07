@@ -24,6 +24,7 @@ Bootstrap status: seeded from `WORKSPACE.md`, repo layout, and current AI routin
   - `Assets/TheBestLogger/Tests/Performance/`
 - Consumer validation targets currently mapped in the hub:
   - `DevAccelerationSystem.DemoProject/`
+- Optional local-only validation target:
   - `DAS.LocalProject/`
 - Public logger docs currently present:
   - `../Docs/TheBestLogger_Integration_Best_Practices.md`
@@ -46,6 +47,7 @@ Bootstrap status: seeded from `WORKSPACE.md`, repo layout, and current AI routin
 - Validate behavior changes in representative consumer workspaces after editing here.
 - Related consumers:
   - `DevAccelerationSystem/DevAccelerationSystem.DemoProject/`
+- Optional local-only consumer:
   - `DevAccelerationSystem/DAS.LocalProject/`
 
 ## Maintenance Rules

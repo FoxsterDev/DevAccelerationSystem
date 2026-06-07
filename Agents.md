@@ -20,12 +20,13 @@ Use it when a session starts from this nested repo root instead of the hub root.
 - Canonical package source: `DevAccelerationSystem/`
 - Consumer validation projects:
   - `DevAccelerationSystem.DemoProject/`
+- Optional local-only validation project:
   - `DAS.LocalProject/`
 
 ## Routing Rules
 - If a change affects shared package code, edit `DevAccelerationSystem/` first.
 - Use `DevAccelerationSystem.DemoProject/` as the default tracked consumer validation workspace.
-- Use `DAS.LocalProject/` for local repro or local validation when helpful, but remember it is ignored by this nested repo's `.gitignore`.
+- Use `DAS.LocalProject/` for local repro or local validation only when it exists; remember it is ignored by this nested repo's `.gitignore` and is not tracked release proof.
 - When a task spans package source and a consumer project, keep one implementation target and state the validation target explicitly.
 
 ## Git Boundary
