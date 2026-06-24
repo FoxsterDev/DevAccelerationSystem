@@ -37,7 +37,7 @@
 
 ## Remediation Status — Implemented 2026-06-24
 
-All P0 + P1 + (requested) P2 canonical findings were implemented in the working tree (Loqui package + DemoProject), **not yet committed**. **No compile/EditMode/PlayMode run was performed** (Unity MCP bridge disabled this session) — code-complete but unverified-at-runtime. Run the suites with the bridge enabled to confirm and lift scoring confidence above Low.
+All P0 + P1 + (requested) P2 canonical findings were implemented and committed (`siarheikha/loqui-hardening`, commit `a7cc892`). **Verified via Unity MCP (2022.3.62f3, 2026-06-24):** project refresh + script compile clean (`compiler_error_count: 0`), and the full `Loqui.Tests` EditMode suite **96/96 passed** (existing + new hardening tests, no regressions). Still pending: **PlayMode** (`LoquiSample.PlayModeTests` — the DemoProject editor was offline) and an **IL2CPP + managed-stripping device build** (CF-05/CF-16/CF-17 device behavior). Remediation confidence accordingly raised Low → **Medium** (deterministic logic proven; runtime-lifecycle and device/IL2CPP proof still outstanding).
 
 | ID | Status | Change |
 | --- | --- | --- |
