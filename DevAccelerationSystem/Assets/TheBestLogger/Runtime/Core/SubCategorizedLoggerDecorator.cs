@@ -65,7 +65,9 @@ namespace TheBestLogger
                               LogAttributes logAttributes = null,
                               params object[] args)
         {
+#pragma warning disable 0618
             _logger.LogFormat(logLevel,ZString.Concat(_subCategoryName, " ", message), logAttributes, args);
+#pragma warning restore 0618
         }
 
         public void LogFormat<T1>(LogLevel level,

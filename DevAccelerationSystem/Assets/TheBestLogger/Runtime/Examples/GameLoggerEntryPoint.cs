@@ -1,4 +1,5 @@
 #if THEBESTLOGGER_AUTO_INITIALIZATION
+using UnityEngine;
 using TheBestLogger.Examples;
 
 public class GameLoggerEntryPoint
