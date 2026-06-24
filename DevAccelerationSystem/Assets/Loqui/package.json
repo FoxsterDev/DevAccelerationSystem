@@ -1,0 +1,23 @@
+{
+  "name": "com.foxsterdev.loqui",
+  "displayName": "Loqui",
+  "version": "0.1.0",
+  "unity": "2021.3",
+  "keywords": [
+    "unity",
+    "localization",
+    "i18n",
+    "l10n",
+    "translation",
+    "tmp",
+    "fallback"
+  ],
+  "license": "MIT",
+  "documentationUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/tree/master",
+  "changelogUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/releases",
+  "licensesUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/blob/master/LICENSE.md",
+  "description": "Fallback-first localization for Unity: keep your code literal as the default and override only per language and per platform. ScriptableObject catalog, TMP integration, locale formatting, JsonUtility remote overrides, and editor validation.",
+  "dependencies": {
+    "com.foxsterdev.thebestlogger": "3.0.1"
+  }
+}
