@@ -25,7 +25,8 @@ namespace Loqui.Editor
             for (var i = 0; i < tmpComponents.Length; i++)
             {
                 var component = tmpComponents[i];
-                if (component is TMP_InputField)
+                var ownerInputField = component.GetComponentInParent<TMP_InputField>(true);
+                if (ownerInputField != null && ownerInputField.textComponent == component)
                 {
                     continue;
                 }
