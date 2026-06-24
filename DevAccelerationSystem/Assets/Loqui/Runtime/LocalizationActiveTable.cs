@@ -27,17 +27,26 @@ namespace Loqui
             return _values.TryGetValue(key, out value);
         }
 
+        internal void Set(string key, string value)
+        {
+            if (!string.IsNullOrEmpty(key))
+            {
+                _values[key] = value;
+            }
+        }
+
         public static LocalizationActiveTable Build(
             LocalizationCatalog catalog,
             string languageCode,
             LocalizationPlatform platform,
             List<LocalizationEntry> entryBuffer)
         {
-            var values = new Dictionary<string, string>(StringComparer.Ordinal);
+            Dictionary<string, string> values;
             if (catalog != null && entryBuffer != null)
             {
                 entryBuffer.Clear();
                 catalog.CollectEntries(entryBuffer);
+                values = new Dictionary<string, string>(entryBuffer.Count, StringComparer.Ordinal);
                 for (var i = 0; i < entryBuffer.Count; i++)
                 {
                     var entry = entryBuffer[i];
@@ -46,6 +55,10 @@ namespace Loqui
                         values[entry.Key] = value;
                     }
                 }
+            }
+            else
+            {
+                values = new Dictionary<string, string>(StringComparer.Ordinal);
             }
 
             return new LocalizationActiveTable(languageCode, values);

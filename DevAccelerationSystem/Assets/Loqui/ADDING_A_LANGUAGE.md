@@ -52,6 +52,14 @@ The package namespace is `Loqui` (runtime asmdef `Loqui`, editor drawer in `Loqu
 
 Optionally run `LocalizationValidator` at build time via an `IPreprocessBuildWithReport` in your project, so the build is **blocked** on any localization error. In the editor you can validate manually via menu `Tools/Loqui/Validate`.
 
+## Culture-aware formatting on IL2CPP
+
+`Loc.FormatNumber` / `FormatCurrency` / `FormatPercent` / `FormatShortDate` / `FormatDateTime` resolve a `CultureInfo` from each locale's `CultureName`, which on IL2CPP depends on ICU/globalization data:
+
+- Do **not** enable **Player ▸ Use Invariant Culture** (`System.Globalization.Invariant`) if you rely on culture-aware number/currency/date formatting. Under invariant globalization named cultures collapse to the invariant culture, so grouping, decimal separators, and currency layout silently fall back to invariant output. Text localization itself is unaffected.
+- `FormatCurrency` groups by the **currency's** country for `USD`, `BRL`, `GBP`, `JPY`; other currencies (including `EUR`) group by the active UI culture. The currency symbol is always applied.
+- The editor (Mono) always has full ICU and is **not** representative — verify formatting on a real IL2CPP device build for your shipped locales.
+
 ## Acceptance
 
 - All EditMode tests green, including your configured-catalog gate.

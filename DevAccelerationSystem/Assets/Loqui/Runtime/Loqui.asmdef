@@ -3,7 +3,6 @@
     "rootNamespace": "",
     "references": [
         "Unity.TextMeshPro",
-        "TheBestLogger.Core",
         "UnityEngine.UI"
     ],
     "includePlatforms": [],

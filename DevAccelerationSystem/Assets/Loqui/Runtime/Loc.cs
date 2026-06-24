@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
+using Loqui.Remote;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using ILogger = TheBestLogger.ILogger;
 
 namespace Loqui
 {
@@ -13,7 +13,7 @@ namespace Loqui
         private static readonly LocalizationEvent _languageChanged = new();
         private static readonly LocalizationEvent _ready = new();
         private static LocalizationService _service;
-        private static ILogger _logger;
+        private static ILoquiLog _logger;
 
         public static event Action LanguageChanged
         {
@@ -23,7 +23,21 @@ namespace Loqui
 
         public static event Action Ready
         {
-            add => _ready.Add(value);
+            add
+            {
+                _ready.Add(value);
+                if (value != null && _service != null && _service.IsReady)
+                {
+                    try
+                    {
+                        value();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogException(ex);
+                    }
+                }
+            }
             remove => _ready.Remove(value);
         }
 
@@ -39,9 +53,10 @@ namespace Loqui
             LocalizationSettingsScope settings,
             SystemLanguage systemLanguage,
             LocalizationPlatform platform,
-            ILogger logger = null)
+            ILoquiLog logger = null)
         {
             Shutdown();
+            LocalizationMainThread.Capture();
             _logger = logger;
             _service = new LocalizationService(settings, systemLanguage, platform, logger);
             _service.LanguageChanged += RaiseLanguageChanged;
@@ -81,12 +96,26 @@ namespace Loqui
 
         public static bool SetLanguage(string languageCode)
         {
+            LocalizationMainThread.Verify(nameof(SetLanguage), _logger);
             return _service != null && _service.SetLanguage(languageCode);
         }
 
         public static bool ResetToSystemLanguage()
         {
+            LocalizationMainThread.Verify(nameof(ResetToSystemLanguage), _logger);
             return _service != null && _service.ResetToSystemLanguage();
+        }
+
+        public static bool ApplyOverrides(LocalizationOverridesResult result)
+        {
+            LocalizationMainThread.Verify(nameof(ApplyOverrides), _logger);
+            return _service != null && _service.ApplyOverrides(result);
+        }
+
+        public static bool ClearOverrides()
+        {
+            LocalizationMainThread.Verify(nameof(ClearOverrides), _logger);
+            return _service != null && _service.ClearOverrides();
         }
 
         public static void Apply(TMP_Text target, string key, string fallback)
@@ -96,6 +125,7 @@ namespace Loqui
                 return;
             }
 
+            LocalizationMainThread.Verify(nameof(Apply), _logger);
             target.text = Get(key, fallback);
             if (_service != null && _service.IsEnabled && _service.IsReady && _service.TryGetActiveTmpFont(out var font))
             {
@@ -110,7 +140,12 @@ namespace Loqui
                 return;
             }
 
+            LocalizationMainThread.Verify(nameof(Apply), _logger);
             target.text = Get(key, fallback);
+            if (_service != null && _service.IsEnabled && _service.IsReady && _service.TryGetActiveLegacyFont(out var font))
+            {
+                target.font = font;
+            }
         }
 
         public static string FormatNumber(double value)

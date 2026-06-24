@@ -1,6 +1,5 @@
 using System.Text;
 using UnityEngine;
-using ILogger = TheBestLogger.ILogger;
 
 namespace Loqui.Remote
 {
@@ -9,7 +8,7 @@ namespace Loqui.Remote
         public const int SupportedSchemaVersion = 1;
         public const int MaxPayloadBytes = 256 * 1024;
 
-        public static LocalizationOverridesResult Parse(string json, ILogger logger = null)
+        public static LocalizationOverridesResult Parse(string json, ILoquiLog logger = null)
         {
             if (string.IsNullOrEmpty(json))
             {

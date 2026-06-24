@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 
 namespace Loqui
@@ -8,6 +9,7 @@ namespace Loqui
         public static readonly LocalizationFormatter Invariant = new(null);
 
         private readonly CultureInfo _culture;
+        private Dictionary<string, NumberFormatInfo> _currencyFormats;
 
         public LocalizationFormatter(string cultureName)
         {
@@ -28,9 +30,7 @@ namespace Loqui
 
         public string FormatCurrency(decimal value, string currencyCode)
         {
-            var format = (NumberFormatInfo)_culture.NumberFormat.Clone();
-            format.CurrencySymbol = ResolveCurrencySymbol(currencyCode, format.CurrencySymbol);
-            return value.ToString("C", format);
+            return value.ToString("C", ResolveCurrencyFormat(currencyCode));
         }
 
         public string FormatShortDate(DateTime value)
@@ -43,6 +43,44 @@ namespace Loqui
             return value.ToString("g", _culture);
         }
 
+        private NumberFormatInfo ResolveCurrencyFormat(string currencyCode)
+        {
+            var key = string.IsNullOrEmpty(currencyCode) ? string.Empty : currencyCode.ToUpperInvariant();
+            _currencyFormats ??= new Dictionary<string, NumberFormatInfo>(StringComparer.Ordinal);
+            if (_currencyFormats.TryGetValue(key, out var cached))
+            {
+                return cached;
+            }
+
+            var baseCulture = ResolveCurrencyCulture(key) ?? _culture;
+            var format = (NumberFormatInfo)baseCulture.NumberFormat.Clone();
+            format.CurrencySymbol = ResolveCurrencySymbol(key, format.CurrencySymbol);
+            _currencyFormats[key] = format;
+            return format;
+        }
+
+        private static CultureInfo ResolveCurrencyCulture(string currencyCode)
+        {
+            string name;
+            switch (currencyCode)
+            {
+                case "USD": name = "en-US"; break;
+                case "BRL": name = "pt-BR"; break;
+                case "GBP": name = "en-GB"; break;
+                case "JPY": name = "ja-JP"; break;
+                default: return null;
+            }
+
+            try
+            {
+                return CultureInfo.GetCultureInfo(name);
+            }
+            catch (CultureNotFoundException)
+            {
+                return null;
+            }
+        }
+
         private static string ResolveCurrencySymbol(string currencyCode, string fallback)
         {
             if (string.IsNullOrEmpty(currencyCode))
@@ -50,7 +88,7 @@ namespace Loqui
                 return fallback;
             }
 
-            switch (currencyCode.ToUpperInvariant())
+            switch (currencyCode)
             {
                 case "USD": return "$";
                 case "BRL": return "R$";

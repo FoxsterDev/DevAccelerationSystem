@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Loqui.Editor
@@ -25,8 +26,109 @@ namespace Loqui.Editor
                 return;
             }
 
-            AddMatches(AssignPattern, sourceText, filePath, buffer);
-            AddMatches(SetTextPattern, sourceText, filePath, buffer);
+            var scannable = StripCommentsPreservingLayout(sourceText);
+            AddMatches(AssignPattern, scannable, filePath, buffer);
+            AddMatches(SetTextPattern, scannable, filePath, buffer);
+        }
+
+        private static string StripCommentsPreservingLayout(string source)
+        {
+            var sb = new StringBuilder(source.Length);
+            var i = 0;
+            var n = source.Length;
+            while (i < n)
+            {
+                var c = source[i];
+
+                if (c == '/' && i + 1 < n && source[i + 1] == '/')
+                {
+                    while (i < n && source[i] != '\n')
+                    {
+                        sb.Append(source[i] == '\r' ? '\r' : ' ');
+                        i++;
+                    }
+
+                    continue;
+                }
+
+                if (c == '/' && i + 1 < n && source[i + 1] == '*')
+                {
+                    sb.Append("  ");
+                    i += 2;
+                    while (i < n && !(source[i] == '*' && i + 1 < n && source[i + 1] == '/'))
+                    {
+                        sb.Append(source[i] == '\n' ? '\n' : source[i] == '\r' ? '\r' : ' ');
+                        i++;
+                    }
+
+                    if (i < n)
+                    {
+                        sb.Append("  ");
+                        i += 2;
+                    }
+
+                    continue;
+                }
+
+                if (c == '@' && i + 1 < n && source[i + 1] == '"')
+                {
+                    sb.Append('@');
+                    sb.Append('"');
+                    i += 2;
+                    while (i < n)
+                    {
+                        if (source[i] == '"')
+                        {
+                            if (i + 1 < n && source[i + 1] == '"')
+                            {
+                                sb.Append("\"\"");
+                                i += 2;
+                                continue;
+                            }
+
+                            sb.Append('"');
+                            i++;
+                            break;
+                        }
+
+                        sb.Append(source[i]);
+                        i++;
+                    }
+
+                    continue;
+                }
+
+                if (c == '"' || c == '\'')
+                {
+                    var quote = c;
+                    sb.Append(quote);
+                    i++;
+                    while (i < n)
+                    {
+                        var d = source[i];
+                        sb.Append(d);
+                        i++;
+                        if (d == '\\' && i < n)
+                        {
+                            sb.Append(source[i]);
+                            i++;
+                            continue;
+                        }
+
+                        if (d == quote)
+                        {
+                            break;
+                        }
+                    }
+
+                    continue;
+                }
+
+                sb.Append(c);
+                i++;
+            }
+
+            return sb.ToString();
         }
 
         private static void AddMatches(Regex pattern, string sourceText, string filePath, List<LocalizationScanItem> buffer)

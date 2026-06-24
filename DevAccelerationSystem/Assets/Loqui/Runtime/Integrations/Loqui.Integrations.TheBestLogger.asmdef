@@ -1,0 +1,25 @@
+{
+    "name": "Loqui.Integrations.TheBestLogger",
+    "rootNamespace": "",
+    "references": [
+        "Loqui",
+        "TheBestLogger.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "LOQUI_THEBESTLOGGER"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.foxsterdev.thebestlogger",
+            "expression": "",
+            "define": "LOQUI_THEBESTLOGGER"
+        }
+    ],
+    "noEngineReferences": false
+}

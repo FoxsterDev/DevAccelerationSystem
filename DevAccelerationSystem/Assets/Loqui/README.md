@@ -14,19 +14,23 @@ label.text = Loc.Get("home.play_now", "Play Now");
 - **ScriptableObject catalog** — authored in the Inspector; organized into text tables; build-time validation.
 - **TMP integration** — `LocalizedText` component for static prefab/scene labels; runtime font swap per language.
 - **Locale formatting** — culture-aware number / currency / percent / date helpers.
-- **Remote overrides** — apply a sparse key→value override at runtime (`JsonUtility`-compatible) without a rebuild.
+- **Remote overrides (opt-in)** — parse and validate a sparse key→value payload (`JsonUtility`-compatible), then apply it on top of the catalog at runtime via `Loc.ApplyOverrides(...)` / `Loc.ClearOverrides()` without a rebuild.
 - **Editor tooling** — text scanner, deterministic key generation, and approved-attach mode.
 
 ## Requirements
 
-- Unity `2021.3+`
-- TextMeshPro
-- [TheBestLogger](https://github.com/FoxsterDev/DevAccelerationSystem/tree/master/DevAccelerationSystem/Assets/TheBestLogger) — Loqui logs through it.
+- Unity `2022.3+`
+- TextMeshPro + uGUI (`com.unity.ugui`, `com.unity.textmeshpro`) — declared package dependencies, resolved automatically.
 
-> **Note:** UPM does not auto-resolve git transitive dependencies. If you install Loqui from a git URL, add TheBestLogger to your project manifest too:
-> ```json
-> "com.foxsterdev.thebestlogger": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/TheBestLogger#3.0.1"
-> ```
+### Logging (optional)
+
+Loqui has no hard logging dependency. Pass any `ILoquiLog` to `Loc.Initialize`, or `null` to stay silent.
+
+If [TheBestLogger](https://github.com/FoxsterDev/DevAccelerationSystem/tree/master/DevAccelerationSystem/Assets/TheBestLogger) is present in your project, the optional `Loqui.Integrations.TheBestLogger` assembly compiles automatically (gated by the `LOQUI_THEBESTLOGGER` version define) and provides a ready adapter:
+
+```csharp
+ILoquiLog log = new Loqui.Integrations.TheBestLoggerLoquiLog(myTheBestLogger);
+```
 
 ## Install (UPM, git)
 
@@ -40,8 +44,9 @@ Add to `Packages/manifest.json`:
 ```csharp
 using Loqui;
 
-// 1) Initialize once at startup (catalog comes from your settings scope).
-Loc.Initialize(settings, Application.systemLanguage, LocalizationPlatformResolver.Current, logger);
+// 1) Initialize once at startup, on the main thread (catalog comes from your settings scope).
+//    The logger is an optional ILoquiLog (pass null to stay silent).
+Loc.Initialize(settings, Application.systemLanguage, LocalizationPlatformResolver.Current, logger: null);
 
 // 2) Read text, fallback-first.
 string play = Loc.Get("home.play_now", "Play Now");
@@ -50,6 +55,13 @@ string play = Loc.Get("home.play_now", "Play Now");
 
 // 4) Switch language at runtime.
 Loc.SetLanguage("pt-BR");
+
+// 5) (Optional) apply a validated remote override on top of the catalog.
+var result = Loqui.Remote.LocalizationOverridesParser.Parse(json);
+if (result.Accepted)
+{
+    Loc.ApplyOverrides(result);
+}
 ```
 
 ## License

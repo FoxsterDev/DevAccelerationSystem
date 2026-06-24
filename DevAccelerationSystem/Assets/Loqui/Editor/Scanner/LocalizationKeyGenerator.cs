@@ -13,10 +13,40 @@ namespace Loqui.Editor
             var groupSlug = Slug(group, int.MaxValue);
             if (string.IsNullOrEmpty(slug))
             {
+                slug = HashSuffix(source);
+            }
+
+            if (string.IsNullOrEmpty(slug))
+            {
                 return groupSlug;
             }
 
             return string.IsNullOrEmpty(groupSlug) ? slug : groupSlug + "." + slug;
+        }
+
+        private static string HashSuffix(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+
+            var trimmed = text.Trim();
+            if (trimmed.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            const uint offset = 2166136261;
+            const uint prime = 16777619;
+            var hash = offset;
+            for (var i = 0; i < trimmed.Length; i++)
+            {
+                hash ^= trimmed[i];
+                hash *= prime;
+            }
+
+            return "x" + hash.ToString("x8", CultureInfo.InvariantCulture);
         }
 
         public static string Slug(string text, int maxWords)

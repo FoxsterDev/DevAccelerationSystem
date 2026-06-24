@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
+using Loqui.Remote;
 using TMPro;
 using UnityEngine;
-using ILogger = TheBestLogger.ILogger;
 
 namespace Loqui
 {
@@ -12,7 +12,7 @@ namespace Loqui
         private readonly LocalizationPlatform _platform;
         private readonly SystemLanguage _systemLanguage;
         private readonly string _defaultLanguageCode;
-        private readonly ILogger _logger;
+        private readonly ILoquiLog _logger;
 
         private readonly List<LocalizationEntry> _entryBuffer = new();
         private readonly List<string> _supportedCodes = new();
@@ -22,6 +22,8 @@ namespace Loqui
         private LocalizationActiveTable _activeTable;
         private LocalizationFormatter _formatter = LocalizationFormatter.Invariant;
         private TMP_FontAsset _activeTmpFont;
+        private Font _activeLegacyFont;
+        private LocalizationOverridesDto _activeOverrides;
 
         public bool IsEnabled { get; private set; }
         public bool IsReady { get; private set; }
@@ -32,11 +34,11 @@ namespace Loqui
         public event Action LanguageChanged;
         public event Action Ready;
 
-        public LocalizationService(
+        internal LocalizationService(
             LocalizationSettingsScope settings,
             SystemLanguage systemLanguage,
             LocalizationPlatform platform,
-            ILogger logger = null)
+            ILoquiLog logger = null)
         {
             _logger = logger;
             _platform = platform;
@@ -107,6 +109,11 @@ namespace Loqui
             }
 
             LocalizationPreferences.SetExplicitChoice(matched);
+            if (LocalizationLanguageCodes.Equals(matched, CurrentLanguageCode))
+            {
+                return true;
+            }
+
             RebuildActive(matched);
             LanguageChanged?.Invoke();
             return true;
@@ -130,9 +137,45 @@ namespace Loqui
             return true;
         }
 
+        public bool ApplyOverrides(LocalizationOverridesResult result)
+        {
+            if (!IsEnabled || !IsReady || result == null || !result.Accepted || result.Payload == null)
+            {
+                return false;
+            }
+
+            _activeOverrides = result.Payload;
+            RebuildActive(CurrentLanguageCode);
+            LanguageChanged?.Invoke();
+            return true;
+        }
+
+        public bool ClearOverrides()
+        {
+            if (_activeOverrides == null)
+            {
+                return false;
+            }
+
+            _activeOverrides = null;
+            if (IsEnabled && IsReady)
+            {
+                RebuildActive(CurrentLanguageCode);
+                LanguageChanged?.Invoke();
+            }
+
+            return true;
+        }
+
         public bool TryGetActiveTmpFont(out TMP_FontAsset font)
         {
             font = _activeTmpFont;
+            return font != null;
+        }
+
+        public bool TryGetActiveLegacyFont(out Font font)
+        {
+            font = _activeLegacyFont;
             return font != null;
         }
 
@@ -160,10 +203,95 @@ namespace Loqui
         {
             CurrentLanguageCode = languageCode;
             _activeTable = LocalizationActiveTable.Build(_catalog, languageCode, _platform, _entryBuffer);
+            ApplyActiveOverrides(languageCode);
             _catalog.TryGetLocale(languageCode, out var locale);
             _formatter = new LocalizationFormatter(locale?.CultureName);
-            _activeTmpFont = locale?.FontProfile != null ? locale.FontProfile.ResolveTmpFont(_platform) : null;
+            var fontProfile = locale?.FontProfile;
+            _activeTmpFont = fontProfile != null ? fontProfile.ResolveTmpFont(_platform) : null;
+            _activeLegacyFont = fontProfile?.LegacyFont;
+            ApplyFontFallbacks(fontProfile, _activeTmpFont);
             _reportedMissingKeys.Clear();
+        }
+
+        private void ApplyActiveOverrides(string languageCode)
+        {
+            if (_activeOverrides?.Languages == null || _activeTable == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < _activeOverrides.Languages.Length; i++)
+            {
+                var block = _activeOverrides.Languages[i];
+                if (block?.Entries == null || !LocalizationLanguageCodes.Equals(block.LanguageCode, languageCode))
+                {
+                    continue;
+                }
+
+                for (var j = 0; j < block.Entries.Length; j++)
+                {
+                    var entry = block.Entries[j];
+                    if (entry == null || string.IsNullOrEmpty(entry.Key))
+                    {
+                        continue;
+                    }
+
+                    if (TryResolveOverrideValue(entry, out var value))
+                    {
+                        _activeTable.Set(entry.Key, value);
+                    }
+                }
+            }
+        }
+
+        private bool TryResolveOverrideValue(LocalizationOverrideEntryDto entry, out string value)
+        {
+            switch (_platform)
+            {
+                case LocalizationPlatform.IOS:
+                    if (!string.IsNullOrEmpty(entry.iOS))
+                    {
+                        value = entry.iOS;
+                        return true;
+                    }
+
+                    break;
+                case LocalizationPlatform.Android:
+                    if (!string.IsNullOrEmpty(entry.Android))
+                    {
+                        value = entry.Android;
+                        return true;
+                    }
+
+                    break;
+            }
+
+            if (!string.IsNullOrEmpty(entry.Default))
+            {
+                value = entry.Default;
+                return true;
+            }
+
+            value = null;
+            return false;
+        }
+
+        private static void ApplyFontFallbacks(LocalizationFontProfile profile, TMP_FontAsset font)
+        {
+            if (profile?.FallbackFonts == null || font == null)
+            {
+                return;
+            }
+
+            font.fallbackFontAssetTable ??= new List<TMP_FontAsset>();
+            for (var i = 0; i < profile.FallbackFonts.Count; i++)
+            {
+                var fallback = profile.FallbackFonts[i];
+                if (fallback != null && fallback != font && !font.fallbackFontAssetTable.Contains(fallback))
+                {
+                    font.fallbackFontAssetTable.Add(fallback);
+                }
+            }
         }
 
         private bool TryMatchSupported(string code, out string matched)

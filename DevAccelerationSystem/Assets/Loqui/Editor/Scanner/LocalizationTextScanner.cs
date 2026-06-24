@@ -147,9 +147,17 @@ namespace Loqui.Editor
 
                 if (seen.TryGetValue(item.ProposedKey, out var count))
                 {
-                    count++;
+                    string candidate;
+                    do
+                    {
+                        count++;
+                        candidate = item.ProposedKey + "_" + count.ToString();
+                    }
+                    while (seen.ContainsKey(candidate));
+
                     seen[item.ProposedKey] = count;
-                    item.ProposedKey = item.ProposedKey + "_" + count.ToString();
+                    seen[candidate] = 1;
+                    item.ProposedKey = candidate;
                 }
                 else
                 {
@@ -391,7 +399,25 @@ namespace Loqui.Editor
                 return c;
             }
 
-            return string.CompareOrdinal(a.EnglishSource ?? string.Empty, b.EnglishSource ?? string.Empty);
+            c = string.CompareOrdinal(a.EnglishSource ?? string.Empty, b.EnglishSource ?? string.Empty);
+            if (c != 0)
+            {
+                return c;
+            }
+
+            c = string.CompareOrdinal(a.TextComponentId ?? string.Empty, b.TextComponentId ?? string.Empty);
+            if (c != 0)
+            {
+                return c;
+            }
+
+            c = string.CompareOrdinal(a.ProposedKey ?? string.Empty, b.ProposedKey ?? string.Empty);
+            if (c != 0)
+            {
+                return c;
+            }
+
+            return a.LineNumber.CompareTo(b.LineNumber);
         }
     }
 }

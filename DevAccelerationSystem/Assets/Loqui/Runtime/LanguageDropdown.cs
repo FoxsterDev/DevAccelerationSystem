@@ -34,8 +34,13 @@ namespace Loqui
 
         private void OnEnable()
         {
+            if (_dropdown == null)
+            {
+                _dropdown = GetComponent<TMP_Dropdown>();
+            }
+
             Rebuild();
-            if (!_subscribed)
+            if (_dropdown != null && !_subscribed)
             {
                 _dropdown.onValueChanged.AddListener(OnDropdownValueChanged);
                 Loc.LanguageChanged += SyncSelection;
@@ -46,13 +51,19 @@ namespace Loqui
 
         private void OnDisable()
         {
-            if (_subscribed)
+            if (!_subscribed)
+            {
+                return;
+            }
+
+            if (_dropdown != null)
             {
                 _dropdown.onValueChanged.RemoveListener(OnDropdownValueChanged);
-                Loc.LanguageChanged -= SyncSelection;
-                Loc.Ready -= Rebuild;
-                _subscribed = false;
             }
+
+            Loc.LanguageChanged -= SyncSelection;
+            Loc.Ready -= Rebuild;
+            _subscribed = false;
         }
 
         private void Rebuild()

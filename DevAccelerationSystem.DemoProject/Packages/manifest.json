@@ -3,6 +3,7 @@
     "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
     "com.cysharp.zstring": "file:../../DevAccelerationSystem/Packages/ZString.Unity.2.6.0.tgz",
     "com.foxsterdev.devaccelerationsystem": "file:../../DevAccelerationSystem/Assets/DevAccelerationSystem",
+    "com.foxsterdev.loqui": "file:../../DevAccelerationSystem/Assets/Loqui",
     "com.foxsterdev.thebestlogger": "file:../../DevAccelerationSystem/Assets/TheBestLogger",
     "com.unity.2d.sprite": "1.0.0",
     "com.unity.2d.spriteshape": "9.1.1",
