@@ -1,5 +1,24 @@
 # Changelog
 
+## [4.0.0] - 2026-06-24
+
+Introduces the **Loqui** localization package (`com.foxsterdev.loqui` 0.1.0) and hardens it per a full-SDK review.
+
+### Loqui — added
+- Fallback-first localization for Unity: `Loc.Get(key, literal)` keeps the code literal as the default and never throws on a missing key.
+- Per-language and per-platform (`iOS`/`Android`) overrides from a ScriptableObject catalog; TMP integration (`LocalizedText`), language dropdown, runtime font swap.
+- Locale-aware number/currency/percent/date formatting; `JsonUtility` remote overrides; editor scanner with deterministic key generation.
+
+### Loqui — hardening (full-SDK review remediation)
+- Logging decoupled behind a package-owned `ILoquiLog`; `TheBestLogger` is now optional via a version-define-gated adapter (`LOQUI_THEBESTLOGGER`), not a hard dependency.
+- Packaging: declares `com.unity.ugui` + `com.unity.textmeshpro`; added a Unity-recognized `link.xml` for IL2CPP managed stripping; Unity floor raised to `2022.3`.
+- Opt-in remote-override apply (`Loc.ApplyOverrides` / `ClearOverrides`) with per-language and per-platform (`iOS`→`IOS`) resolution that survives language switches.
+- `Loc.Ready` is level-triggered (late subscribers fire); `LocalizationEvent.Raise` is re-entrancy-safe; main-thread contract documented and asserted in editor/development builds.
+- `FormatCurrency` caches its `NumberFormatInfo` and groups by the currency's country (`USD`/`BRL`/`GBP`/`JPY`); non-ASCII source no longer produces colliding keys; the C# scanner ignores comments; scan order and key disambiguation are deterministic.
+- `LanguageDropdown` lifecycle null-guards; `LocalizationService` constructor is internal (`Loc` is the entry point); `SetLanguage` no-ops on the already-active language; active-table dictionary allocated with a capacity hint.
+- Added EditMode hardening tests and a DemoProject PlayMode lane; author prompts moved to `Documentation~`.
+- Verified on Unity 2022.3.62f3: `Loqui.Tests` EditMode suite 96/96 passing. PlayMode and an IL2CPP+stripping device build remain to be run.
+
 ## TheBestLogger
 
 ## [2.2.14] - 2025-11-19
