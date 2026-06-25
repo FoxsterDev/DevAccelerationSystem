@@ -25,6 +25,18 @@ namespace Loqui.Tests
             _created.Clear();
         }
 
+        private LocalizationCatalog Catalog(params string[] languageCodes)
+        {
+            var catalog = New<LocalizationCatalog>();
+            catalog.Languages = new List<LocalizationLocaleProfile>();
+            foreach (var code in languageCodes)
+            {
+                catalog.Languages.Add(new LocalizationLocaleProfile { LanguageCode = code, DisplayName = code });
+            }
+
+            return catalog;
+        }
+
         private T New<T>() where T : ScriptableObject
         {
             var asset = ScriptableObject.CreateInstance<T>();
@@ -32,50 +44,29 @@ namespace Loqui.Tests
             return asset;
         }
 
-        private LocalizationLocaleSet LocaleSet(params string[] codes)
+        private static LocalizationEntry Entry(string key, string group, string value)
         {
-            var set = New<LocalizationLocaleSet>();
-            set.Languages = new List<LocalizationLocaleProfile>();
-            foreach (var code in codes)
-            {
-                set.Languages.Add(new LocalizationLocaleProfile { LanguageCode = code, DisplayName = code });
-            }
-
-            return set;
-        }
-
-        private LocalizationTextTable Table(string group, params (string key, string value)[] entries)
-        {
-            var table = New<LocalizationTextTable>();
-            table.Group = group;
-            table.Entries = new List<LocalizationEntry>();
-            foreach (var (key, value) in entries)
-            {
-                table.Entries.Add(new LocalizationEntry { Key = key, EnglishFallback = value });
-            }
-
-            return table;
+            return new LocalizationEntry { Key = key, Group = group, EnglishFallback = value };
         }
 
         [Test]
         public void ValidCatalog_PassesValidation()
         {
-            var catalog = New<LocalizationCatalog>();
-            catalog.Locales = LocaleSet(LocalizationLanguageCodes.English, LocalizationLanguageCodes.BrazilianPortuguese);
-            catalog.TextTables = new List<LocalizationTextTable>
+            var catalog = Catalog(LocalizationLanguageCodes.English, LocalizationLanguageCodes.BrazilianPortuguese);
+            catalog.Texts = new List<LocalizationEntry>
             {
-                Table("options", ("options.title", "Options")),
-                Table("shop", ("shop.title", "Buy"))
+                Entry("options.title", "options", "Options"),
+                Entry("shop.title", "shop", "Buy")
             };
 
             Assert.IsTrue(catalog.IsValid(out var error), error);
         }
 
         [Test]
-        public void Catalog_WithoutLocaleSet_IsInvalid()
+        public void Catalog_WithoutLanguages_IsInvalid()
         {
             var catalog = New<LocalizationCatalog>();
-            catalog.Locales = null;
+            catalog.Languages = null;
 
             Assert.IsFalse(catalog.IsValid(out _));
         }
@@ -83,51 +74,49 @@ namespace Loqui.Tests
         [Test]
         public void Catalog_WithoutEnglish_IsInvalid()
         {
-            var catalog = New<LocalizationCatalog>();
-            catalog.Locales = LocaleSet(LocalizationLanguageCodes.BrazilianPortuguese);
+            var catalog = Catalog(LocalizationLanguageCodes.BrazilianPortuguese);
 
             Assert.IsFalse(catalog.IsValid(out _));
         }
 
         [Test]
-        public void LocaleSet_WithDuplicateLanguageCode_IsInvalid()
+        public void Catalog_WithDuplicateLanguageCode_IsInvalid()
         {
-            var set = LocaleSet(LocalizationLanguageCodes.English, LocalizationLanguageCodes.English);
+            var catalog = Catalog(LocalizationLanguageCodes.English, LocalizationLanguageCodes.English);
 
-            Assert.IsFalse(set.Validate(out _));
+            Assert.IsFalse(catalog.IsValid(out _));
         }
 
         [Test]
-        public void TextTable_WithDuplicateKey_IsInvalid()
+        public void Catalog_WithDuplicateTextKey_IsInvalid()
         {
-            var table = Table("dup", ("dup", "1"), ("dup", "2"));
-
-            Assert.IsFalse(table.Validate(out _));
-        }
-
-        [Test]
-        public void Catalog_WithDuplicateKeyAcrossTables_IsInvalid()
-        {
-            var catalog = New<LocalizationCatalog>();
-            catalog.Locales = LocaleSet(LocalizationLanguageCodes.English);
-            catalog.TextTables = new List<LocalizationTextTable>
+            var catalog = Catalog(LocalizationLanguageCodes.English);
+            catalog.Texts = new List<LocalizationEntry>
             {
-                Table("a", ("shared.key", "1")),
-                Table("b", ("shared.key", "2"))
+                Entry("dup", "a", "1"),
+                Entry("dup", "b", "2")
             };
 
             Assert.IsFalse(catalog.IsValid(out _));
         }
 
         [Test]
-        public void Catalog_TryGetEntry_SearchesAcrossTables()
+        public void Catalog_WithEmptyTextKey_IsInvalid()
         {
-            var catalog = New<LocalizationCatalog>();
-            catalog.Locales = LocaleSet(LocalizationLanguageCodes.English);
-            catalog.TextTables = new List<LocalizationTextTable>
+            var catalog = Catalog(LocalizationLanguageCodes.English);
+            catalog.Texts = new List<LocalizationEntry> { Entry("", "a", "1") };
+
+            Assert.IsFalse(catalog.IsValid(out _));
+        }
+
+        [Test]
+        public void Catalog_TryGetEntry_SearchesAllTexts()
+        {
+            var catalog = Catalog(LocalizationLanguageCodes.English);
+            catalog.Texts = new List<LocalizationEntry>
             {
-                Table("a", ("a.key", "A")),
-                Table("b", ("b.key", "B"))
+                Entry("a.key", "a", "A"),
+                Entry("b.key", "b", "B")
             };
 
             Assert.IsTrue(catalog.TryGetEntry("b.key", out var entry));
@@ -136,14 +125,13 @@ namespace Loqui.Tests
         }
 
         [Test]
-        public void Catalog_WithNullTable_IsTolerated()
+        public void Catalog_WithNullEntry_IsTolerated()
         {
-            var catalog = New<LocalizationCatalog>();
-            catalog.Locales = LocaleSet(LocalizationLanguageCodes.English);
-            catalog.TextTables = new List<LocalizationTextTable>
+            var catalog = Catalog(LocalizationLanguageCodes.English);
+            catalog.Texts = new List<LocalizationEntry>
             {
                 null,
-                Table("a", ("a.key", "A"))
+                Entry("a.key", "a", "A")
             };
 
             Assert.IsTrue(catalog.IsValid(out var error), error);
@@ -154,8 +142,8 @@ namespace Loqui.Tests
         public void FontProfileLookup_ReturnsLocaleFont()
         {
             var primary = New<TMP_FontAsset>();
-            var set = New<LocalizationLocaleSet>();
-            set.Languages = new List<LocalizationLocaleProfile>
+            var catalog = New<LocalizationCatalog>();
+            catalog.Languages = new List<LocalizationLocaleProfile>
             {
                 new()
                 {
@@ -163,8 +151,6 @@ namespace Loqui.Tests
                     FontProfile = new LocalizationFontProfile { PrimaryFont = primary }
                 }
             };
-            var catalog = New<LocalizationCatalog>();
-            catalog.Locales = set;
 
             Assert.IsTrue(catalog.TryGetFontProfile(LocalizationLanguageCodes.English, out var profile));
             Assert.AreSame(primary, profile.ResolveTmpFont(LocalizationPlatform.Default));

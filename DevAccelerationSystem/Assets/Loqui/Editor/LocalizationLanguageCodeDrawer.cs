@@ -65,15 +65,21 @@ namespace Loqui.Editor
                 }
             }
 
-            if (selected >= 0)
+            var labels = new string[known.Length];
+            for (var i = 0; i < known.Length; i++)
             {
-                return known;
+                labels[i] = LocalizationLanguageCodes.DisplayLabel(known[i]);
             }
 
-            var options = new string[known.Length + 1];
-            Array.Copy(known, options, known.Length);
-            options[known.Length] = string.IsNullOrEmpty(current) ? "<empty>" : $"{current} (unknown)";
-            selected = known.Length;
+            if (selected >= 0)
+            {
+                return labels;
+            }
+
+            var options = new string[labels.Length + 1];
+            Array.Copy(labels, options, labels.Length);
+            options[labels.Length] = string.IsNullOrEmpty(current) ? "<empty>" : $"{current} (unknown)";
+            selected = labels.Length;
             return options;
         }
     }

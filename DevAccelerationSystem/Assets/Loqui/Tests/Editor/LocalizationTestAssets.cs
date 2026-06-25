@@ -8,8 +8,8 @@ namespace Loqui.Tests
     {
         public static LocalizationCatalog Catalog(List<Object> sink, bool withPortuguese = true)
         {
-            var locales = Create<LocalizationLocaleSet>(sink);
-            locales.Languages = new List<LocalizationLocaleProfile>
+            var catalog = Create<LocalizationCatalog>(sink);
+            catalog.Languages = new List<LocalizationLocaleProfile>
             {
                 new()
                 {
@@ -23,7 +23,7 @@ namespace Loqui.Tests
 
             if (withPortuguese)
             {
-                locales.Languages.Add(new LocalizationLocaleProfile
+                catalog.Languages.Add(new LocalizationLocaleProfile
                 {
                     LanguageCode = LocalizationLanguageCodes.BrazilianPortuguese,
                     DisplayName = "Portuguese (Brazil)",
@@ -33,17 +33,11 @@ namespace Loqui.Tests
                 });
             }
 
-            var table = Create<LocalizationTextTable>(sink);
-            table.Group = "test";
-            table.Entries = new List<LocalizationEntry>
+            catalog.Texts = new List<LocalizationEntry>
             {
-                Entry("greeting", "Hello", ("en", "Hello"), ("pt-BR", "Olá")),
-                Entry("english_only", "OnlyEnglish", ("en", "OnlyEnglish"))
+                Entry("greeting", "test", "Hello", ("en", "Hello"), ("pt-BR", "Olá")),
+                Entry("english_only", "test", "OnlyEnglish", ("en", "OnlyEnglish"))
             };
-
-            var catalog = Create<LocalizationCatalog>(sink);
-            catalog.Locales = locales;
-            catalog.TextTables = new List<LocalizationTextTable> { table };
             return catalog;
         }
 
@@ -57,11 +51,12 @@ namespace Loqui.Tests
             };
         }
 
-        private static LocalizationEntry Entry(string key, string englishFallback, params (string code, string value)[] languages)
+        private static LocalizationEntry Entry(string key, string group, string englishFallback, params (string code, string value)[] languages)
         {
             var entry = new LocalizationEntry
             {
                 Key = key,
+                Group = group,
                 EnglishFallback = englishFallback,
                 Languages = new List<LocalizationLanguageValue>()
             };

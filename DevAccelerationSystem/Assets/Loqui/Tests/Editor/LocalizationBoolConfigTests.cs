@@ -98,9 +98,7 @@ namespace Loqui.Tests
         private LocalizationCatalog CatalogWithFlag(bool defaultValue, LocalizationBoolOverride iosOverride)
         {
             var catalog = LocalizationTestAssets.Catalog(_created);
-            var configTable = ScriptableObject.CreateInstance<LocalizationConfigTable>();
-            _created.Add(configTable);
-            configTable.Bools = new List<LocalizationBoolEntry>
+            catalog.Bools = new List<LocalizationBoolEntry>
             {
                 new()
                 {
@@ -113,7 +111,6 @@ namespace Loqui.Tests
                     }
                 }
             };
-            catalog.ConfigTables = new List<LocalizationConfigTable> { configTable };
             return catalog;
         }
     }

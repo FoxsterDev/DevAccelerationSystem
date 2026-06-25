@@ -8,7 +8,7 @@ namespace Loqui
     [DisallowMultipleComponent]
     public sealed class LocalizedText : MonoBehaviour
     {
-        [SerializeField] private string _key;
+        [SerializeField, LocalizationKey] private string _key;
         [SerializeField, TextArea] private string _fallback;
         [SerializeField] private TMP_Text _tmpTarget;
         [SerializeField] private Text _legacyTarget;

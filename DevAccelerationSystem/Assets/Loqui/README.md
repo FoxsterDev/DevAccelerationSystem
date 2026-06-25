@@ -11,11 +11,11 @@ label.text = Loc.Get("home.play_now", "Play Now");
 - **Fallback-first** — `Loc.Get(key, literal)` returns the literal when no override exists; never throws on a missing key.
 - **Per-language** — ship multiple languages from one catalog; pick by device locale or user choice at runtime.
 - **Per-platform** — every entry can override per `iOS` / `Android` (e.g. store-review wording) on top of a shared default.
-- **ScriptableObject catalog** — authored in the Inspector; organized into text tables; build-time validation.
+- **Single ScriptableObject catalog** — one self-contained asset holds every language, text entry, and bool flag inline (no sibling sub-assets); authored in the Inspector with build-time validation.
 - **TMP integration** — `LocalizedText` component for static prefab/scene labels; runtime font swap per language.
 - **Locale formatting** — culture-aware number / currency / percent / date helpers.
 - **Remote overrides (opt-in)** — parse and validate a sparse key→value payload (`JsonUtility`-compatible), then apply it on top of the catalog at runtime via `Loc.ApplyOverrides(...)` / `Loc.ClearOverrides()` without a rebuild.
-- **Editor tooling** — text scanner, deterministic key generation, and approved-attach mode.
+- **Editor tooling** — text scanner, deterministic key generation, approved-attach mode, a searchable key dropdown (`[LocalizationKey]`) for key fields, and an on-demand **Advanced Usage** scanner that reports per-key call counts, unused keys, owning modules, and per-platform overrides across the project.
 
 ## Requirements
 
@@ -36,7 +36,7 @@ ILoquiLog log = new Loqui.Integrations.TheBestLoggerLoquiLog(myTheBestLogger);
 
 Add to `Packages/manifest.json`:
 ```json
-"com.foxsterdev.loqui": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/Loqui#0.1.0"
+"com.foxsterdev.loqui": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/Loqui#4.2.0"
 ```
 
 ## Quick start

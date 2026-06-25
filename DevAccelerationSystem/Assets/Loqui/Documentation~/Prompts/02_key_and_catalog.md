@@ -8,14 +8,16 @@ You are a principal Unity engineer turning approved discovery rows into **catalo
 
 ## Add entries to the catalog
 
-The shipped data is `LocalizationCatalog → LocalizationTextTable(Group) → LocalizationEntry`. For the surface, use (or create) one `LocalizationTextTable` whose `Group` matches the surface slug. For keys consumed from C#, add or update a per-feature const-key class next to the presenter, builder, or ViewData owner that will call `Loc.Get`. Keep the class grouped 1:1 with the catalog `Group`. Do not put localization keys on domain models.
+The shipped data is a single self-contained `LocalizationCatalog` ScriptableObject that holds everything inline: `Languages`, a flat `Texts` list of `LocalizationEntry`, and a flat `Bools` list. There are no separate locale-set / text-table assets — add each entry to `Texts` and set its `Group` to the surface slug. For keys consumed from C#, add or update a per-feature const-key class next to the presenter, builder, or ViewData owner that will call `Loc.Get`. Keep the class grouped 1:1 with the entry `Group`. Do not put localization keys on domain models.
 
 For each approved row add a `LocalizationEntry`:
 
 - `Key` — the approved `proposedKey`. Keys are unique across the whole catalog; if the scanner / `LocalizationCatalog.IsValid` reports a duplicate, the duplicate is wrong — reuse the existing entry instead of adding a second.
 - `EnglishFallback` — the exact English source (the template, with placeholders, for composed text).
 - `Languages` — add the `en` value (`LocalizationLanguageValue { LanguageCode = "en", Values.Default = <source> }`). Leave target languages empty here; they are filled from the translation bundle after human review.
-- `Group` — the surface slug. `MaxLength` — the hint from discovery (0 = none). `Context` — one line on where/how it appears (helps translation). `Notes` — placeholder semantics for templates (e.g. `{0}` = coin amount).
+- `Group` — the surface slug.
+- `MaxLength` — the visible-character budget before the UI clips/overflows, from discovery (0 = none). Always fill it when discovery found a width or character constraint; it gates translation length downstream.
+- `Context` — **always fill this** (it is the only author/translator-facing note now that `Notes` is merged in). One or two lines covering both where/how the string appears *and* placeholder semantics for templates (e.g. `{0}` = coin amount). An empty `Context` produces worse translations — never leave it blank for a non-trivial string.
 - Platform variants (`Values.IOS` / `Values.Android`) only when iOS and Android copy genuinely differ.
 
 **English is the hard fallback** — every entry must keep its English value; never add an entry that removes or empties English.

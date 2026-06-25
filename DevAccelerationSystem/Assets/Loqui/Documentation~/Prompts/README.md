@@ -37,7 +37,7 @@ label.text = Loc.Get("home.play_now", "Play Now");
 4. **Prefer the component path for authored UI.** If a `TMP_Text`/`Text` is static and lives in a prefab/scene, attach `LocalizedText` (via the scanner's approved-attach mode) instead of editing code. Use the code path (`Get`/`Apply`) only for text set or composed in C#.
 5. **Code wins ownership.** If code writes to a text component at runtime, localize at that code path with `Loc.Get(key, fallback)` or typed `Format*` helpers. Do not also attach `LocalizedText` to that label until the mutator is removed or explicitly made non-owner.
 6. **Keys are stable and additive.** Reuse an existing catalog key for identical English copy; never rename or repurpose a shipped key. New keys only.
-7. **Code keys live near the feature owner.** For strings used from C#, add per-feature `static` const-key classes next to the presenter/builder that owns the copy. Match the class grouping to the catalog `LocalizationTextTable.Group`.
+7. **Code keys live near the feature owner.** For strings used from C#, add per-feature `static` const-key classes next to the presenter/builder that owns the copy. Match the class grouping to the catalog entry's `Group`.
 8. **Keep models localization-neutral.** Models expose raw data and semantic IDs/enums. Presenter/ViewData owns key selection, fallback text, formatting, and language-change rehydration for dynamic UI copy.
 9. **Human review gates every stage.** Stage 1 and 2 output is reviewed before stage 3 touches code.
 10. **Validate before declaring done.** Let Unity import, run the `Loqui.Tests` EditMode suite plus your own catalog-gate test, and build for your targets. See each prompt's validation section.
@@ -52,7 +52,7 @@ label.text = Loc.Get("home.play_now", "Play Now");
 - **Key generator:** `LocalizationKeyGenerator.Generate(group, source)` — `group.slug`, lowercase ASCII, `_`-joined, diacritics stripped, max 6 words. Agents must follow the same rules so proposed keys match the tool.
 - **Approved attach mode:** `LocalizationAttachMode` attaches `LocalizedText` only to `RecommendedApproach = ComponentAttach` scene/prefab rows and returns a mutation record per processed row.
 - **Runtime API:** `Loc.Get/TryGet/Apply`, `LocalizedText`, `LanguageDropdown`, `LanguagePickerController`, and `Format{Number,Currency,Percent,ShortDate,DateTime}`.
-- **Catalog model:** `LocalizationCatalog → LocalizationTextTable(Group) → LocalizationEntry` (`Key`, `EnglishFallback`, `Languages[ LocalizationLanguageValue{ LanguageCode, Values{Default,IOS,Android} } ]`, `Group`, `MaxLength`, `Context`, `Notes`).
+- **Catalog model:** a single self-contained `LocalizationCatalog` ScriptableObject holds everything inline — `Languages` (`List<LocalizationLocaleProfile>`), `Texts` (`List<LocalizationEntry>`), and `Bools` (`List<LocalizationBoolEntry>`). A `LocalizationEntry` is (`Key`, `EnglishFallback`, `Languages[ LocalizationLanguageValue{ LanguageCode, Values{Default,IOS,Android} } ]`, `Group`, `MaxLength`, `Context`). There is no separate locale-set / text-table / config-table asset; `Group` lives on each entry.
 
 ## Migration order (highest value first)
 
