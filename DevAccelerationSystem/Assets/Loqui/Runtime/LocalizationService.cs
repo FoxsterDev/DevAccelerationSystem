@@ -18,6 +18,8 @@ namespace Loqui
         private readonly List<string> _supportedCodes = new();
         private readonly List<LocalizationLanguageInfo> _availableLanguages = new();
         private readonly HashSet<string> _reportedMissingKeys = new(StringComparer.Ordinal);
+        private readonly List<LocalizationBoolEntry> _boolBuffer = new();
+        private readonly Dictionary<string, bool> _boolConfig = new(StringComparer.Ordinal);
 
         private LocalizationActiveTable _activeTable;
         private LocalizationFormatter _formatter = LocalizationFormatter.Invariant;
@@ -73,6 +75,7 @@ namespace Loqui
                     _supportedCodes,
                     _defaultLanguageCode);
                 RebuildActive(resolved);
+                BuildBoolConfig();
             }
 
             IsReady = true;
@@ -99,6 +102,22 @@ namespace Loqui
 
             ReportMissingKey(key);
             return fallback;
+        }
+
+        public bool TryGetBool(string key, out bool value)
+        {
+            if (IsEnabled && IsReady && !string.IsNullOrEmpty(key))
+            {
+                return _boolConfig.TryGetValue(key, out value);
+            }
+
+            value = false;
+            return false;
+        }
+
+        public bool GetBool(string key, bool fallback)
+        {
+            return TryGetBool(key, out var value) ? value : fallback;
         }
 
         public bool SetLanguage(string languageCode)
@@ -195,6 +214,26 @@ namespace Loqui
                 if (_catalog.TryGetLocale(_supportedCodes[i], out var locale))
                 {
                     _availableLanguages.Add(locale.ToLanguageInfo());
+                }
+            }
+        }
+
+        private void BuildBoolConfig()
+        {
+            _boolConfig.Clear();
+            if (_catalog == null)
+            {
+                return;
+            }
+
+            _boolBuffer.Clear();
+            _catalog.CollectBoolEntries(_boolBuffer);
+            for (var i = 0; i < _boolBuffer.Count; i++)
+            {
+                var entry = _boolBuffer[i];
+                if (entry != null && !string.IsNullOrEmpty(entry.Key) && entry.Values != null)
+                {
+                    _boolConfig[entry.Key] = entry.Values.Resolve(_platform);
                 }
             }
         }

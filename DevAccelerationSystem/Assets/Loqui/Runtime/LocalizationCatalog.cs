@@ -10,6 +10,7 @@ namespace Loqui
         public int SchemaVersion = 1;
         public LocalizationLocaleSet Locales;
         public List<LocalizationTextTable> TextTables = new();
+        public List<LocalizationConfigTable> ConfigTables = new();
 
         public bool IsValid(out string error)
         {
@@ -49,6 +50,37 @@ namespace Loqui
                         if (entry != null && !seenKeys.Add(entry.Key))
                         {
                             error = $"Catalog has a duplicate key '{entry.Key}' across text tables.";
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            var seenBoolKeys = new HashSet<string>(StringComparer.Ordinal);
+            if (ConfigTables != null)
+            {
+                foreach (var table in ConfigTables)
+                {
+                    if (table == null)
+                    {
+                        continue;
+                    }
+
+                    if (!table.Validate(out error))
+                    {
+                        return false;
+                    }
+
+                    if (table.Bools == null)
+                    {
+                        continue;
+                    }
+
+                    foreach (var entry in table.Bools)
+                    {
+                        if (entry != null && !string.IsNullOrEmpty(entry.Key) && !seenBoolKeys.Add(entry.Key))
+                        {
+                            error = $"Catalog has a duplicate bool config key '{entry.Key}' across config tables.";
                             return false;
                         }
                     }
@@ -118,6 +150,30 @@ namespace Loqui
                 }
 
                 foreach (var entry in table.Entries)
+                {
+                    if (entry != null && !string.IsNullOrEmpty(entry.Key))
+                    {
+                        buffer.Add(entry);
+                    }
+                }
+            }
+        }
+
+        public void CollectBoolEntries(List<LocalizationBoolEntry> buffer)
+        {
+            if (buffer == null || ConfigTables == null)
+            {
+                return;
+            }
+
+            foreach (var table in ConfigTables)
+            {
+                if (table?.Bools == null)
+                {
+                    continue;
+                }
+
+                foreach (var entry in table.Bools)
                 {
                     if (entry != null && !string.IsNullOrEmpty(entry.Key))
                     {
