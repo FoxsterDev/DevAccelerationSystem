@@ -94,6 +94,22 @@ namespace Loqui
             return _service != null ? _service.Get(key, fallback) : fallback;
         }
 
+        public static bool TryGetBool(string key, out bool value)
+        {
+            if (_service != null)
+            {
+                return _service.TryGetBool(key, out value);
+            }
+
+            value = false;
+            return false;
+        }
+
+        public static bool GetBool(string key, bool fallback)
+        {
+            return _service != null ? _service.GetBool(key, fallback) : fallback;
+        }
+
         public static bool SetLanguage(string languageCode)
         {
             LocalizationMainThread.Verify(nameof(SetLanguage), _logger);

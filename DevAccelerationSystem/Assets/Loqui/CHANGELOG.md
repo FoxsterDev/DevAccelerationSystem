@@ -5,6 +5,12 @@ All notable changes to this package are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-06-24
+
+### Added
+- Per-platform bool configuration: `LocalizationConfigTable` (+ `LocalizationBoolEntry` / `LocalizationBoolValues` with `Default` / `iOS` / `Android` overrides) on `LocalizationCatalog.ConfigTables`, resolved at init for the active platform.
+- `Loc.GetBool(key, fallback)` / `Loc.TryGetBool(key, out value)` — fallback-first non-text config lookup.
+
 ## [0.1.0] - 2026-06-24
 
 ### Added
