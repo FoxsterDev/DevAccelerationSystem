@@ -1,7 +1,10 @@
 # Changelog
 
-## [Unreleased]
-- No unreleased entries yet.
+## [4.3.0] - 2026-07-10
+- Fixed captured exceptions forwarded by the global async/unhandled sources (`UnobservedUniTaskExceptionLogSource`, `UnobservedTaskExceptionLogSource`, `CurrentDomainUnhandledExceptionLogSource`) so they no longer ship with an empty `Message`; the message is now derived from the exception through `LogMessageFormatter`.
+- Changed the emitted `Category` for captured exceptions from the default `Uncategorized` bucket to the originating log-source id so unhandled-exception logs are groupable per source. Non-exception logs keep their existing category.
+- Added structured exception attributes (`ExceptionType`, `Fingerprint`) for every captured exception. `AggregateException` is unwrapped to its inner exception first, so Task-sourced faults type and group by the real exception instead of collapsing to `System.AggregateException`. `Fingerprint` is a stable FNV-1a hash of the exception type plus the first non-framework stack frame, intended as a group-by key in log backends. Attribute preparation is exception-safe and never throws.
+- Kept non-exception log records byte-identical (message, category, and attributes unchanged); only exception-carrying records are enriched, and no public API or call site changed.
 
 ## [3.0.1] - 2026-05-04
 - Fixed Apple-system logger native bridge compilation on Apple player targets by restoring valid access to the imported native entry points.

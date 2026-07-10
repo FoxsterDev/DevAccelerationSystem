@@ -29,6 +29,9 @@ namespace TheBestLogger
         private readonly UtilitySupplier _utilitySupplier;
         private IReadOnlyList<ILogTarget> _logTargets;
 
+        private const string ExceptionTypeAttributeKey = "ExceptionType";
+        private const string FingerprintAttributeKey = "Fingerprint";
+
         public CoreLogger(string categoryName,
                           string subCategoryName,
                           IReadOnlyList<ILogTarget> logTargets,
@@ -81,7 +84,23 @@ namespace TheBestLogger
                 return;
             }
 #endif
-            SendToLogTargets(logLevel, message, logSourceId, exception, stackTrace, context, null, true, args);
+            if (!AnyTargetWillLog(logLevel))
+            {
+                return;
+            }
+
+            string categoryOverride = null;
+            if (exception != null)
+            {
+                if (string.IsNullOrEmpty(message))
+                {
+                    message = LogMessageFormatter.TryFormat(_subCategoryName, null, exception);
+                }
+
+                categoryOverride = logSourceId;
+            }
+
+            SendToLogTargets(logLevel, message, logSourceId, exception, stackTrace, context, null, categoryOverride, true, args);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -178,7 +197,7 @@ namespace TheBestLogger
                 return;
 
             var formatted = LogMessageFormatter.TryFormat(_subCategoryName, message, null, args);
-            SendToLogTargets(logLevel, formatted, "direct", null, null, null, logAttributes, true, args);
+            SendToLogTargets(logLevel, formatted, "direct", null, null, null, logAttributes, null, true, args);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -298,7 +317,9 @@ namespace TheBestLogger
                                       Exception exception = null,
                                       string stackTrace = null,
                                       Object context = null,
-                                      LogAttributes logAttributes = null, bool argsConcat = false,
+                                      LogAttributes logAttributes = null,
+                                      string categoryOverride = null,
+                                      bool argsConcat = false,
                                       params object[] args)
         {
             var logPrepared = false;
@@ -312,6 +333,8 @@ namespace TheBestLogger
             {
 #endif
             if (formattedMessage == null) formattedMessage = string.Empty;
+
+            var category = string.IsNullOrEmpty(categoryOverride) ? _categoryName : categoryOverride;
 
             var isMainThread = _utilitySupplier.IsMainThread;
             var logTargetsCount = _logTargets.Count;
@@ -362,6 +385,13 @@ namespace TheBestLogger
                     logAttributes.StackTrace = stackTrace;
                     logAttributes.Tags = _utilitySupplier.TagsRegistry.GetAllTags();
 
+                    if (exception != null)
+                    {
+                        var reportedException = ExceptionFingerprint.Unwrap(exception);
+                        logAttributes.Add(ExceptionTypeAttributeKey, reportedException.GetType().FullName ?? reportedException.GetType().Name);
+                        logAttributes.Add(FingerprintAttributeKey, ExceptionFingerprint.Compute(reportedException));
+                    }
+
 #if THEBESTLOGGER_DIAGNOSTICS_ENABLED
                     logAttributes.Add("LogSourceId", logSourceId);
                     logAttributes.Add("StackTraceSourceId", stackTrace != null ? "direct" : "recreated");
@@ -376,7 +406,7 @@ namespace TheBestLogger
                     }
                 }
 
-                logTarget.Log(logLevel, _categoryName, formattedMessage, logAttributes, exception);
+                logTarget.Log(logLevel, category, formattedMessage, logAttributes, exception);
             }
 #if THEBESTLOGGER_ENABLE_PROFILER
             }
