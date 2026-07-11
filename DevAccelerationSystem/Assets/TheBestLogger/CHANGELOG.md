@@ -1,5 +1,15 @@
 # Changelog
 
+## [4.4.0] - 2026-07-11
+- Hardened log-source, diagnostics, update-loop, and target delivery boundaries so consumer or target exceptions cannot escape into application callbacks.
+- Added per-target failure isolation, recursive-log suppression, and automatic quarantine after repeated target failures.
+- Added bounded batch and main-thread dispatch queues with importance-aware eviction, dropped-log telemetry, and guaranteed retained-payload progress under sustained overload.
+- Kept batching and main-thread dispatch decorators installed across the target lifetime so remote configuration can safely enable either behavior after initialization.
+- Clamped unsafe remote batch/update values and aligned the built-in development and production presets with non-thread-safe target dispatch requirements.
+- Disabled crash-reporter auto-reporting by default so applications must opt in explicitly.
+- Preserved automatic `THEBESTLOGGER_ZSTRING_ENABLED` activation in `TheBestLogger.Core.Utilities` and the assemblies that directly consume ZString-backed types.
+- Expanded Editor, PlayMode, stress, overflow, quarantine, remote-configuration, and fallback-builder performance coverage.
+
 ## [4.3.0] - 2026-07-10
 - Fixed captured exceptions forwarded by the global async/unhandled sources (`UnobservedUniTaskExceptionLogSource`, `UnobservedTaskExceptionLogSource`, `CurrentDomainUnhandledExceptionLogSource`) so they no longer ship with an empty `Message`; the message is now derived from the exception through `LogMessageFormatter`.
 - Changed the emitted `Category` for captured exceptions from the default `Uncategorized` bucket to the originating log-source id so unhandled-exception logs are groupable per source. Non-exception logs keep their existing category.

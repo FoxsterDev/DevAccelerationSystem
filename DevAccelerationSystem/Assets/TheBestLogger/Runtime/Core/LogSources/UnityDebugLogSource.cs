@@ -53,13 +53,23 @@ namespace TheBestLogger
                                    string message,
                                    params object[] args)
         {
-            _logConsumer.LogFormat(logType.ConvertToTheBestLoggerLogLevel(), nameof(UnityDebugLogSource), message, null, null, context, args);
+            LogSourceSafety.TryLog(_logConsumer,
+                                   logType.ConvertToTheBestLoggerLogLevel(),
+                                   nameof(UnityDebugLogSource),
+                                   message,
+                                   context: context,
+                                   args: args);
         }
 
         [HideInCallstack] //handled or unhandled exceptions
         void ILogHandler.LogException(Exception exception, UnityEngine.Object context)
         {
-            _logConsumer.LogFormat(LogLevel.Exception, nameof(UnityDebugLogSource), string.Empty, exception, null, context);
+            LogSourceSafety.TryLog(_logConsumer,
+                                   LogLevel.Exception,
+                                   nameof(UnityDebugLogSource),
+                                   string.Empty,
+                                   exception,
+                                   context: context);
         }
     }
 }

@@ -61,6 +61,30 @@ namespace TheBestLogger.Tests.Performance
         }
 
         [Test, Performance]
+        public void NoZString_PerformanceBaseline()
+        {
+            string result = null;
+
+            Measure.Method(() =>
+                   {
+                       using var builder = StringOperations.CreateStringBuilder(128, false);
+                       builder.Append("fallback-");
+                       builder.Append(42);
+                       builder.Append('-');
+                       builder.Append(true);
+                       result = builder.ToString();
+                   })
+                   .SampleGroup(new SampleGroup("StringOperations.NoZString", SampleUnit.Millisecond))
+                   .WarmupCount(3)
+                   .MeasurementCount(12)
+                   .IterationsPerMeasurement(HotPathIterations)
+                   .GC()
+                   .Run();
+
+            Assert.That(result, Is.EqualTo("fallback-42-True"));
+        }
+
+        [Test, Performance]
         public void DispatchingFlush_QueuedBurst_RecordsTimeAndGcMetrics()
         {
             PerformanceCountingLogTarget target = null;
@@ -113,6 +137,8 @@ namespace TheBestLogger.Tests.Performance
         {
             const int batchSize = 64;
             const int updatePeriodMs = 1000;
+            const int retainedPayloadCount = batchSize * 4;
+            const int expectedDeliveredCount = retainedPayloadCount + 1;
             PerformanceCountingLogTarget target = null;
             LogTargetBatchLogsDecoration batchingTarget = null;
             DateTime startTimeUtc = default;
@@ -120,7 +146,7 @@ namespace TheBestLogger.Tests.Performance
             Measure.Method(() =>
                    {
                        var currentTimeUtc = startTimeUtc;
-                       while (target.LoggedCount < QueuedLogCount)
+                       while (target.LoggedCount < expectedDeliveredCount)
                        {
                            currentTimeUtc = currentTimeUtc.AddMilliseconds(updatePeriodMs + 1);
                            ((IScheduledUpdate) batchingTarget).Update(currentTimeUtc, updatePeriodMs + 1);
@@ -155,7 +181,7 @@ namespace TheBestLogger.Tests.Performance
                    })
                    .CleanUp(() =>
                    {
-                       Assert.That(target.LoggedCount, Is.EqualTo(QueuedLogCount));
+                       Assert.That(target.LoggedCount, Is.InRange(expectedDeliveredCount, expectedDeliveredCount + 1));
                    })
                    .WarmupCount(2)
                    .MeasurementCount(10)

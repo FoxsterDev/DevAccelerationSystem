@@ -621,42 +621,25 @@ namespace TheBestLogger
                     continue;
                 }
 
-                ILogTarget decoratedLogTarget = null;
-                if (config.DispatchingLogsToMainThread.Enabled)
+                if (config.DispatchingLogsToMainThread.Enabled && config.IsThreadSafe)
                 {
-                    if (config.IsThreadSafe)
-                    {
-                        FallbackLogger.LogWarning($" {config} IsThreadSafe but DispatchingLogsToMainThread.Enabled");
-                    }
-
-                    decoratedLogTarget = new LogTargetDispatchingLogsToMainThreadDecoration(
-                                             config.DispatchingLogsToMainThread, originalLogTarget, SynchronizationContext.Current, utilitySupplier) as ILogTarget;
-
-                    Diagnostics.Write(
-                        originalLogTarget.GetType() + " was decorated by " +
-                        decoratedLogTarget.GetType());
+                    FallbackLogger.LogWarning($" {config} IsThreadSafe but DispatchingLogsToMainThread.Enabled");
                 }
 
-                if (config.BatchLogs.Enabled)
-                {
-                    var toDecorate = decoratedLogTarget ?? originalLogTarget;
-                    decoratedLogTarget = new LogTargetBatchLogsDecoration(
-                                             config.BatchLogs, toDecorate, currentTimeUtc) as ILogTarget;
+                var dispatchingLogTarget = new LogTargetDispatchingLogsToMainThreadDecoration(
+                    config.DispatchingLogsToMainThread,
+                    originalLogTarget,
+                    SynchronizationContext.Current,
+                    utilitySupplier);
+                var decoratedLogTarget = new LogTargetBatchLogsDecoration(
+                    config.BatchLogs,
+                    dispatchingLogTarget,
+                    currentTimeUtc);
 
-                    Diagnostics.Write(
-                        toDecorate.GetType() + " was decorated by " +
-                        decoratedLogTarget.GetType());
+                Diagnostics.Write(originalLogTarget.GetType() + " was decorated by " +
+                                  dispatchingLogTarget.GetType() + " and " + decoratedLogTarget.GetType());
 
-                }
-
-                if (decoratedLogTarget != null)
-                {
-                    list.Add(decoratedLogTarget);
-                }
-                else
-                {
-                    list.Add(originalLogTarget);
-                }
+                list.Add(decoratedLogTarget);
 
             }
 
@@ -689,10 +672,9 @@ namespace TheBestLogger
 
             _isRunningUpdates = true;
             var previousTimeStamp = currentTimeUtc;
-            var minUpdate = (int) Math.Min(targetUpdates.Min(k => k.PeriodMs), minUpdatesPeriodMs);
-
             while (_isRunningUpdates)
             {
+                var minUpdate = GetScheduledUpdateDelay(targetUpdates, minUpdatesPeriodMs);
                 await Task.Delay(minUpdate, cancellationToken).ConfigureAwait(true);
 
                 if (cancellationToken.IsCancellationRequested)
@@ -704,14 +686,34 @@ namespace TheBestLogger
                 using (_scheduledUpdatesMarker.Auto())
                 {
 #endif
-                    var currentTimeStamp = _utilitySupplier.GetTimeStamp();
+                    var utilitySupplier = _utilitySupplier;
+                    if (utilitySupplier == null)
+                    {
+                        return;
+                    }
+
+                    var currentTimeStamp = utilitySupplier.GetTimeStamp();
                     var deltaMs = (uint) (currentTimeStamp.currentTimeUtc - previousTimeStamp).TotalMilliseconds;
                     previousTimeStamp = currentTimeStamp.currentTimeUtc;
 
                     //_defaultLogger?.LogDebug("Update: "+deltaMs+", "+currentTimeStamp.timeStampCached);
                     foreach (var target in targetUpdates)
                     {
-                        target.Update(currentTimeStamp.currentTimeUtc, deltaMs);
+                        if (target.PeriodMs == uint.MaxValue)
+                        {
+                            continue;
+                        }
+
+                        try
+                        {
+                            target.Update(currentTimeStamp.currentTimeUtc, deltaMs);
+                        }
+                        catch (Exception exception)
+                        {
+                            Diagnostics.Write("Scheduled log-target update failed: " + target.GetType().Name,
+                                              LogLevel.Error,
+                                              exception);
+                        }
                     }
 #if THEBESTLOGGER_ENABLE_PROFILER
                 }
@@ -719,6 +721,30 @@ namespace TheBestLogger
             }
 
             Diagnostics.Write(" finished");
+        }
+
+        private static int GetScheduledUpdateDelay(IReadOnlyList<IScheduledUpdate> targetUpdates,
+                                                   uint minUpdatesPeriodMs)
+        {
+            const uint disabledPollPeriodMs = 1000;
+            var minTargetPeriodMs = uint.MaxValue;
+            for (var index = 0; index < targetUpdates.Count; index++)
+            {
+                var periodMs = targetUpdates[index].PeriodMs;
+                if (periodMs < minTargetPeriodMs)
+                {
+                    minTargetPeriodMs = periodMs;
+                }
+            }
+
+            if (minTargetPeriodMs == uint.MaxValue)
+            {
+                return (int) disabledPollPeriodMs;
+            }
+
+            var configuredMinUpdate = Math.Min(minTargetPeriodMs, minUpdatesPeriodMs);
+            var clampedMinUpdate = Math.Max(configuredMinUpdate, LogTargetBatchLogsConfiguration.MIN_UPDATE_PERIOD_MS);
+            return (int) Math.Min(clampedMinUpdate, int.MaxValue);
         }
 
         private static void SetApplicationLogTypesStackTrace(LogManagerConfiguration logManagerConfiguration)

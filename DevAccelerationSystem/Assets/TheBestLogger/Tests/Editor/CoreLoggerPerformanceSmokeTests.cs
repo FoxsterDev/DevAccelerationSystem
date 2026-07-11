@@ -87,13 +87,13 @@ namespace TheBestLogger.Tests.Editor
                 }
             });
 
-            Assert.That(syncContext.PendingCount, Is.EqualTo(QueuedLogCount));
+            Assert.That(syncContext.PendingCount, Is.EqualTo(1));
 
             var stopwatch = Stopwatch.StartNew();
             syncContext.FlushPostedCallbacks();
             stopwatch.Stop();
 
-            Assert.That(target.LoggedCount, Is.EqualTo(QueuedLogCount));
+            Assert.That(target.LoggedCount, Is.EqualTo(1025));
             Assert.That(stopwatch.ElapsedMilliseconds, Is.LessThan(250L), $"Dispatch flush took {stopwatch.ElapsedMilliseconds} ms.");
         }
 
@@ -102,6 +102,8 @@ namespace TheBestLogger.Tests.Editor
         {
             const int batchSize = 64;
             const int updatePeriodMs = 1000;
+            const int retainedPayloadCount = batchSize * 4;
+            const int expectedDeliveredCount = retainedPayloadCount + 1;
 
             var target = new CountingOnlyLogTarget();
             var startTimeUtc = DateTime.UtcNow;
@@ -129,7 +131,7 @@ namespace TheBestLogger.Tests.Editor
 
             var stopwatch = Stopwatch.StartNew();
             var currentTimeUtc = startTimeUtc;
-            while (target.LoggedCount < QueuedLogCount)
+            while (target.LoggedCount < expectedDeliveredCount)
             {
                 currentTimeUtc = currentTimeUtc.AddMilliseconds(updatePeriodMs + 1);
                 ((IScheduledUpdate) batchingTarget).Update(currentTimeUtc, updatePeriodMs + 1);
@@ -137,7 +139,7 @@ namespace TheBestLogger.Tests.Editor
 
             stopwatch.Stop();
 
-            Assert.That(target.LoggedCount, Is.EqualTo(QueuedLogCount));
+            Assert.That(target.LoggedCount, Is.InRange(expectedDeliveredCount, expectedDeliveredCount + 1));
             Assert.That(stopwatch.ElapsedMilliseconds, Is.LessThan(250L), $"Batch flush took {stopwatch.ElapsedMilliseconds} ms.");
         }
 

@@ -3,6 +3,7 @@ using StabilityHub;
 using StabilityHub.Monitoring;
 using System;
 using System.Collections.Generic;
+using TheBestLogger.Examples;
 
 namespace TheBestLogger.Tests.Editor
 {
@@ -34,6 +35,17 @@ namespace TheBestLogger.Tests.Editor
             Assert.DoesNotThrow(() => StabilityHubService.Initialize(_logger));
 
             Assert.That(_logger.DebugMessages, Is.EqualTo(new[] { "CrashReporterModule is disabled" }));
+        }
+
+        [TestCase(MonitoringConfigurationPreset.Production)]
+        [TestCase(MonitoringConfigurationPreset.Qa)]
+        public void MonitoringPreset_DoesNotAutomaticallyEnableUnityCrashReporter(MonitoringConfigurationPreset preset)
+        {
+            var configuration = MonitoringConfigurationPresets.Create(preset);
+
+            Assert.That(configuration.CrashReporterModule.AutoProjectSettingsSetup, Is.False);
+
+            UnityEngine.Object.DestroyImmediate(configuration);
         }
 
         [Test]

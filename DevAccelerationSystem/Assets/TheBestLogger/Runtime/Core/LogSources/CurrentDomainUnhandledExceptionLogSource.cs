@@ -15,21 +15,26 @@ namespace TheBestLogger
 
         private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            if (_logConsumer == null)
+            var logConsumer = _logConsumer;
+            if (logConsumer == null)
             {
                 return;
             }
 
             if (e?.ExceptionObject is Exception exception)
             {
-                _logConsumer.LogFormat(LogLevel.Exception, nameof(CurrentDomainUnhandledExceptionLogSource), string.Empty, exception);
+                LogSourceSafety.TryLog(logConsumer,
+                                       LogLevel.Exception,
+                                       nameof(CurrentDomainUnhandledExceptionLogSource),
+                                       string.Empty,
+                                       exception);
                 return;
             }
 
-            _logConsumer.LogFormat(LogLevel.Exception,
+            LogSourceSafety.TryLog(logConsumer,
+                                   LogLevel.Exception,
                                    nameof(CurrentDomainUnhandledExceptionLogSource),
-                                   e?.ExceptionObject?.ToString() ?? "UnhandledExceptionObject is null",
-                                   null);
+                                   e?.ExceptionObject?.ToString() ?? "UnhandledExceptionObject is null");
         }
 
         public void Dispose()

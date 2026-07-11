@@ -40,10 +40,10 @@ namespace StabilityHub.Monitoring.CrashReporting.Editor
 
         public static void EnableCrashReporting(bool enabled)
         {
-            Debug.Log("Set to  PlayerSettings.enableCrashReportAPI = true");
+            Debug.Log("Set PlayerSettings.enableCrashReportAPI = " + enabled);
             PlayerSettings.enableCrashReportAPI = enabled;
 
-            Debug.Log("Crash Reporting API has been enabled in Player Settings.");
+            Debug.Log("Crash Reporting API enabled state in Player Settings: " + enabled);
         }
     }
 }

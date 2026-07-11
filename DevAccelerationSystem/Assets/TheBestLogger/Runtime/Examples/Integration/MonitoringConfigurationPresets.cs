@@ -41,13 +41,13 @@ namespace TheBestLogger.Examples
                 MonitoringConfigurationPreset.Production => new CrashReporterModuleConfiguration
                 {
                     Enabled = true,
-                    AutoProjectSettingsSetup = true,
+                    AutoProjectSettingsSetup = false,
                     IOS = new CrashReporteriOSConfiguration { Enabled = true }
                 },
                 MonitoringConfigurationPreset.Qa => new CrashReporterModuleConfiguration
                 {
                     Enabled = true,
-                    AutoProjectSettingsSetup = true,
+                    AutoProjectSettingsSetup = false,
                     IOS = new CrashReporteriOSConfiguration { Enabled = true }
                 },
                 _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, null)

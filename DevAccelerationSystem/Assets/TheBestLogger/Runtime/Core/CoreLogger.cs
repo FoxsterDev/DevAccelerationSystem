@@ -8,6 +8,7 @@
 using Unity.Profiling;
 #endif
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -19,6 +20,13 @@ namespace TheBestLogger
 {
     internal class CoreLogger : ILogger, ILogConsumer
     {
+        private const int TARGET_FAILURES_BEFORE_MUTE = 3;
+        private const string ExceptionTypeAttributeKey = "ExceptionType";
+        private const string FingerprintAttributeKey = "Fingerprint";
+
+        [ThreadStatic]
+        private static bool _isInsidePipeline;
+
 #if THEBESTLOGGER_ENABLE_PROFILER
         private static readonly ProfilerMarker _logTargetsUpdatesMarker = new(ProfilerCategory.Scripts, "TheBestLogger.LogTargetUpdates");
 #endif
@@ -27,10 +35,8 @@ namespace TheBestLogger
         private readonly uint _messageMaxLength;
         private readonly string _subCategoryName;
         private readonly UtilitySupplier _utilitySupplier;
+        private readonly ConcurrentDictionary<ILogTarget, int> _targetFailureCounts = new();
         private IReadOnlyList<ILogTarget> _logTargets;
-
-        private const string ExceptionTypeAttributeKey = "ExceptionType";
-        private const string FingerprintAttributeKey = "Fingerprint";
 
         public CoreLogger(string categoryName,
                           string subCategoryName,
@@ -276,29 +282,37 @@ namespace TheBestLogger
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool AnyTargetWillLog(LogLevel level)
         {
-            if (_logTargets == null)
+            var logTargets = _logTargets;
+            if (logTargets == null)
             {
                 return false;
             }
 
             var isMainThread = _utilitySupplier.IsMainThread;
-            for (int i = 0, n = _logTargets.Count; i < n; i++)
+            for (int i = 0, n = logTargets.Count; i < n; i++)
             {
-                var logTarget = _logTargets[i];
+                var logTarget = logTargets[i];
                 if (logTarget == null)
                 {
                     continue;
                 }
 
-                if (!logTarget.Configuration.IsThreadSafe && !isMainThread &&
-                    !logTarget.Configuration.DispatchingLogsToMainThread.Enabled)
+                try
                 {
-                    continue;
-                }
+                    var configuration = logTarget.Configuration;
+                    if (!CanDeliverOnCurrentThread(configuration, isMainThread))
+                    {
+                        continue;
+                    }
 
-                if (logTarget.IsLogLevelAllowed(level, _categoryName))
+                    if (logTarget.IsLogLevelAllowed(level, _categoryName))
+                    {
+                        return true;
+                    }
+                }
+                catch (Exception exception)
                 {
-                    return true;
+                    HandleTargetFailure(logTarget, exception);
                 }
             }
 
@@ -308,6 +322,7 @@ namespace TheBestLogger
         public void Dispose()
         {
             _logTargets = null;
+            _targetFailureCounts.Clear();
         }
 
         [HideInCallstack]
@@ -322,9 +337,18 @@ namespace TheBestLogger
                                       bool argsConcat = false,
                                       params object[] args)
         {
+            if (_isInsidePipeline)
+            {
+                return;
+            }
+
+            _isInsidePipeline = true;
+            try
+            {
             var logPrepared = false;
 
-            if (_logTargets == null)
+            var logTargets = _logTargets;
+            if (logTargets == null)
             {
                 return;
             }
@@ -337,80 +361,136 @@ namespace TheBestLogger
             var category = string.IsNullOrEmpty(categoryOverride) ? _categoryName : categoryOverride;
 
             var isMainThread = _utilitySupplier.IsMainThread;
-            var logTargetsCount = _logTargets.Count;
+            var logTargetsCount = logTargets.Count;
             for (var index = 0; index < logTargetsCount; index++)
             {
-                var logTarget = _logTargets[index];
+                var logTarget = logTargets[index];
                 if (logTarget == null)
                 {
                     continue;
                 }
 
-                if (!logTarget.Configuration.IsThreadSafe && !isMainThread)
+                try
                 {
-                    if (!logTarget.Configuration.DispatchingLogsToMainThread.Enabled)
+                    var configuration = logTarget.Configuration;
+                    if (!CanDeliverOnCurrentThread(configuration, isMainThread))
                     {
                         Diagnostics.Write(
-                            "Message:{" + formattedMessage + "} was skipped because " + logTarget.Configuration.GetType() +
+                            "Message:{" + formattedMessage + "} was skipped because " + configuration?.GetType() +
                             " is not thread safe and called outside of unity main thread", LogLevel.Warning);
                         continue;
                     }
-                }
 
-                if (!logTarget.IsLogLevelAllowed(logLevel, _categoryName))
-                {
-                    continue;
-                }
-
-                if (!logPrepared)
-                {
-                    logPrepared = true;
-
-                    if (argsConcat && args != null && args.Length > 0)
+                    if (!logTarget.IsLogLevelAllowed(logLevel, _categoryName))
                     {
-                        formattedMessage = LogMessageFormatter.TryFormat(_subCategoryName, formattedMessage, exception, args) ?? string.Empty;
+                        continue;
                     }
 
-                    if (formattedMessage.Length > _messageMaxLength)
+                    if (!logPrepared)
                     {
-                        formattedMessage = formattedMessage.Substring(0, (int) _messageMaxLength);
-                        formattedMessage = StringOperations.Concat(formattedMessage, "\n--Truncated--");
-                    }
+                        if (argsConcat && args != null && args.Length > 0)
+                        {
+                            formattedMessage = LogMessageFormatter.TryFormat(_subCategoryName, formattedMessage, exception, args) ?? string.Empty;
+                        }
 
-                    logAttributes ??= new LogAttributes();
-                    logAttributes.UnityContextObject = context;
-                    var timeStamp = _utilitySupplier.GetTimeStamp();
-                    logAttributes.TimeStampFormatted = timeStamp.Item2;
-                    logAttributes.TimeUtc = timeStamp.Item1;
-                    logAttributes.StackTrace = stackTrace;
-                    logAttributes.Tags = _utilitySupplier.TagsRegistry.GetAllTags();
+                        if (formattedMessage.Length > _messageMaxLength)
+                        {
+                            formattedMessage = formattedMessage.Substring(0, (int) _messageMaxLength);
+                            formattedMessage = StringOperations.Concat(formattedMessage, "\n--Truncated--");
+                        }
 
-                    if (exception != null)
-                    {
-                        var reportedException = ExceptionFingerprint.Unwrap(exception);
-                        logAttributes.Add(ExceptionTypeAttributeKey, reportedException.GetType().FullName ?? reportedException.GetType().Name);
-                        logAttributes.Add(FingerprintAttributeKey, ExceptionFingerprint.Compute(reportedException));
-                    }
+                        logAttributes ??= new LogAttributes();
+                        logAttributes.UnityContextObject = context;
+                        var timeStamp = _utilitySupplier.GetTimeStamp();
+                        logAttributes.TimeStampFormatted = timeStamp.Item2;
+                        logAttributes.TimeUtc = timeStamp.Item1;
+                        logAttributes.StackTrace = stackTrace;
+                        logAttributes.Tags = _utilitySupplier.TagsRegistry.GetAllTags();
+
+                        if (exception != null)
+                        {
+                            var reportedException = ExceptionFingerprint.Unwrap(exception);
+                            logAttributes.Add(ExceptionTypeAttributeKey, reportedException.GetType().FullName ?? reportedException.GetType().Name);
+                            logAttributes.Add(FingerprintAttributeKey, ExceptionFingerprint.Compute(reportedException));
+                        }
 
 #if THEBESTLOGGER_DIAGNOSTICS_ENABLED
-                    logAttributes.Add("LogSourceId", logSourceId);
-                    logAttributes.Add("StackTraceSourceId", stackTrace != null ? "direct" : "recreated");
+                        logAttributes.Add("LogSourceId", logSourceId);
+                        logAttributes.Add("StackTraceSourceId", stackTrace != null ? "direct" : "recreated");
 #endif
-                }
-
-                if (string.IsNullOrEmpty(logAttributes.StackTrace))
-                {
-                    if (logTarget.IsStackTraceEnabled(logLevel, _categoryName))
-                    {
-                        logAttributes.StackTrace = _utilitySupplier.StackTraceFormatter.Extract(exception);
+                        logPrepared = true;
                     }
-                }
 
-                logTarget.Log(logLevel, category, formattedMessage, logAttributes, exception);
+                    if (string.IsNullOrEmpty(logAttributes.StackTrace))
+                    {
+                        if (logTarget.IsStackTraceEnabled(logLevel, _categoryName))
+                        {
+                            logAttributes.StackTrace = _utilitySupplier.StackTraceFormatter.Extract(exception);
+                        }
+                    }
+
+                    logTarget.Log(logLevel, category, formattedMessage, logAttributes, exception);
+                }
+                catch (Exception targetException)
+                {
+                    HandleTargetFailure(logTarget, targetException);
+                }
             }
 #if THEBESTLOGGER_ENABLE_PROFILER
             }
 #endif
+            }
+            finally
+            {
+                _isInsidePipeline = false;
+            }
+        }
+
+        private static bool CanDeliverOnCurrentThread(LogTargetConfiguration configuration, bool isMainThread)
+        {
+            if (configuration == null)
+            {
+                return false;
+            }
+
+            if (configuration.IsThreadSafe || isMainThread)
+            {
+                return true;
+            }
+
+            var dispatch = configuration.DispatchingLogsToMainThread;
+            if (dispatch == null || !dispatch.Enabled)
+            {
+                return false;
+            }
+
+            return configuration.BatchLogs != null && configuration.BatchLogs.Enabled
+                       ? dispatch.BatchLogsDispatchEnabled
+                       : dispatch.SingleLogDispatchEnabled;
+        }
+
+        private void HandleTargetFailure(ILogTarget logTarget, Exception exception)
+        {
+            Diagnostics.Write("Log target " + logTarget.GetType().Name + " failed: " + exception.GetType().Name,
+                              LogLevel.Error,
+                              exception);
+
+            var failureCount = _targetFailureCounts.AddOrUpdate(logTarget, 1, (_, count) => count + 1);
+            if (failureCount < TARGET_FAILURES_BEFORE_MUTE)
+            {
+                return;
+            }
+
+            try
+            {
+                logTarget.Mute(true);
+            }
+            catch (Exception muteException)
+            {
+                Diagnostics.Write("Failed to mute log target " + logTarget.GetType().Name,
+                                  LogLevel.Error,
+                                  muteException);
+            }
         }
     }
 }

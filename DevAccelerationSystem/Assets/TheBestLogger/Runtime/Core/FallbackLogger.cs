@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using Cysharp.Text;
 using TheBestLogger.Core.Utilities;
 using UnityEngine;
 using UnityEngine.Scripting;

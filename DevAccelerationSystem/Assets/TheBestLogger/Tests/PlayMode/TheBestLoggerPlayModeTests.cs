@@ -184,7 +184,7 @@ namespace TheBestLogger.Tests.PlayMode
                                                     });
 
                 Assert.That(exceptions, Is.Empty);
-                Assert.That(syncContext.PendingCount, Is.EqualTo(workerCount * logsPerWorkerPerFrame));
+                Assert.That(syncContext.PendingCount, Is.EqualTo(1));
 
                 yield return null;
 

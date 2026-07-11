@@ -10,8 +10,14 @@ namespace TheBestLogger.Core.Utilities
                                            Exception ex,
                                            in T1 a1)
         {
-            
-            return Build(category, StringOperations.Format(message, a1), ex);
+            try
+            {
+                return Build(category, StringOperations.Format(message, a1), ex);
+            }
+            catch (Exception)
+            {
+                return BuildFormatError(category, message);
+            }
         }
 
         public static string TryFormat<T1, T2>(string category,
@@ -20,7 +26,14 @@ namespace TheBestLogger.Core.Utilities
                                                in T1 a1,
                                                in T2 a2)
         {
-            return Build(category, StringOperations.Format(message, a1, a2), ex);
+            try
+            {
+                return Build(category, StringOperations.Format(message, a1, a2), ex);
+            }
+            catch (Exception)
+            {
+                return BuildFormatError(category, message);
+            }
         }
 
         public static string TryFormat<T1, T2, T3>(string category,
@@ -30,14 +43,28 @@ namespace TheBestLogger.Core.Utilities
                                                    in T2 a2,
                                                    in T3 a3)
         {
-            return Build(category, StringOperations.Format(message, a1, a2, a3), ex);
+            try
+            {
+                return Build(category, StringOperations.Format(message, a1, a2, a3), ex);
+            }
+            catch (Exception)
+            {
+                return BuildFormatError(category, message);
+            }
         }
 
         public static string TryFormat(string category,
                                        string message,
                                        Exception ex)
         {
-            return Build(category, message, ex);
+            try
+            {
+                return Build(category, message, ex);
+            }
+            catch (Exception)
+            {
+                return BuildFormatError(category, message);
+            }
         }
 
         private static string Build(string category,
@@ -63,6 +90,21 @@ namespace TheBestLogger.Core.Utilities
                                        Exception ex,
                                        params object[] args)
         {
+            try
+            {
+                return FormatWithArgs(category, message, ex, args);
+            }
+            catch (Exception)
+            {
+                return BuildFormatError(category, message);
+            }
+        }
+
+        private static string FormatWithArgs(string category,
+                                             string message,
+                                             Exception ex,
+                                             object[] args)
+        {
             // Append exception info if present
             if (ex != null)
             {
@@ -87,7 +129,7 @@ namespace TheBestLogger.Core.Utilities
                         _ => string.Format(message, args)
                     };
                 }
-                catch (FormatException)
+                catch (Exception)
                 {
                     formatError = true;
                 }
@@ -95,9 +137,7 @@ namespace TheBestLogger.Core.Utilities
 
             if (formatError)
             {
-                return string.IsNullOrEmpty(category)
-                           ? StringOperations.Concat(message, " => cannot be formatted")
-                           : StringOperations.Concat("<", category, "> ", message, " => cannot be formatted");
+                return BuildFormatError(category, message);
             }
             else
             {
@@ -105,6 +145,14 @@ namespace TheBestLogger.Core.Utilities
                            ? formattedMessage
                            : StringOperations.Concat("<", category, "> ", formattedMessage);
             }
+        }
+
+        private static string BuildFormatError(string category, string message)
+        {
+            message ??= string.Empty;
+            return string.IsNullOrEmpty(category)
+                       ? StringOperations.Concat(message, " => cannot be formatted")
+                       : StringOperations.Concat("<", category, "> ", message, " => cannot be formatted");
         }
 
         public static string ToSimpleNotEscapedJson(this List<KeyValuePair<string, object>> keyValuePairs)

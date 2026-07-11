@@ -413,6 +413,61 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
+        public void RemoteConfig_EnableDispatchAfterInitialization_StillUsesDecorator()
+        {
+            var queuedContext = new QueuedSynchronizationContext();
+            var previousContext = SynchronizationContext.Current;
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(queuedContext);
+                InitializeForTests("debug-user");
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previousContext);
+            }
+
+            AssertTryApplyRemoteConfigurationPatchSucceeds(
+                nameof(TrackingLogTargetConfiguration),
+                "{\"IsThreadSafe\":false,\"DispatchingLogsToMainThread\":{" +
+                "\"Enabled\":true,\"SingleLogDispatchEnabled\":true,\"BatchLogsDispatchEnabled\":true}}" );
+
+            var logger = LogManager.CreateLogger("RemoteDispatch");
+            RunOnWorkerThread(() => logger.LogWarning("queued after remote enable",
+                                                       new LogAttributes(LogImportance.Important)));
+
+            Assert.That(_trackingTarget.LoggedEntries, Is.Empty);
+            Assert.That(queuedContext.PendingCount, Is.EqualTo(1));
+
+            queuedContext.FlushPostedCallbacks();
+
+            Assert.That(_trackingTarget.LoggedEntries.Count, Is.EqualTo(1));
+            Assert.That(_trackingTarget.LoggedEntries[0].Message, Does.Contain("queued after remote enable"));
+        }
+
+        [Test]
+        public void RemoteConfig_EnableBatchAfterInitialization_UsesBatchDecorator()
+        {
+            InitializeForTests("debug-user");
+            var logger = LogManager.CreateLogger("RemoteBatch");
+
+            AssertTryApplyRemoteConfigurationPatchSucceeds(
+                nameof(TrackingLogTargetConfiguration),
+                "{\"BatchLogs\":{\"Enabled\":true,\"MaxCountLogs\":2,\"UpdatePeriodMs\":100000}}" );
+
+            logger.LogWarning("buffered after remote enable", new LogAttributes(LogImportance.Important));
+            Assert.That(_trackingTarget.LoggedEntries, Is.Empty);
+
+            AssertTryApplyRemoteConfigurationPatchSucceeds(
+                nameof(TrackingLogTargetConfiguration),
+                "{\"BatchLogs\":{\"Enabled\":false}}" );
+            logger.LogWarning("direct after remote disable", new LogAttributes(LogImportance.Important));
+
+            Assert.That(_trackingTarget.LoggedEntries.Count, Is.EqualTo(1));
+            Assert.That(_trackingTarget.LoggedEntries[0].Message, Does.Contain("direct after remote disable"));
+        }
+
+        [Test]
         public void ApplyRemoteConfigurationPatch_PreservesOmittedTargetsAndPersistsThem()
         {
             var unityEditorConsoleTarget = new UnityEditorConsoleLogTarget();
@@ -1633,6 +1688,34 @@ namespace TheBestLogger.Tests.Editor
         private void InitializeForTests(string debugId)
         {
             LogManager.Initialize(new LogTarget[] { _trackingTarget }, DefaultResourceSubFolder, CancellationToken.None, debugId);
+        }
+
+        private static void RunOnWorkerThread(ThreadStart action)
+        {
+            Exception exception = null;
+            using var completed = new ManualResetEventSlim(false);
+            var worker = new Thread(() =>
+            {
+                try
+                {
+                    action.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    exception = ex;
+                }
+                finally
+                {
+                    completed.Set();
+                }
+            });
+
+            worker.Start();
+            Assert.That(completed.Wait(TimeSpan.FromSeconds(5)), Is.True, "Worker thread timed out.");
+            if (exception != null)
+            {
+                throw exception;
+            }
         }
 
         private static TrackingLogTargetConfiguration CreateDefaultTrackingTargetConfiguration(bool debugModeEnabled = true,

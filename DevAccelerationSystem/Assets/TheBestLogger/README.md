@@ -5,9 +5,10 @@ Configurable logging package for Unity projects with runtime logging, structured
 ## Current Package Baseline
 
 - Package id: `com.foxsterdev.thebestlogger`
-- Latest tagged release: `3.0.0`
+- Current release: `4.4.0`
 - Declared Unity baseline: `2022.3`
-- This workspace currently resolves `com.cysharp.zstring` from `Packages/ZString.Unity.2.6.0.tgz`
+- `TheBestLogger.Core.Utilities` automatically enables the optimized ZString paths through `THEBESTLOGGER_ZSTRING_ENABLED` when `com.cysharp.zstring` is resolved.
+- The package-owned fallback paths remain covered for configurations where the ZString define is not active.
 - This workspace also includes `com.unity.test-framework.performance@3.1.0` for package performance measurements
 
 ## Installation
@@ -17,7 +18,7 @@ Configurable logging package for Unity projects with runtime logging, structured
 Use the tagged package path:
 
 ```text
-https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/TheBestLogger#3.0.0
+https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/TheBestLogger#4.4.0
 ```
 
 ### Install manually via `manifest.json`
@@ -25,7 +26,7 @@ https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSyst
 ```json
 {
   "dependencies": {
-    "com.foxsterdev.thebestlogger": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/TheBestLogger#3.0.0"
+    "com.foxsterdev.thebestlogger": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/TheBestLogger#4.4.0"
   }
 }
 ```
@@ -43,6 +44,8 @@ https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSyst
   - unobserved `UniTask` exceptions
   - current-domain unhandled exceptions
   - optional `System.Diagnostics` debug and console sources
+
+The StabilityHub monitoring presets do not automatically enable Unity's native Crash Reporting API. Opt in to `AutoProjectSettingsSetup` only when Unity Crash Reporting is the sole native crash reporter; it must remain disabled when Firebase Crashlytics, Sentry, Backtrace, or another native crash SDK owns the process crash handlers.
 
 ## Built-In And Example Targets
 

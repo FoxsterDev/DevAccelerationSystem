@@ -9,7 +9,7 @@ namespace StabilityHub.Monitoring
         [Tooltip("The full disable or enable the crashreporter module")]
         public bool Enabled;
         [FormerlySerializedAs("AutoSetup")]
-        [Tooltip("If AutoSetup =false you have to manually in build sequence to call CrashReportingPreprocessBuildStep.EnableCrashReporting(). In case true the step will be automatically called")]
+        [Tooltip("Opt in only when Unity Crash Reporting is the sole native crash reporter. Keep disabled when Firebase Crashlytics, Sentry, Backtrace, or another native crash SDK is installed because their crash handlers are mutually exclusive.")]
         public bool AutoProjectSettingsSetup;
         public CrashReporteriOSConfiguration IOS;
     }

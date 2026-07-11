@@ -51,7 +51,7 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
-        public void DispatchingTarget_ConcurrentBurst_QueuesThenFlushesAllLogs()
+        public void DispatchingTarget_ConcurrentBurst_BoundsQueueAndFlushesRetainedLogs()
         {
             const int workerCount = 8;
             const int logsPerWorker = 150;
@@ -81,12 +81,13 @@ namespace TheBestLogger.Tests.Editor
                                                 (workerId, iteration) => logger.LogInfo($"dispatch-{workerId}-{iteration}"));
 
             Assert.That(exceptions, Is.Empty);
-            Assert.That(synchronizationContext.PendingCount, Is.EqualTo(workerCount * logsPerWorker));
+            Assert.That(synchronizationContext.PendingCount, Is.EqualTo(1));
             Assert.That(originalTarget.LoggedCount, Is.EqualTo(0));
 
             synchronizationContext.FlushPostedCallbacks();
 
-            Assert.That(originalTarget.LoggedCount, Is.EqualTo(workerCount * logsPerWorker));
+            Assert.That(originalTarget.LoggedCount, Is.EqualTo(1025));
+            Assert.That(originalTarget.LoggedEntries.Count(entry => entry.Category == "TheBestLogger"), Is.EqualTo(1));
         }
 
         [Test]

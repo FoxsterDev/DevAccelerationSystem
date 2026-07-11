@@ -112,6 +112,104 @@ namespace TheBestLogger.Tests.Editor
             Assert.IsFalse(_logDecoratedTarget.Configuration.DispatchingLogsToMainThread.Enabled);
         }
 
+        [Test]
+        public void Log_WhenMoreThanOneTickBudgetIsQueued_DrainsOnlyOneBudgetPerCallback()
+        {
+            RunOnWorkerThread(() =>
+            {
+                for (var index = 0; index < 100; index++)
+                {
+                    _logDecoratedTarget.Log(LogLevel.Info,
+                                            "TestCategory",
+                                            "Message " + index,
+                                            new LogAttributes(LogImportance.Important),
+                                            null);
+                }
+            });
+
+            Assert.That(_synchronizationContext.PendingCount, Is.EqualTo(1));
+            Assert.That(_synchronizationContext.FlushOnePostedCallback(), Is.True);
+            Assert.That(_mockLogTarget.LoggedEntries.Count, Is.EqualTo(64));
+            Assert.That(_synchronizationContext.PendingCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void LogBatch_WhenBatchExceedsTickBudget_SplitsWorkAcrossCallbacks()
+        {
+            RunOnWorkerThread(() =>
+            {
+                var logBatch = new List<LogEntry>();
+                for (var index = 0; index < 100; index++)
+                {
+                    logBatch.Add(new LogEntry(LogLevel.Info,
+                                              "TestCategory",
+                                              "Message " + index,
+                                              new LogAttributes(LogImportance.Important),
+                                              null));
+                }
+
+                _logDecoratedTarget.LogBatch(logBatch);
+            });
+
+            Assert.That(_synchronizationContext.PendingCount, Is.EqualTo(1));
+            Assert.That(_synchronizationContext.FlushOnePostedCallback(), Is.True);
+            Assert.That(_mockLogTarget.LoggedEntries.Count, Is.EqualTo(64));
+            Assert.That(_synchronizationContext.PendingCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void DispatchOverflow_WithFullBatchSegments_MakesPayloadProgress()
+        {
+            RunOnWorkerThread(() =>
+            {
+                var logBatch = new List<LogEntry>();
+                for (var index = 0; index < 1088; index++)
+                {
+                    logBatch.Add(new LogEntry(LogLevel.Info,
+                                              "TestCategory",
+                                              "Message " + index,
+                                              new LogAttributes(LogImportance.Important),
+                                              null));
+                }
+
+                _logDecoratedTarget.LogBatch(logBatch);
+            });
+
+            Assert.That(_synchronizationContext.FlushOnePostedCallback(), Is.True);
+            Assert.That(_mockLogTarget.LoggedEntries.Count, Is.EqualTo(65));
+            Assert.That(_mockLogTarget.LoggedEntries[0].Category, Is.EqualTo("TheBestLogger"));
+            Assert.That(_mockLogTarget.LoggedEntries[0].Message, Does.Contain("Dropped 64 pending"));
+            Assert.That(_mockLogTarget.LoggedEntries[1].Category, Is.EqualTo("TestCategory"));
+        }
+
+        [Test]
+        public void QueuedThrowingTarget_StopsAfterMuteThreshold()
+        {
+            var throwingTarget = new ThrowingLogTarget();
+            var decoratedTarget = new LogTargetDispatchingLogsToMainThreadDecoration(_config,
+                                                                                       throwingTarget,
+                                                                                       _synchronizationContext,
+                                                                                       _utilitySupplier);
+
+            RunOnWorkerThread(() =>
+            {
+                for (var index = 0; index < 100; index++)
+                {
+                    ((ILogTarget) decoratedTarget).Log(LogLevel.Info,
+                                                       "TestCategory",
+                                                       "Message " + index,
+                                                       new LogAttributes(LogImportance.Important),
+                                                       null);
+                }
+            });
+
+            _synchronizationContext.FlushPostedCallbacks();
+
+            Assert.That(throwingTarget.LogCallCount, Is.EqualTo(3));
+            Assert.That(throwingTarget.IsLogLevelAllowed(LogLevel.Info, "TestCategory"), Is.False);
+            Assert.That(_synchronizationContext.PendingCount, Is.EqualTo(0));
+        }
+
         private static void RunOnWorkerThread(ThreadStart action)
         {
             Exception exception = null;
@@ -137,6 +235,21 @@ namespace TheBestLogger.Tests.Editor
             if (exception != null)
             {
                 throw exception;
+            }
+        }
+
+        private sealed class ThrowingLogTarget : MockLogTarget
+        {
+            public int LogCallCount { get; private set; }
+
+            public override void Log(LogLevel level,
+                                     string category,
+                                     string message,
+                                     LogAttributes logAttributes,
+                                     Exception exception)
+            {
+                LogCallCount++;
+                throw new InvalidOperationException("Expected test failure.");
             }
         }
     }

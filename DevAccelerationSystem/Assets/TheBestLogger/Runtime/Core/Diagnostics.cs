@@ -75,30 +75,36 @@ namespace TheBestLogger
                                  [CallerFilePath] string filePath = "",
                                  [CallerLineNumber] int lineNumber = 0)
         {
-            if (level < Instance._minLogLevel)
+            try
             {
-                return;
-            }
+                if (level < Instance._minLogLevel)
+                {
+                    return;
+                }
 
-            var exString = string.Empty;
-            if (ex != null)
+                var exString = string.Empty;
+                if (ex != null)
+                {
+                    exString = $"\n\n-->Exception message: {ex.Message}\nStacktrace:{ex.StackTrace}";
+                }
+
+                var mainThread = Thread.CurrentThread.ManagedThreadId == Instance._mainThreadId
+                                     ? ""
+                                     : "BackThread";
+                var fileName = string.IsNullOrEmpty(filePath)
+                                   ? "Unknown File"
+                                   : Path.GetFileName(filePath);
+                var logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} {level}: {fileName}:{lineNumber}-[{memberName}][{mainThread}:{Thread.CurrentThread.ManagedThreadId}]-->{message} {exString}";
+                if (string.IsNullOrEmpty(writerId))
+                {
+                    writerId = "Main";
+                }
+
+                Instance.GetWriter(writerId)?.Write(logEntry);
+            }
+            catch (Exception)
             {
-                exString = $"\n\n-->Exception message: {ex?.Message}\nStacktrace:{ex?.StackTrace}";
             }
-
-            var mainThread = Thread.CurrentThread.ManagedThreadId == Instance._mainThreadId
-                                 ? ""
-                                 : "BackThread";
-            var fileName = string.IsNullOrEmpty(filePath)
-                               ? "Unknown File"
-                               : Path.GetFileName(filePath);
-            var logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} {level}: {fileName}:{lineNumber}-[{memberName}][{mainThread}:{Thread.CurrentThread.ManagedThreadId}]-->{message} {exString}";
-            if (string.IsNullOrEmpty(writerId))
-            {
-                writerId = "Main";
-            }
-
-            Instance.GetWriter(writerId)?.Write(logEntry);
         }
     }
 }

@@ -61,6 +61,7 @@ namespace TheBestLogger
             DebugMode ??= new DebugModeConfiguration();
             DebugMode.ApplyRuntimeDefaults();
             BatchLogs ??= new LogTargetBatchLogsConfiguration();
+            BatchLogs.ApplyRuntimeDefaults();
             DispatchingLogsToMainThread ??= new LogTargetDispatchingLogsToMainThreadConfiguration();
             StackTraces ??= CreateDefaultStackTraceConfiguration();
         }

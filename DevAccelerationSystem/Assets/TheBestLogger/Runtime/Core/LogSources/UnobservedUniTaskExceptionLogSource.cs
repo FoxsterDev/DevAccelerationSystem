@@ -24,20 +24,26 @@ namespace TheBestLogger
 
         private void OnUnobservedTaskException(Exception obj)
         {
-            if (_logConsumer == null)
+            var logConsumer = _logConsumer;
+            if (logConsumer == null)
             {
                 return;
             }
 
             if (obj != null)
             {
-                _logConsumer.LogFormat(LogLevel.Exception, nameof(UnobservedUniTaskExceptionLogSource), string.Empty, obj);
+                LogSourceSafety.TryLog(logConsumer,
+                                       LogLevel.Exception,
+                                       nameof(UnobservedUniTaskExceptionLogSource),
+                                       string.Empty,
+                                       obj);
             }
             else
             {
-                _logConsumer.LogFormat(
-                    LogLevel.Exception, nameof(UnobservedUniTaskExceptionLogSource),
-                    "UnobservedUniTaskException is null", null);
+                LogSourceSafety.TryLog(logConsumer,
+                                       LogLevel.Exception,
+                                       nameof(UnobservedUniTaskExceptionLogSource),
+                                       "UnobservedUniTaskException is null");
             }
         }
 

@@ -30,6 +30,66 @@ namespace TheBestLogger.Core.Utilities
             return StringBuilder.ToString();
         }
 
+        public void Append(char value)
+        {
+            StringBuilder.Append(value);
+        }
+
+        public void Append(string value)
+        {
+            StringBuilder.Append(value);
+        }
+
+        public void Append(object value)
+        {
+            StringBuilder.Append(value);
+        }
+
+        public void Append(bool value)
+        {
+            StringBuilder.Append(value);
+        }
+
+        public void Append(int value)
+        {
+            StringBuilder.Append(value);
+        }
+
+        public void Append(uint value)
+        {
+            StringBuilder.Append(value);
+        }
+
+        public void Append(long value)
+        {
+            StringBuilder.Append(value);
+        }
+
+        public void Append(ulong value)
+        {
+            StringBuilder.Append(value);
+        }
+
+        public void Append(float value)
+        {
+            StringBuilder.Append(value);
+        }
+
+        public void Append(double value)
+        {
+            StringBuilder.Append(value);
+        }
+
+        public void Append(ReadOnlySpan<char> value)
+        {
+            StringBuilder.Append(value);
+        }
+
+        public void AppendLine()
+        {
+            StringBuilder.AppendLine();
+        }
+
         public void AppendLine(string line)
         {
             StringBuilder.AppendLine(line);

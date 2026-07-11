@@ -22,7 +22,7 @@ namespace TheBestLogger
             var level = _isError
                             ? LogLevel.Error
                             : LogLevel.Debug;
-            _logConsumer.LogFormat(level, nameof(SystemDiagnosticsConsoleLogSource), message);
+            LogSourceSafety.TryLog(_logConsumer, level, nameof(SystemDiagnosticsConsoleLogSource), message);
             _originalConsoleOutput.Write(message);
         }
 
@@ -31,7 +31,7 @@ namespace TheBestLogger
             var level = _isError
                             ? LogLevel.Error
                             : LogLevel.Debug;
-            _logConsumer.LogFormat(level, nameof(SystemDiagnosticsConsoleLogSource), message);
+            LogSourceSafety.TryLog(_logConsumer, level, nameof(SystemDiagnosticsConsoleLogSource), message);
             _originalConsoleOutput.WriteLine(message);
         }
 

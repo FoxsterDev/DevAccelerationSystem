@@ -179,10 +179,10 @@ namespace TheBestLogger.Examples
             configurationSo.SpecificConfiguration = new AndroidSystemLogTargetConfiguration
             {
                 MinLogLevel = LogLevel.Warning,
-                IsThreadSafe = true,
+                IsThreadSafe = false,
                 DebugMode = new DebugModeConfiguration(),
                 BatchLogs = new LogTargetBatchLogsConfiguration(),
-                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                DispatchingLogsToMainThread = CreateEnabledDispatchConfiguration()
             };
             return configurationSo;
 #elif UNITY_IOS || UNITY_TVOS || UNITY_STANDALONE_OSX
@@ -190,10 +190,10 @@ namespace TheBestLogger.Examples
             configurationSo.SpecificConfiguration = new AppleSystemLogTargetConfiguration
             {
                 MinLogLevel = LogLevel.Warning,
-                IsThreadSafe = true,
+                IsThreadSafe = false,
                 DebugMode = new DebugModeConfiguration(),
                 BatchLogs = new LogTargetBatchLogsConfiguration(),
-                DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                DispatchingLogsToMainThread = CreateEnabledDispatchConfiguration()
             };
             return configurationSo;
 #else
@@ -249,14 +249,14 @@ namespace TheBestLogger.Examples
                     configurationSo.SpecificConfiguration = new OpenSearchLogTargetConfiguration
                     {
                         MinLogLevel = LogLevel.Info,
-                        IsThreadSafe = true,
+                        IsThreadSafe = false,
                         OpenSearchHostUrl = "mock://sample-opensearch",
                         OpenSearchSingleLogMethod = "/logs",
                         IndexPrefix = "thebestlogger-sample-",
                         ApiKey = "sample-demo-key",
                         DebugMode = new DebugModeConfiguration(),
                         BatchLogs = new LogTargetBatchLogsConfiguration(),
-                        DispatchingLogsToMainThread = new LogTargetDispatchingLogsToMainThreadConfiguration()
+                        DispatchingLogsToMainThread = CreateEnabledDispatchConfiguration()
                     };
                     return configurationSo;
                 }
@@ -272,6 +272,16 @@ namespace TheBestLogger.Examples
             }
 
             return null;
+        }
+
+        private static LogTargetDispatchingLogsToMainThreadConfiguration CreateEnabledDispatchConfiguration()
+        {
+            return new LogTargetDispatchingLogsToMainThreadConfiguration
+            {
+                Enabled = true,
+                SingleLogDispatchEnabled = true,
+                BatchLogsDispatchEnabled = true
+            };
         }
 
         private static OpenSearchLogTargetConfigurationSO LoadLocalOpenSearchConfiguration()

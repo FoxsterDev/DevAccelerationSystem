@@ -26,6 +26,17 @@ namespace TheBestLogger.Tests.Editor
                 item.callback(item.state);
             }
         }
+
+        public bool FlushOnePostedCallback()
+        {
+            if (!_queue.TryDequeue(out var item))
+            {
+                return false;
+            }
+
+            item.callback(item.state);
+            return true;
+        }
     }
 
     internal class MakeSynchronizationContext : SynchronizationContext

@@ -51,7 +51,7 @@ namespace TheBestLogger.Tests.Editor
                                                   null);
             });
 
-            Assert.That(syncContext.PendingCount, Is.EqualTo(2));
+            Assert.That(syncContext.PendingCount, Is.EqualTo(1));
             Assert.That(originalTarget.LoggedBatches.Count, Is.EqualTo(0));
 
             syncContext.FlushPostedCallbacks();
@@ -107,7 +107,7 @@ namespace TheBestLogger.Tests.Editor
                 ((IScheduledUpdate) batchingTarget).Update(startTimeUtc.AddMilliseconds(2400), 1200);
             });
 
-            Assert.That(syncContext.PendingCount, Is.EqualTo(2));
+            Assert.That(syncContext.PendingCount, Is.EqualTo(1));
 
             syncContext.FlushPostedCallbacks();
 

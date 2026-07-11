@@ -14,12 +14,12 @@ namespace TheBestLogger
 
         public override void Write(string message)
         {
-            _logConsumer.LogFormat(LogLevel.Debug, nameof(SystemDiagnosticsDebugLogSource), message);
+            LogSourceSafety.TryLog(_logConsumer, LogLevel.Debug, nameof(SystemDiagnosticsDebugLogSource), message);
         }
 
         public override void WriteLine(string message)
         {
-            _logConsumer.LogFormat(LogLevel.Debug, nameof(SystemDiagnosticsDebugLogSource), message);
+            LogSourceSafety.TryLog(_logConsumer, LogLevel.Debug, nameof(SystemDiagnosticsDebugLogSource), message);
         }
 
         protected override void Dispose(bool disposing)
