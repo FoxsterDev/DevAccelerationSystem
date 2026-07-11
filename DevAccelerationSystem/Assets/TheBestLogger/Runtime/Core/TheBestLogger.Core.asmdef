@@ -15,11 +15,6 @@
     "defineConstraints": [],
     "versionDefines": [
         {
-            "name": "com.cysharp.zstring",
-            "expression": "1.0.0",
-            "define": "THEBESTLOGGER_ZSTRING_ENABLED"
-        },
-        {
             "name": "com.cysharp.unitask",
             "expression": "1.0.0",
             "define": "THEBESTLOGGER_UNITASK_ENABLED"
