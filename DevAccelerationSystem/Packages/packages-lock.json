@@ -68,13 +68,6 @@
         "com.unity.modules.imgui": "1.0.0"
       }
     },
-    "com.xuunity.light-mcp": {
-      "version": "https://github.com/FoxsterDev/xuunity-mcp.git?path=/packages/com.xuunity.light-mcp#v0.3.31",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {},
-      "hash": "d7f333f542a1c6d4b0dbd3cac2833074f0099a75"
-    },
     "com.unity.modules.androidjni": {
       "version": "1.0.0",
       "depth": 0,
