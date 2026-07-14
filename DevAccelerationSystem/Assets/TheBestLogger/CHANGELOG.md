@@ -1,5 +1,10 @@
 # Changelog
 
+## [4.4.2] - 2026-07-14
+
+- Released disposal-token registrations during logger shutdown and before reinitialization, preventing a previous logger lifetime from disposing a replacement initialization.
+- Made initialization with an already-cancelled disposal token leave the logger uninitialized instead of reporting a false successful initialization.
+
 ## [4.4.1] - 2026-07-14
 
 - Fixed the performance-test assembly reference to `ZString`, allowing the suite to compile when its public utility API exposes `Utf8ValueStringBuilder`.

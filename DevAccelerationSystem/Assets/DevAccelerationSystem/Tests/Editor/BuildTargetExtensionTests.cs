@@ -20,5 +20,11 @@ namespace DevAccelerationSystem.Tests.Editor
            //assert
            Assert.IsTrue(isSupported, $"The active build target must be available in Unity {Application.unityVersion}.");
        }
+
+       [Test]
+       public void StandaloneOSX_ConvertsToStandaloneBuildTargetGroup()
+       {
+           Assert.That(BuildTarget.StandaloneOSX.ConvertToBuildTargetGroup(), Is.EqualTo(BuildTargetGroup.Standalone));
+       }
     }
 }

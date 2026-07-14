@@ -19,11 +19,25 @@
       "source": "local",
       "dependencies": {}
     },
+    "com.foxsterdev.loqui": {
+      "version": "file:../../DevAccelerationSystem/Assets/Loqui",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.unity.ugui": "1.0.0",
+        "com.unity.textmeshpro": "3.0.7",
+        "com.unity.modules.jsonserialize": "1.0.0"
+      }
+    },
     "com.foxsterdev.thebestlogger": {
       "version": "file:../../DevAccelerationSystem/Assets/TheBestLogger",
       "depth": 0,
       "source": "local",
-      "dependencies": {}
+      "dependencies": {
+        "com.unity.modules.imgui": "1.0.0",
+        "com.unity.modules.jsonserialize": "1.0.0",
+        "com.unity.modules.unitywebrequest": "1.0.0"
+      }
     },
     "com.unity.2d.common": {
       "version": "8.1.1",
@@ -130,6 +144,13 @@
         "com.unity.modules.ui": "1.0.0",
         "com.unity.modules.imgui": "1.0.0"
       }
+    },
+    "com.xuunity.light-mcp": {
+      "version": "https://github.com/FoxsterDev/xuunity-mcp.git?path=/packages/com.xuunity.light-mcp#v0.3.43",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "57171bd2ae8873bb5977d6e35dc197ced5aaa1e1"
     },
     "com.unity.modules.androidjni": {
       "version": "1.0.0",

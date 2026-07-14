@@ -4,9 +4,9 @@ Open-source Unity development tooling collected as three independently installab
 
 | Package | Version | Purpose | Declared Unity floor |
 | --- | --- | --- | --- |
-| [`com.foxsterdev.devaccelerationsystem`](./DevAccelerationSystem/Assets/DevAccelerationSystem) | `1.0.2` | Editor-side compilation checks across build targets and define-symbol combinations. | 2020.3 |
-| [`com.foxsterdev.thebestlogger`](./DevAccelerationSystem/Assets/TheBestLogger) | `4.4.1` | Configurable runtime logging, capture, target isolation, and stability integrations. | 2022.3 |
-| [`com.foxsterdev.loqui`](./DevAccelerationSystem/Assets/Loqui) | `0.3.1` | Fallback-first localization with catalog, TMP, and editor tooling. | 2022.3 |
+| [`com.foxsterdev.devaccelerationsystem`](./DevAccelerationSystem/Assets/DevAccelerationSystem) | `1.0.3` | Editor-side compilation checks across build targets and define-symbol combinations. | 2020.3 |
+| [`com.foxsterdev.thebestlogger`](./DevAccelerationSystem/Assets/TheBestLogger) | `4.4.2` | Configurable runtime logging, capture, target isolation, and stability integrations. | 2022.3 |
+| [`com.foxsterdev.loqui`](./DevAccelerationSystem/Assets/Loqui) | `0.3.2` | Fallback-first localization with catalog, TMP, and editor tooling. | 2022.3 |
 
 ## Choose a package
 
@@ -16,7 +16,7 @@ Open-source Unity development tooling collected as three independently installab
 
 ## Installation
 
-The versions above are release candidates in the current source tree. Their package-specific tags have not been authorized or published, so the Git URLs below are a release recipe, not yet installable public URLs. The historical repository-wide tag `4.4.0` is retained only as an old snapshot and is not a clean standalone-package release.
+The source versions above are the next patch releases. The latest published package-specific tags below are installable public URLs; create and push their matching next-version tags only after the release gates pass. The historical repository-wide tag `4.4.0` is retained only as an old snapshot and is not a clean standalone-package release.
 
 ```json
 {
@@ -28,9 +28,9 @@ The versions above are release candidates in the current source tree. Their pack
 }
 ```
 
-Install only the package you need. Before the release tags exist, use a reviewed commit SHA for a reproducible internal pin; do not use `master` for a production pin.
+Install only the package you need. Pin the package-specific tag for a reproducible production dependency; do not use `master` for a production pin.
 
-OpenUPM publication has not been performed. The repository is prepared for it, but registry submission and release tags require maintainer authorization. See [release policy](./Docs/RELEASES.md).
+OpenUPM publication has not been performed. The repository is prepared for it, but registry submission remains a separate maintainer-authorized action. See [release policy](./Docs/RELEASES.md).
 
 ## Compatibility and support
 

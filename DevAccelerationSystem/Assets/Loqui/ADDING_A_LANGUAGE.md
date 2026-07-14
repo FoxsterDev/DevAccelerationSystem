@@ -9,15 +9,15 @@ How to add a new language to a Loqui catalog and validate it end-to-end. A human
 3. **JSON stays JsonUtility-compatible.** The remote contract (`Remote/LocalizationOverridesDto`) is parsed with `UnityEngine.JsonUtility`. Only `[Serializable]` classes, `string`/`int` fields, and arrays of those — no `Dictionary`, properties, polymorphism, or top-level arrays.
 4. **Remote can override copy for existing keys only.** It cannot introduce new keys or assets in V1.
 5. **Do not convert dynamic/server-owned or analytics strings into static keys.** Localize product-facing UI copy only.
-6. **Composition, not a god asset.** Locale/font config, text, and orchestration are separate ScriptableObjects.
+6. **One self-contained catalog.** Keep locale/font configuration, text entries, and bool configuration inside one `LocalizationCatalog` asset; use each entry's `Group` field to organize feature ownership.
 
 ## Architecture (where things live)
 
 The package namespace is `Loqui` (runtime asmdef `Loqui`, editor drawer in `Loqui.Editor`, tests in `Loqui.Tests`). The runtime facade is `Loc` — each project calls `Loc.Initialize(...)` once from its own bootstrap. Project-specific glue (e.g. build-config validation) lives in **your** project and references the package.
 
-- `LocalizationLocaleSet` (ScriptableObject) — the languages: code, display name, native name, culture name, font profile, enabled flag. Owns locale-level validation.
-- `LocalizationTextTable` (ScriptableObject) — one per feature/screen group (e.g. `settings`, `shop`). Holds `LocalizationEntry` rows: key, English fallback, per-language + per-platform values, context, max-length.
-- `LocalizationCatalog` (ScriptableObject) — **the orchestrator.** References one locale set + N text tables, exposes the unified lookup/validation API, detects duplicate keys across tables. Holds no raw data itself.
+- `LocalizationCatalog` (ScriptableObject) — the single source of localization data. It owns `Languages`, `Texts`, and `Bools`, exposes the unified lookup/validation API, and detects duplicate keys across the complete catalog.
+- `LocalizationLocaleProfile` — an entry in `LocalizationCatalog.Languages`: code, display name, native name, culture name, font profile, and enabled flag.
+- `LocalizationEntry` — an entry in `LocalizationCatalog.Texts`: key, English fallback, per-language plus per-platform values, context, max length, and `Group` for feature/screen ownership (for example `settings` or `shop`).
 - `LocalizationSettingsScope` — your project points it at the `LocalizationCatalog` and holds `EnabledByDefault` + `DefaultLanguageCode`; set it on your build configuration.
 - `LocalizationLanguageResolver` — pure system-language → code mapping + user-choice priority.
 - `LocalizationValidator` — runtime-safe validator usable from a build pre-step and from EditMode tests.
@@ -35,10 +35,10 @@ The package namespace is `Loqui` (runtime asmdef `Loqui`, editor drawer in `Loqu
    - RTL languages (Arabic/Hebrew) are out of scope and need a separate RTL font + layout design first.
 
 3. **Locale profile**
-   - Open the `LocalizationLocaleSet` asset. Add a `LocalizationLocaleProfile`: `LanguageCode = fr-FR`, `DisplayName`, `NativeDisplayName`, `CultureName = fr-FR`, `FontProfile.PrimaryFont = <tmp font>`, `Enabled = true`.
+   - Open the `LocalizationCatalog` asset. Add a `LocalizationLocaleProfile` to `Languages`: `LanguageCode = fr-FR`, `DisplayName`, `NativeDisplayName`, `CultureName = fr-FR`, `FontProfile.PrimaryFont = <tmp font>`, `Enabled = true`.
 
 4. **Translations**
-   - For each relevant `LocalizationTextTable`, add the new language value to every key (`LocalizationLanguageValue { LanguageCode = "fr-FR", Values.Default = "..." }`).
+   - For each relevant entry in `LocalizationCatalog.Texts`, add the new language value (`LocalizationLanguageValue { LanguageCode = "fr-FR", Values.Default = "..." }`). Use the entry's `Group` to keep feature ownership clear.
    - Keep the English fallback intact. Set platform-specific values only when the platform copy differs.
    - Respect each entry's `MaxLength` hint to avoid clipping/overflow.
 

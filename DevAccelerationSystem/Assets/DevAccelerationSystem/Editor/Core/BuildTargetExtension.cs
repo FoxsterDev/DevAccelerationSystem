@@ -29,6 +29,7 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
                 case BuildTarget.StandaloneWindows: return BuildTargetGroup.Standalone;
                 case BuildTarget.StandaloneWindows64: return BuildTargetGroup.Standalone;
                 case BuildTarget.StandaloneLinux64: return BuildTargetGroup.Standalone;
+                case BuildTarget.StandaloneOSX: return BuildTargetGroup.Standalone;
                 #if !UNITY_2023_1_OR_NEWER
                 case BuildTarget.Stadia: return BuildTargetGroup.Stadia;
                 #endif

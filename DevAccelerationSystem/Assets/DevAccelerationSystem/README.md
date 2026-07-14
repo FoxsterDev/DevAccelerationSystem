@@ -4,7 +4,7 @@
 
 ## Package identity
 
-- Version: `1.0.2` (from `package.json`)
+- Source version: `1.0.3` (from `package.json`)
 - Declared Unity floor: `2020.3`
 - Current source path: `DevAccelerationSystem/Assets/DevAccelerationSystem`
 
@@ -18,7 +18,7 @@
 }
 ```
 
-This release-candidate URL becomes installable when the documented package-specific tag is authorized and published. The historical `4.4.0` repository tag is not a package-specific release tag.
+The latest published package-specific tag is `com.foxsterdev.devaccelerationsystem/1.0.2`. Pin that tag for a reproducible installation; do not use `master` as a production dependency. The source version `1.0.3` requires its matching tag after release validation. The historical `4.4.0` repository tag is not a package-specific release tag.
 
 ## Use
 

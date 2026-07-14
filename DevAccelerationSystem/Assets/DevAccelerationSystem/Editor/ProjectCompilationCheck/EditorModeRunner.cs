@@ -134,8 +134,20 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
 
                 CompilationPipeline.assemblyCompilationFinished -= CompilationFinished;
                 CompilationPipeline.assemblyCompilationFinished += CompilationFinished;
-                output.UnityCompilationResult = PlayerBuildInterface.CompilePlayerScripts(compilationConfig, filePath);
-                CompilationPipeline.assemblyCompilationFinished -= CompilationFinished;
+                try
+                {
+                    output.UnityCompilationResult = PlayerBuildInterface.CompilePlayerScripts(compilationConfig, filePath);
+                }
+                catch (System.Exception exception)
+                {
+                    output.ErrorsCount++;
+                    output.ErrorsList += $"[{output.ErrorsCount}]: CompilePlayerScripts threw {exception.GetType().Name}: {exception.Message}\n";
+                    editorLogger.Error($"Compilation failed for {compilationConfig.Name}: {exception.Message}");
+                }
+                finally
+                {
+                    CompilationPipeline.assemblyCompilationFinished -= CompilationFinished;
+                }
                     
                 st.Stop();
                 output.CompilationStats = new CompilationStats{ Name= compilationConfig.Name, CompilationTotalMs = st.ElapsedMilliseconds};

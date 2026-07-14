@@ -48,6 +48,7 @@ namespace TheBestLogger
             }
 
             _wasDisposed = false;
+            ReleaseDisposingTokenRegistration();
 
             try
             {
@@ -57,9 +58,6 @@ namespace TheBestLogger
                 {
                     throw new ArgumentException(nameof(logTargets));
                 }
-
-                _disposingToken = disposingToken;
-                _disposingToken.Register(Dispose);
 
                 logTargets = PatchUnityEditorConsoleLogTarget(logTargets);
 
@@ -155,6 +153,12 @@ namespace TheBestLogger
                     _currentDebugId = debugId;
                     _debugModeRequestedState = true;
                     SetDebugMode(debugId, true);
+                }
+
+                RegisterDisposingToken(disposingToken);
+                if (!_isInitialized)
+                {
+                    return;
                 }
 
                 Diagnostics.Write("LogManager has initialized!");

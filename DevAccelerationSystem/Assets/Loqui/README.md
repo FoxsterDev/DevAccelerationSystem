@@ -6,6 +6,12 @@ Fallback-first localization for Unity. Your code literal stays the default; tran
 label.text = Loc.Get("home.play_now", "Play Now");
 ```
 
+## Scope and maturity
+
+Loqui owns fallback-first text and small configuration localization inside a Unity project: a catalog, language selection, platform overlays, formatting, and opt-in remote overrides. It deliberately does **not** provide a translation-management service, machine translation, a remote content backend, or a logging framework. Logging stays optional through `ILoquiLog`; TheBestLogger integration is isolated in its optional assembly.
+
+The source package version is `0.3.2`; the latest published release is `0.3.1`. The package remains on the `0.x` line. Its current APIs are tested, but `1.0.0` is reserved for an intentional public-API stability decision rather than inferred from adoption.
+
 ## Features
 
 - **Fallback-first** — `Loc.Get(key, literal)` returns the literal when no override exists; never throws on a missing key.
@@ -39,7 +45,7 @@ Add to `Packages/manifest.json`:
 "com.foxsterdev.loqui": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/Loqui#com.foxsterdev.loqui/0.3.1"
 ```
 
-The package-specific `com.foxsterdev.loqui/0.3.1` release tag is prepared but not published yet. Until it is authorized and created, pin a reviewed commit SHA rather than `master`.
+The package-specific `com.foxsterdev.loqui/0.3.1` tag is the latest published release. Pin that tag for a reproducible installation; do not use `master` as a production dependency. The source version `0.3.2` requires its matching tag after release validation.
 
 ## Quick start
 

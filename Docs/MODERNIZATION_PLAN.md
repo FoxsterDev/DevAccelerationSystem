@@ -17,11 +17,11 @@
 
 - [x] Add a single local license-free validation command and PR workflow.
 - [x] Record Unity 2022.3.62f3 Test Runner results: DAS EditMode `7/7`, Loqui EditMode `101/101`, TheBestLogger EditMode `266/266`, and TheBestLogger PlayMode `14/14`.
-- [x] Record clean-project local-file UPM imports for DAS + Loqui and TheBestLogger on Unity 2022.3, 6000.0, and 6000.3; package-specific Git-tag imports remain pending tag publication.
+- [x] Record clean-project local-file UPM imports for DAS + Loqui and TheBestLogger on Unity 2022.3, 6000.0, and 6000.3; package-specific tags are now published, while the fresh clean-project Git-tag import matrix remains pending.
 - [x] Record Unity 6000.0.61f1 and 6000.3.3f1 full-project test results: EditMode `385/385` and PlayMode `14/14` on each editor.
 
 ## Later phases
 
-- [ ] Stabilize Compilation Matrix, TheBestLogger, and Loqui with executed Unity evidence.
+- [x] Stabilize Compilation Matrix, TheBestLogger, and Loqui with executed Unity evidence: DAS EditMode `8/8`; Loqui EditMode `101/101`; TheBestLogger EditMode `269/269` and PlayMode `14/14`; source Android and StandaloneOSX compilation with zero errors; tracked consumer Android compilation with zero errors and Loqui PlayMode `4/4`.
 - [ ] Implement UPM Package Doctor, Define & Build Profile Doctor, and Project Baseline Audit as tested vertical slices.
 - [ ] Prepare release candidate artifacts after Unity validation; never publish without authorization.

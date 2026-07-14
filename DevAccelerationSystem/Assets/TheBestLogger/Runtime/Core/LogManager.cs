@@ -46,6 +46,7 @@ namespace TheBestLogger
         private static bool _wasDisposed = false;
         private static List<IScheduledUpdate> _targetUpdates;
         private static CancellationToken _disposingToken;
+        private static CancellationTokenRegistration _disposingTokenRegistration;
         private static bool _isInitialized = false;
         private static bool _hasWarnedAboutMissingInitialization = false;
         private static readonly ILogger FallbackLogger = new FallbackLogger();
@@ -790,6 +791,31 @@ namespace TheBestLogger
             return logTargets;
         }
 
+        private static void RegisterDisposingToken(CancellationToken disposingToken)
+        {
+            _disposingToken = disposingToken;
+            if (disposingToken.IsCancellationRequested)
+            {
+                Dispose();
+                return;
+            }
+
+            var registration = disposingToken.Register(Dispose);
+            _disposingTokenRegistration = registration;
+
+            if (_wasDisposed)
+            {
+                ReleaseDisposingTokenRegistration();
+            }
+        }
+
+        private static void ReleaseDisposingTokenRegistration()
+        {
+            _disposingTokenRegistration.Dispose();
+            _disposingTokenRegistration = default;
+            _disposingToken = default;
+        }
+
         public static void Dispose()
         {
             if (_wasDisposed)
@@ -799,6 +825,7 @@ namespace TheBestLogger
 
             _wasDisposed = true;
             Diagnostics.Write("is disposing!");
+            ReleaseDisposingTokenRegistration();
 
             _isInitialized = false;
             _hasWarnedAboutMissingInitialization = false;

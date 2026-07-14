@@ -8,8 +8,8 @@ namespace LoquiSample.Tests
     {
         public static LocalizationSettingsScope Settings(List<Object> sink)
         {
-            var locales = Create<LocalizationLocaleSet>(sink);
-            locales.Languages = new List<LocalizationLocaleProfile>
+            var catalog = Create<LocalizationCatalog>(sink);
+            catalog.Languages = new List<LocalizationLocaleProfile>
             {
                 new()
                 {
@@ -29,14 +29,13 @@ namespace LoquiSample.Tests
                 }
             };
 
-            var table = Create<LocalizationTextTable>(sink);
-            table.Group = "demo";
-            table.Entries = new List<LocalizationEntry>
+            catalog.Texts = new List<LocalizationEntry>
             {
                 new()
                 {
                     Key = "greeting",
                     EnglishFallback = "Hello",
+                    Group = "demo",
                     Languages = new List<LocalizationLanguageValue>
                     {
                         new() { LanguageCode = "en", Values = new LocalizationPlatformValues { Default = "Hello" } },
@@ -44,10 +43,6 @@ namespace LoquiSample.Tests
                     }
                 }
             };
-
-            var catalog = Create<LocalizationCatalog>(sink);
-            catalog.Locales = locales;
-            catalog.TextTables = new List<LocalizationTextTable> { table };
 
             return new LocalizationSettingsScope
             {

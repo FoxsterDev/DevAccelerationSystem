@@ -1454,6 +1454,60 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
+        public void Initialize_AfterDispose_DoesNotKeepPreviousDisposalTokenRegistration()
+        {
+            using var previousLifetime = new CancellationTokenSource();
+            LogManager.Initialize(new LogTarget[] { _trackingTarget },
+                                  DefaultResourceSubFolder,
+                                  previousLifetime.Token,
+                                  "debug-user");
+            LogManager.Dispose();
+
+            var replacementTarget = new TrackingLogTarget();
+            LogManager.Initialize(new LogTarget[] { replacementTarget },
+                                  DefaultResourceSubFolder,
+                                  CancellationToken.None,
+                                  "debug-user");
+
+            previousLifetime.Cancel();
+
+            var logger = LogManager.CreateLogger("Gameplay");
+            logger.LogWarning("current runtime remains active");
+
+            Assert.That(logger, Is.TypeOf<CoreLogger>());
+            Assert.That(replacementTarget.LoggedEntries, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void Initialize_WithAlreadyCancelledDisposalToken_LeavesManagerUninitialized()
+        {
+            using var cancelledLifetime = new CancellationTokenSource();
+            cancelledLifetime.Cancel();
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget },
+                                  DefaultResourceSubFolder,
+                                  cancelledLifetime.Token,
+                                  "debug-user");
+
+            Assert.That(LogManager.GetCurrentLogTargetConfigurationsSnapshot(), Is.Empty);
+        }
+
+        [Test]
+        public void Initialize_WithDisposalTokenCancellation_DisposesManager()
+        {
+            using var lifetime = new CancellationTokenSource();
+            LogManager.Initialize(new LogTarget[] { _trackingTarget },
+                                  DefaultResourceSubFolder,
+                                  lifetime.Token,
+                                  "debug-user");
+
+            lifetime.Cancel();
+
+            Assert.That(_trackingTarget.DisposeCallCount, Is.EqualTo(1));
+            Assert.That(LogManager.GetCurrentLogTargetConfigurationsSnapshot(), Is.Empty);
+        }
+
+        [Test]
         public void CreateLogger_AfterDispose_ReturnsFallbackLogger()
         {
             InitializeForTests("debug-user");

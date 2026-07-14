@@ -10,7 +10,7 @@ New releases use these exact tag names:
 - `com.foxsterdev.thebestlogger/<version>`
 - `com.foxsterdev.loqui/<version>`
 
-For example, `com.foxsterdev.loqui/0.3.1`. The prefix is the OpenUPM `gitTagPrefix` value for that package. Historical bare tags remain historical snapshots and must not be treated as independent package releases.
+For example, `com.foxsterdev.loqui/0.3.2`. The prefix is the OpenUPM `gitTagPrefix` value for that package. Historical bare tags remain historical snapshots and must not be treated as independent package releases.
 
 ## Lifecycle
 
