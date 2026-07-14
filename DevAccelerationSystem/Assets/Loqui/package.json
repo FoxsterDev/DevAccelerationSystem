@@ -1,7 +1,7 @@
 {
   "name": "com.foxsterdev.loqui",
   "displayName": "Loqui",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "unity": "2022.3",
   "keywords": [
     "unity",
@@ -27,7 +27,8 @@
   },
   "dependencies": {
     "com.unity.ugui": "1.0.0",
-    "com.unity.textmeshpro": "3.0.7"
+    "com.unity.textmeshpro": "3.0.7",
+    "com.unity.modules.jsonserialize": "1.0.0"
   },
   "testables": [
     "Loqui.Tests"

@@ -4,7 +4,7 @@
 
 ## Package identity
 
-- Version: `1.0.1` (from `package.json`)
+- Version: `1.0.2` (from `package.json`)
 - Declared Unity floor: `2020.3`
 - Current source path: `DevAccelerationSystem/Assets/DevAccelerationSystem`
 
@@ -13,12 +13,12 @@
 ```json
 {
   "dependencies": {
-    "com.foxsterdev.devaccelerationsystem": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/DevAccelerationSystem#4.4.0"
+    "com.foxsterdev.devaccelerationsystem": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/DevAccelerationSystem#com.foxsterdev.devaccelerationsystem/1.0.2"
   }
 }
 ```
 
-`4.4.0` is the verified legacy repository snapshot containing this package version. Future package-specific releases use the format `com.foxsterdev.devaccelerationsystem/<package.json version>`.
+This release-candidate URL becomes installable when the documented package-specific tag is authorized and published. The historical `4.4.0` repository tag is not a package-specific release tag.
 
 ## Use
 

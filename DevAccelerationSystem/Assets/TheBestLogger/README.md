@@ -5,7 +5,7 @@ Configurable logging package for Unity projects with runtime logging, structured
 ## Current Package Baseline
 
 - Package id: `com.foxsterdev.thebestlogger`
-- Current release: `4.4.0`
+- Current release candidate: `4.4.1`
 - Declared Unity baseline: `2022.3`
 - `TheBestLogger.Core.Utilities` automatically enables the optimized ZString paths through `THEBESTLOGGER_ZSTRING_ENABLED` when `com.cysharp.zstring` is resolved.
 - The package-owned fallback paths remain covered for configurations where the ZString define is not active.
@@ -15,10 +15,10 @@ Configurable logging package for Unity projects with runtime logging, structured
 
 ### Install via UPM
 
-Use the verified legacy repository snapshot path:
+Use the package-specific release path after its tag is published:
 
 ```text
-https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/TheBestLogger#4.4.0
+https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/TheBestLogger#com.foxsterdev.thebestlogger/4.4.1
 ```
 
 ### Install manually via `manifest.json`
@@ -26,7 +26,7 @@ https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSys
 ```json
 {
   "dependencies": {
-    "com.foxsterdev.thebestlogger": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/TheBestLogger#4.4.0"
+    "com.foxsterdev.thebestlogger": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/TheBestLogger#com.foxsterdev.thebestlogger/4.4.1"
   }
 }
 ```

@@ -36,8 +36,10 @@ ILoquiLog log = new Loqui.Integrations.TheBestLoggerLoquiLog(myTheBestLogger);
 
 Add to `Packages/manifest.json`:
 ```json
-"com.foxsterdev.loqui": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/Loqui#4.4.0"
+"com.foxsterdev.loqui": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/Loqui#com.foxsterdev.loqui/0.3.1"
 ```
+
+The package-specific `com.foxsterdev.loqui/0.3.1` release tag is prepared but not published yet. Until it is authorized and created, pin a reviewed commit SHA rather than `master`.
 
 ## Quick start
 

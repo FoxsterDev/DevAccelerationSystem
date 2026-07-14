@@ -1,8 +1,11 @@
 # Changelog
 
-## Unreleased
+## [4.4.1] - 2026-07-14
 
 - Fixed the performance-test assembly reference to `ZString`, allowing the suite to compile when its public utility API exposes `Utf8ValueStringBuilder`.
+- Declared the built-in `com.unity.modules.jsonserialize` dependency required by runtime configuration serialization.
+- Declared the built-in `com.unity.modules.imgui` dependency required by the IMGUI runtime-viewer example.
+- Declared the built-in `com.unity.modules.unitywebrequest` dependency required by the OpenSearch example target.
 
 ## [4.4.0] - 2026-07-11
 - Hardened log-source, diagnostics, update-loop, and target delivery boundaries so consumer or target exceptions cannot escape into application callbacks.

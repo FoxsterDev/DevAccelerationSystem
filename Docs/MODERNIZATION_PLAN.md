@@ -16,8 +16,9 @@
 ## Phase 2 — reproducible validation
 
 - [x] Add a single local license-free validation command and PR workflow.
-- [ ] Record Unity Test Runner results on 2022.3, 6000.0, and 6000.3 (2022.3.62f3 compilation succeeded; no test result XML was emitted).
-- [ ] Record clean-project Git UPM import results from Unity.
+- [x] Record Unity 2022.3.62f3 Test Runner results: DAS EditMode `7/7`, Loqui EditMode `101/101`, TheBestLogger EditMode `266/266`, and TheBestLogger PlayMode `14/14`.
+- [x] Record clean-project local-file UPM imports for DAS + Loqui and TheBestLogger on Unity 2022.3, 6000.0, and 6000.3; package-specific Git-tag imports remain pending tag publication.
+- [x] Record Unity 6000.0.61f1 and 6000.3.3f1 full-project test results: EditMode `385/385` and PlayMode `14/14` on each editor.
 
 ## Later phases
 

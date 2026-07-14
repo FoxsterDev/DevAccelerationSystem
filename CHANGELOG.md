@@ -7,6 +7,7 @@ This is the repository timeline. The canonical changelog for each release line i
 - Established package-specific metadata, documentation, validation, and future tag strategy without publishing a release.
 - Fixed Dev Acceleration System's build-target check to use Unity's public API and fixed its successful configuration-create return value.
 - Isolated Logger's reflective Editor-console implementation from player compilation.
+- Declared the Unity module dependencies required for standalone Loqui and TheBestLogger UPM imports, and validated release candidates in Unity 2022.3, 6000.0, and 6000.3.
 
 ## [4.4.0] - 2026-07-11
 

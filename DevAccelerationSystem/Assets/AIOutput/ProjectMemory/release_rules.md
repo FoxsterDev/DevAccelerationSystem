@@ -5,9 +5,9 @@ Define the durable release-facing rules for `DevAccelerationSystem`.
 
 ## Release Identity
 - Package versions are sourced only from package manifests:
-  - `com.foxsterdev.devaccelerationsystem` `1.0.1`
-  - `com.foxsterdev.thebestlogger` `4.4.0`
-  - `com.foxsterdev.loqui` `0.3.0`
+  - `com.foxsterdev.devaccelerationsystem` `1.0.2`
+  - `com.foxsterdev.thebestlogger` `4.4.1`
+  - `com.foxsterdev.loqui` `0.3.1`
 - Future releases use `<package-id>/<version>` tags; existing bare tags are legacy repository snapshots.
 
 ## Release Gates

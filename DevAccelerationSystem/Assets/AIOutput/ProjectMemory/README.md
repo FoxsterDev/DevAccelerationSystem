@@ -13,9 +13,9 @@ Bootstrap status: seeded from `WORKSPACE.md`, repo layout, and current AI routin
 
 ## Verified Current Claims
 - Public package identities currently present in source:
-  - `com.foxsterdev.devaccelerationsystem` `1.0.1` (`Assets/DevAccelerationSystem/`)
-  - `com.foxsterdev.thebestlogger` `4.4.0` (`Assets/TheBestLogger/`)
-  - `com.foxsterdev.loqui` `0.3.0` (`Assets/Loqui/`)
+  - `com.foxsterdev.devaccelerationsystem` `1.0.2` (`Assets/DevAccelerationSystem/`)
+  - `com.foxsterdev.thebestlogger` `4.4.1` (`Assets/TheBestLogger/`)
+  - `com.foxsterdev.loqui` `0.3.1` (`Assets/Loqui/`)
 - Declared Unity floors in manifests: `2020.3` for Dev Acceleration System; `2022.3` for TheBestLogger and Loqui.
 - Additional source surfaces are package roots, not secondary unversioned content.
 - Test surface present:

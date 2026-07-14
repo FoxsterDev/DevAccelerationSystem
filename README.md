@@ -4,9 +4,9 @@ Open-source Unity development tooling collected as three independently installab
 
 | Package | Version | Purpose | Declared Unity floor |
 | --- | --- | --- | --- |
-| [`com.foxsterdev.devaccelerationsystem`](./DevAccelerationSystem/Assets/DevAccelerationSystem) | `1.0.1` | Editor-side compilation checks across build targets and define-symbol combinations. | 2020.3 |
-| [`com.foxsterdev.thebestlogger`](./DevAccelerationSystem/Assets/TheBestLogger) | `4.4.0` | Configurable runtime logging, capture, target isolation, and stability integrations. | 2022.3 |
-| [`com.foxsterdev.loqui`](./DevAccelerationSystem/Assets/Loqui) | `0.3.0` | Fallback-first localization with catalog, TMP, and editor tooling. | 2022.3 |
+| [`com.foxsterdev.devaccelerationsystem`](./DevAccelerationSystem/Assets/DevAccelerationSystem) | `1.0.2` | Editor-side compilation checks across build targets and define-symbol combinations. | 2020.3 |
+| [`com.foxsterdev.thebestlogger`](./DevAccelerationSystem/Assets/TheBestLogger) | `4.4.1` | Configurable runtime logging, capture, target isolation, and stability integrations. | 2022.3 |
+| [`com.foxsterdev.loqui`](./DevAccelerationSystem/Assets/Loqui) | `0.3.1` | Fallback-first localization with catalog, TMP, and editor tooling. | 2022.3 |
 
 ## Choose a package
 
@@ -16,19 +16,19 @@ Open-source Unity development tooling collected as three independently installab
 
 ## Installation
 
-The current source snapshot is the existing Git tag `4.4.0`; it contains the package versions in the table above. It is a legacy repository-wide tag, not a future package-release convention. Use the package-specific path below.
+The versions above are release candidates in the current source tree. Their package-specific tags have not been authorized or published, so the Git URLs below are a release recipe, not yet installable public URLs. The historical repository-wide tag `4.4.0` is retained only as an old snapshot and is not a clean standalone-package release.
 
 ```json
 {
   "dependencies": {
-    "com.foxsterdev.devaccelerationsystem": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/DevAccelerationSystem#4.4.0",
-    "com.foxsterdev.thebestlogger": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/TheBestLogger#4.4.0",
-    "com.foxsterdev.loqui": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/Loqui#4.4.0"
+    "com.foxsterdev.devaccelerationsystem": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/DevAccelerationSystem#com.foxsterdev.devaccelerationsystem/1.0.2",
+    "com.foxsterdev.thebestlogger": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/TheBestLogger#com.foxsterdev.thebestlogger/4.4.1",
+    "com.foxsterdev.loqui": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/Loqui#com.foxsterdev.loqui/0.3.1"
   }
 }
 ```
 
-Install only the package you need. For an unreleased change, replace `#4.4.0` with a commit SHA; do not use `master` for a production pin.
+Install only the package you need. Before the release tags exist, use a reviewed commit SHA for a reproducible internal pin; do not use `master` for a production pin.
 
 OpenUPM publication has not been performed. The repository is prepared for it, but registry submission and release tags require maintainer authorization. See [release policy](./Docs/RELEASES.md).
 
