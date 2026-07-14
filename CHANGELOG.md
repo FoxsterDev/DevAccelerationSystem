@@ -1,5 +1,17 @@
 # Changelog
 
+This is the repository timeline. The canonical changelog for each release line is package-local: [Dev Acceleration System](./DevAccelerationSystem/Assets/DevAccelerationSystem/CHANGELOG.md), [TheBestLogger](./DevAccelerationSystem/Assets/TheBestLogger/CHANGELOG.md), and [Loqui](./DevAccelerationSystem/Assets/Loqui/CHANGELOG.md).
+
+## Unreleased
+
+- Established package-specific metadata, documentation, validation, and future tag strategy without publishing a release.
+- Fixed Dev Acceleration System's build-target check to use Unity's public API and fixed its successful configuration-create return value.
+- Isolated Logger's reflective Editor-console implementation from player compilation.
+
+## [4.4.0] - 2026-07-11
+
+Repository snapshot containing `com.foxsterdev.devaccelerationsystem` `1.0.1`, `com.foxsterdev.thebestlogger` `4.4.0`, and `com.foxsterdev.loqui` `0.3.0`. This is a historical global tag; future releases use package-specific tags.
+
 ## [4.0.0] - 2026-06-24
 
 Introduces the **Loqui** localization package (`com.foxsterdev.loqui` 0.1.0) and hardens it per a full-SDK review.

@@ -4,9 +4,11 @@
 Define the durable release-facing rules for `DevAccelerationSystem`.
 
 ## Release Identity
-- Current package identity present in source: `com.foxsterdev.thebestlogger`
-- Current package version present in source: `3.0.1`
-- Declared Unity baseline present in source: `2022.3`
+- Package versions are sourced only from package manifests:
+  - `com.foxsterdev.devaccelerationsystem` `1.0.1`
+  - `com.foxsterdev.thebestlogger` `4.4.0`
+  - `com.foxsterdev.loqui` `0.3.0`
+- Future releases use `<package-id>/<version>` tags; existing bare tags are legacy repository snapshots.
 
 ## Release Gates
 - Confirm package manifest accuracy after release-impacting changes:

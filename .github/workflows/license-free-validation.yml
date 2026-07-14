@@ -1,0 +1,23 @@
+name: License-free validation
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Optional proposed package tag, for example com.foxsterdev.loqui/0.3.0
+        required: false
+        type: string
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate repository
+        run: python3 scripts/validate_repo.py ${{ inputs.release_tag && format('--release-tag {0}', inputs.release_tag) || '' }}

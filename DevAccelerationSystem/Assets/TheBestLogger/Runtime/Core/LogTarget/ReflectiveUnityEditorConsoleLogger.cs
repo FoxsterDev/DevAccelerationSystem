@@ -1,10 +1,9 @@
+#if UNITY_EDITOR
 using System;
 using System.Diagnostics;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
-
-#if UNITY_EDITOR
 
 namespace TheBestLogger
 {

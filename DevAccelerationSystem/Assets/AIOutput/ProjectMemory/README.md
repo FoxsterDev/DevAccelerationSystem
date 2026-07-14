@@ -12,11 +12,12 @@ Bootstrap status: seeded from `WORKSPACE.md`, repo layout, and current AI routin
 - Skill override root: `SkillOverrides/`
 
 ## Verified Current Claims
-- Primary package identity currently present in source: `com.foxsterdev.thebestlogger`
-- Package version: `3.0.1`
-- Declared Unity baseline in package manifest: `2022.3`
-- Package source root currently present: `Assets/TheBestLogger/`
-- Additional source surface present under `Assets/DevAccelerationSystem/`
+- Public package identities currently present in source:
+  - `com.foxsterdev.devaccelerationsystem` `1.0.1` (`Assets/DevAccelerationSystem/`)
+  - `com.foxsterdev.thebestlogger` `4.4.0` (`Assets/TheBestLogger/`)
+  - `com.foxsterdev.loqui` `0.3.0` (`Assets/Loqui/`)
+- Declared Unity floors in manifests: `2020.3` for Dev Acceleration System; `2022.3` for TheBestLogger and Loqui.
+- Additional source surfaces are package roots, not secondary unversioned content.
 - Test surface present:
   - `Assets/DevAccelerationSystem/Tests/Editor/`
   - `Assets/TheBestLogger/Tests/Editor/`

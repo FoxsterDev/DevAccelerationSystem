@@ -13,12 +13,23 @@
     "fallback"
   ],
   "license": "MIT",
-  "documentationUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/tree/master",
-  "changelogUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/releases",
-  "licensesUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/blob/master/LICENSE.md",
+  "documentationUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/tree/master/DevAccelerationSystem/Assets/Loqui",
+  "changelogUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/blob/master/DevAccelerationSystem/Assets/Loqui/CHANGELOG.md",
+  "licensesUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/blob/master/DevAccelerationSystem/Assets/Loqui/LICENSE.md",
   "description": "Fallback-first localization for Unity: keep your code literal as the default and override only per language and per platform. ScriptableObject catalog, TMP integration, locale formatting, JsonUtility remote overrides, and editor validation.",
+  "author": {
+    "name": "FoxsterDev",
+    "url": "https://github.com/FoxsterDev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FoxsterDev/DevAccelerationSystem.git"
+  },
   "dependencies": {
     "com.unity.ugui": "1.0.0",
     "com.unity.textmeshpro": "3.0.7"
-  }
+  },
+  "testables": [
+    "Loqui.Tests"
+  ]
 }

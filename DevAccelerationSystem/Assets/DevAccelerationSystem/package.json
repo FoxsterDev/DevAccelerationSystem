@@ -3,12 +3,27 @@
   "displayName": "Development Acceleration System",
   "version": "1.0.1",
   "unity": "2020.3",
-  "keywords": ["unity","compilationcheck", "acceleration"],
+  "keywords": [
+    "unity",
+    "editor-tools",
+    "compilation",
+    "build-validation"
+  ],
   "license": "MIT",
-  "documentationUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/tree/master",
-  "changelogUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/releases",
-  "licensesUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/blob/master/LICENSE.md",
-  "description": "It has one module for public ProjectCompilationCheck. You can specify custom compilation configs with definesymbols and compile it without running actually unity build.",
-  "dependencies": {
-  }
+  "documentationUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/tree/master/DevAccelerationSystem/Assets/DevAccelerationSystem",
+  "changelogUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/blob/master/DevAccelerationSystem/Assets/DevAccelerationSystem/CHANGELOG.md",
+  "licensesUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/blob/master/DevAccelerationSystem/Assets/DevAccelerationSystem/LICENSE.md",
+  "description": "Editor tooling for running deterministic script-compilation checks across representative Unity build targets and scripting define configurations.",
+  "author": {
+    "name": "FoxsterDev",
+    "url": "https://github.com/FoxsterDev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FoxsterDev/DevAccelerationSystem.git"
+  },
+  "dependencies": {},
+  "testables": [
+    "DevAccelerationSystem.Editor.Tests"
+  ]
 }

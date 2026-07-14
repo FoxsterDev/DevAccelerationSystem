@@ -36,7 +36,7 @@ ILoquiLog log = new Loqui.Integrations.TheBestLoggerLoquiLog(myTheBestLogger);
 
 Add to `Packages/manifest.json`:
 ```json
-"com.foxsterdev.loqui": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/Loqui#4.2.0"
+"com.foxsterdev.loqui": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/Loqui#4.4.0"
 ```
 
 ## Quick start

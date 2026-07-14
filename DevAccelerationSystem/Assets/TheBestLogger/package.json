@@ -5,11 +5,27 @@
   "unity": "2022.3",
   "keywords": [
     "unity",
-    "logger"
+    "logging",
+    "diagnostics",
+    "observability"
   ],
   "license": "MIT",
-  "documentationUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/tree/master",
-  "changelogUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/releases",
-  "licensesUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/blob/master/LICENSE.md",
-  "description": "Configurable logging package for Unity projects with runtime targets, exception capture, and stability-oriented integrations."
+  "documentationUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/tree/master/DevAccelerationSystem/Assets/TheBestLogger",
+  "changelogUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/blob/master/DevAccelerationSystem/Assets/TheBestLogger/CHANGELOG.md",
+  "licensesUrl": "https://github.com/FoxsterDev/DevAccelerationSystem/blob/master/DevAccelerationSystem/Assets/TheBestLogger/LICENSE.md",
+  "description": "Configurable Unity runtime logging with target isolation, exception capture, batching, and stability-oriented integrations.",
+  "author": {
+    "name": "FoxsterDev",
+    "url": "https://github.com/FoxsterDev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FoxsterDev/DevAccelerationSystem.git"
+  },
+  "dependencies": {},
+  "testables": [
+    "TheBestLogger.EditorTests",
+    "TheBestLogger.PlayModeTests",
+    "TheBestLogger.PerformanceTests"
+  ]
 }

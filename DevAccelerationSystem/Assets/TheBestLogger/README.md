@@ -15,10 +15,10 @@ Configurable logging package for Unity projects with runtime logging, structured
 
 ### Install via UPM
 
-Use the tagged package path:
+Use the verified legacy repository snapshot path:
 
 ```text
-https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/TheBestLogger#4.4.0
+https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/TheBestLogger#4.4.0
 ```
 
 ### Install manually via `manifest.json`
@@ -26,7 +26,7 @@ https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSyst
 ```json
 {
   "dependencies": {
-    "com.foxsterdev.thebestlogger": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=DevAccelerationSystem/Assets/TheBestLogger#4.4.0"
+    "com.foxsterdev.thebestlogger": "https://github.com/FoxsterDev/DevAccelerationSystem.git?path=/DevAccelerationSystem/Assets/TheBestLogger#4.4.0"
   }
 }
 ```

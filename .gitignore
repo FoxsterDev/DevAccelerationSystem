@@ -74,3 +74,5 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 DevAccelerationSystem.DemoProject/Assets/TheBestLoggerSample/GitIgnored
 .DS_Store
+__pycache__/
+*.py[cod]

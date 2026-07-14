@@ -26,7 +26,7 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
             
             so.CompilationConfigs.Add(settings);
             so.SaveChanges(true);
-            return false;
+            return true;
         }
 
         /// <summary>

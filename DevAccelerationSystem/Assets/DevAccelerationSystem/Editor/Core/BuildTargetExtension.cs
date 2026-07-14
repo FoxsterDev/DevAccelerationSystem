@@ -1,5 +1,3 @@
-using System;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEditor;
 
@@ -8,28 +6,13 @@ namespace DevAccelerationSystem.ProjectCompilationCheck
 {
     public static class BuildTargetExtension
     {
-        internal static MethodInfo IsPlatformSupportLoadedByBuildTargetGetMethod()
-        {
-            var method = Type.GetType("UnityEditor.Modules.ModuleManager,UnityEditor.CoreModule")
-                .GetMethod("IsPlatformSupportLoadedByBuildTarget", BindingFlags.NonPublic | BindingFlags.Static);
-            return method;
-        }
-
         public static bool IsBuildTargetSupported(this BuildTarget target)
         {
             try
             {
-                var method = IsPlatformSupportLoadedByBuildTargetGetMethod();
-                if (method != null)
-                {
-                    var isSupported = (bool) method
-                        .Invoke(null, new object[1] {target});
-                    return isSupported;
-                }
-
-                return false;
+                return BuildPipeline.IsBuildTargetSupported(target.ConvertToBuildTargetGroup(), target);
             }
-            catch 
+            catch
             {
                 return false;
             }

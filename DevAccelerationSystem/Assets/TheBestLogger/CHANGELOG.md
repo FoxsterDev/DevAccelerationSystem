@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fixed the performance-test assembly reference to `ZString`, allowing the suite to compile when its public utility API exposes `Utf8ValueStringBuilder`.
+
 ## [4.4.0] - 2026-07-11
 - Hardened log-source, diagnostics, update-loop, and target delivery boundaries so consumer or target exceptions cannot escape into application callbacks.
 - Added per-target failure isolation, recursive-log suppression, and automatic quarantine after repeated target failures.

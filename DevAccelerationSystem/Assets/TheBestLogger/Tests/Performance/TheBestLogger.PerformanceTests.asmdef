@@ -4,6 +4,7 @@
     "references": [
         "UnityEngine.TestRunner",
         "Unity.PerformanceTesting",
+        "ZString",
         "TheBestLogger.Core.Utilities",
         "TheBestLogger.Core",
         "TheBestLogger.Examples"
