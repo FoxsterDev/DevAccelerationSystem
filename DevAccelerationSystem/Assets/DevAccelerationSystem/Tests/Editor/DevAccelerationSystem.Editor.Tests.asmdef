@@ -5,7 +5,8 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "DevAccelerationSystem.Core",
-        "DevAccelerationSystem.ProjectCompilationCheck"
+        "DevAccelerationSystem.ProjectCompilationCheck",
+        "DevAccelerationSystem.ProjectAuditing"
     ],
     "includePlatforms": [
         "Editor"

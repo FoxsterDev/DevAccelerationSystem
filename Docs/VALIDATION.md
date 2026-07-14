@@ -34,3 +34,12 @@ The tracked consumer target is `DevAccelerationSystem.DemoProject/`. `DAS.LocalP
 - The tracked consumer imports the package roots through local-file UPM dependencies. Its Android compilation passed with `22` compiled assemblies and zero errors; its Loqui PlayMode integration suite passed `4/4`.
 
 This evidence does not prove physical-device behavior, IL2CPP stripping, or a fresh Git-tag installation of the proposed `1.0.3`, `4.4.2`, and `0.3.2` releases.
+
+## Phase 4 Doctors evidence
+
+- Dev Acceleration System EditMode passed `21/21` on Unity `2022.3.62f3`. The suite includes temporary malformed and valid UPM fixtures, the three canonical package roots with proposed tag identities, define/profile drift and asmdef validation, lower-camel-case baseline policy parsing, remediation-preview guards, deterministic JSON ordering, and read-only command dispatch.
+- Source `CompilePlayerScripts` passed for `Android` and `StandaloneOSX`, with `9` compiled assemblies and zero compiler errors on each target.
+- The tracked consumer's Android compile passed with `22` compiled assemblies and zero compiler errors after importing the changed local-file package.
+- `python3 scripts/validate_repo.py --release-tag com.foxsterdev.devaccelerationsystem/1.1.0` passed. The exact `-executeMethod` batch process-exit path is documented and compiled, but was not invoked directly because the available XUUnity batch helper exposes only compile and Test Runner lanes.
+
+This evidence validates editor-side inspection and deterministic policy behavior. It does not prove Unity 6 Build Profile activation, player builds, IL2CPP stripping, physical-device behavior, or a fresh Git-tag installation of `1.1.0`.

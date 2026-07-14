@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1",
+  "requiredColorSpace": "Linear",
+  "requiredPackages": [
+    {
+      "name": "com.unity.textmeshpro",
+      "version": "3.0.6"
+    }
+  ],
+  "forbiddenPackageIds": [],
+  "requiredProjectFiles": [
+    "Assets/Configuration/ProjectSettings.asset"
+  ],
+  "targets": [
+    {
+      "targetGroup": "Android",
+      "scriptingBackend": "IL2CPP",
+      "requiredSymbols": [
+        "PRODUCTION"
+      ]
+    }
+  ]
+}

@@ -4,7 +4,7 @@ Open-source Unity development tooling collected as three independently installab
 
 | Package | Version | Purpose | Declared Unity floor |
 | --- | --- | --- | --- |
-| [`com.foxsterdev.devaccelerationsystem`](./DevAccelerationSystem/Assets/DevAccelerationSystem) | `1.0.3` | Editor-side compilation checks across build targets and define-symbol combinations. | 2020.3 |
+| [`com.foxsterdev.devaccelerationsystem`](./DevAccelerationSystem/Assets/DevAccelerationSystem) | `1.1.0` | Editor-side compilation checks, package health, define/profile, and project-baseline audits. | 2020.3 |
 | [`com.foxsterdev.thebestlogger`](./DevAccelerationSystem/Assets/TheBestLogger) | `4.4.2` | Configurable runtime logging, capture, target isolation, and stability integrations. | 2022.3 |
 | [`com.foxsterdev.loqui`](./DevAccelerationSystem/Assets/Loqui) | `0.3.2` | Fallback-first localization with catalog, TMP, and editor tooling. | 2022.3 |
 
@@ -16,7 +16,7 @@ Open-source Unity development tooling collected as three independently installab
 
 ## Installation
 
-The source versions above are the next patch releases. The latest published package-specific tags below are installable public URLs; create and push their matching next-version tags only after the release gates pass. The historical repository-wide tag `4.4.0` is retained only as an old snapshot and is not a clean standalone-package release.
+The package-specific tags below are the current installable public URLs. The local Phase 3 tags must be visible on `origin` before they replace these URLs. Create and push a matching next-version tag only after that package's release gates pass. The historical repository-wide tag `4.4.0` is retained only as an old snapshot and is not a clean standalone-package release.
 
 ```json
 {

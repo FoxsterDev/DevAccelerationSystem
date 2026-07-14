@@ -23,5 +23,5 @@
 ## Later phases
 
 - [x] Stabilize Compilation Matrix, TheBestLogger, and Loqui with executed Unity evidence: DAS EditMode `8/8`; Loqui EditMode `101/101`; TheBestLogger EditMode `269/269` and PlayMode `14/14`; source Android and StandaloneOSX compilation with zero errors; tracked consumer Android compilation with zero errors and Loqui PlayMode `4/4`.
-- [ ] Implement UPM Package Doctor, Define & Build Profile Doctor, and Project Baseline Audit as tested vertical slices.
+- [x] Implement UPM Package Doctor, Define & Build Profile Doctor, and Project Baseline Audit as tested vertical slices. The default Unity Editor UI and batch runner are read-only; explicit preview/apply/backup/restore APIs cover define and color-space remediation.
 - [ ] Prepare release candidate artifacts after Unity validation; never publish without authorization.
