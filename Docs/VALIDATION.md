@@ -8,7 +8,13 @@ Run from the repository root:
 python3 scripts/validate_repo.py
 ```
 
-The command validates package JSON, required metadata and documents, package IDs and semantic versions, unique assembly definitions, editor/runtime boundaries, package-local absolute paths, stale root-version references, internal documentation links, release-tag syntax, and tracked generated files. To validate a proposed release tag without creating it:
+The command validates package JSON, required metadata and documents, package IDs and semantic versions, unique assembly definitions, editor/runtime boundaries, package-local absolute paths, stale root-version references, internal documentation links, release-tag syntax, tracked generated files, and the repository-native Unity Harness routers, adapter sections, and machine-path privacy boundary. It also provides a standalone privacy preflight for both Unity projects: the expected `FD` / `DAS-SRC` / `DAS-DEMO` identities and application IDs, disabled analytics submission, empty Cloud project/organization/service state, disabled UnityConnect enable/startup flags, and absence of explicit Analytics or Collaborate packages. To validate the generated routers directly without changing files:
+
+```bash
+python3 scripts/refresh_harness_routing.py --check
+```
+
+To validate a proposed release tag without creating it:
 
 ```bash
 python3 scripts/validate_repo.py --release-tag com.foxsterdev.loqui/0.3.2

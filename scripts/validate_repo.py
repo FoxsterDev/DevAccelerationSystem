@@ -12,10 +12,27 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "DevAccelerationSystem" / "Assets"
+HARNESS_ROUTER_REFRESH = ROOT / "scripts" / "refresh_harness_routing.py"
+HARNESS_ADAPTER = ROOT / "Docs" / "ai" / "unity-unified-harness-adapter.md"
+CANONICAL_ROUTERS = (
+    ROOT / "AGENTS.md",
+    ROOT / "DevAccelerationSystem" / "AGENTS.md",
+    ROOT / "DevAccelerationSystem.DemoProject" / "AGENTS.md",
+)
 PACKAGES = {
     "com.foxsterdev.devaccelerationsystem": PACKAGE_ROOT / "DevAccelerationSystem",
     "com.foxsterdev.thebestlogger": PACKAGE_ROOT / "TheBestLogger",
     "com.foxsterdev.loqui": PACKAGE_ROOT / "Loqui",
+}
+UNITY_PROJECTS = {
+    "DAS-SRC": (
+        ROOT / "DevAccelerationSystem",
+        "com.fd.das.src",
+    ),
+    "DAS-DEMO": (
+        ROOT / "DevAccelerationSystem.DemoProject",
+        "com.fd.das.demo",
+    ),
 }
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$")
 PACKAGE_NAME = re.compile(r"^[a-z0-9][a-z0-9.-]*\.[a-z0-9][a-z0-9.-]*\.[a-z0-9][a-z0-9.-]*$")
@@ -164,6 +181,160 @@ def validate_yaml(report: Reporter) -> None:
         report.error(f"invalid workflow YAML: {result.stderr.strip() or result.stdout.strip()}")
 
 
+def validate_harness_routing(report: Reporter) -> None:
+    result = subprocess.run(
+        [sys.executable, str(HARNESS_ROUTER_REFRESH), "--check"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode:
+        detail = result.stdout.strip() or result.stderr.strip()
+        report.error(f"Unity Harness routers are stale: {detail}")
+
+    required_adapter_sections = (
+        "## Journey Zero",
+        "## Four Lanes",
+        "### `docs`",
+        "### `ordinary`",
+        "### `high-risk`",
+        "### `release`",
+        "## Authoring And Consumer Boundary",
+        "## Proof Routing And Ceilings",
+        "## Harness-Owned Gate Scope",
+        "## Version Decision",
+    )
+    if not HARNESS_ADAPTER.is_file():
+        report.error(f"missing Unity Harness adapter: {HARNESS_ADAPTER.relative_to(ROOT)}")
+    else:
+        adapter_text = HARNESS_ADAPTER.read_text(encoding="utf-8")
+        for section in required_adapter_sections:
+            if section not in adapter_text:
+                report.error(
+                    f"{HARNESS_ADAPTER.relative_to(ROOT)}: missing required section '{section}'"
+                )
+
+    privacy_paths = (HARNESS_ROUTER_REFRESH, HARNESS_ADAPTER, *CANONICAL_ROUTERS)
+    for path in privacy_paths:
+        if not path.is_file():
+            report.error(f"missing Harness-owned file: {path.relative_to(ROOT)}")
+            continue
+        if ABSOLUTE_PATH.search(path.read_text(encoding="utf-8")):
+            report.error(
+                f"{path.relative_to(ROOT)}: contains a machine-specific absolute path"
+            )
+
+
+def validate_unity_project_privacy(report: Reporter) -> None:
+    """Keep the two standalone Unity projects detached from Unity cloud services."""
+    banned_package_terms = ("analytics", "collab")
+    legacy_identity_markers = (
+        "DevAccelerationSystem",
+        "FoxsterDev",
+        "FoxsterEntertaiment",
+        "DefaultCompany",
+        "2D_BuiltInRenderer",
+    )
+
+    for product_name, (project_root, application_id) in UNITY_PROJECTS.items():
+        settings_path = project_root / "ProjectSettings" / "ProjectSettings.asset"
+        connect_path = project_root / "ProjectSettings" / "UnityConnectSettings.asset"
+        manifest_path = project_root / "Packages" / "manifest.json"
+
+        try:
+            settings_text = settings_path.read_text(encoding="utf-8")
+        except OSError as exc:
+            report.error(f"{settings_path.relative_to(ROOT)}: unreadable ({exc})")
+            continue
+
+        required_settings = (
+            "  companyName: FD",
+            f"  productName: {product_name}",
+            "  submitAnalytics: 0",
+            "  cloudServicesEnabled: {}",
+            "  cloudEnabled: 0",
+        )
+        for expected in required_settings:
+            if expected not in settings_text.splitlines():
+                report.error(
+                    f"{settings_path.relative_to(ROOT)}: expected privacy setting '{expected.strip()}'"
+                )
+
+        for empty_field in ("cloudProjectId", "projectName", "organizationId"):
+            match = re.search(rf"^  {empty_field}:[ \t]*(.*)$", settings_text, re.MULTILINE)
+            if match is None or match.group(1).strip():
+                report.error(
+                    f"{settings_path.relative_to(ROOT)}: {empty_field} must be present and empty"
+                )
+
+        identifier_match = re.search(
+            r"^  applicationIdentifier:\n(?P<entries>(?:    [^\n]*\n)+)",
+            settings_text,
+            re.MULTILINE,
+        )
+        if identifier_match is None:
+            report.error(
+                f"{settings_path.relative_to(ROOT)}: applicationIdentifier block is missing"
+            )
+        else:
+            identifiers = [
+                line.split(":", 1)[1].strip()
+                for line in identifier_match.group("entries").splitlines()
+                if ":" in line
+            ]
+            if not identifiers or any(value != application_id for value in identifiers):
+                report.error(
+                    f"{settings_path.relative_to(ROOT)}: every applicationIdentifier must be {application_id}"
+                )
+
+        for project_settings_path in sorted((project_root / "ProjectSettings").rglob("*")):
+            if not project_settings_path.is_file():
+                continue
+            try:
+                project_settings_text = project_settings_path.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                continue
+            for marker in legacy_identity_markers:
+                if marker.casefold() in project_settings_text.casefold():
+                    report.error(
+                        f"{project_settings_path.relative_to(ROOT)}: legacy project identity '{marker}' remains"
+                    )
+
+        try:
+            connect_text = connect_path.read_text(encoding="utf-8")
+        except OSError as exc:
+            report.error(f"{connect_path.relative_to(ROOT)}: unreadable ({exc})")
+        else:
+            for flag in ("m_Enabled", "m_InitializeOnStartup"):
+                values = re.findall(rf"^\s+{flag}:\s*(\S+)\s*$", connect_text, re.MULTILINE)
+                if not values:
+                    report.error(
+                        f"{connect_path.relative_to(ROOT)}: no {flag} flags found"
+                    )
+                elif any(value != "0" for value in values):
+                    report.error(
+                        f"{connect_path.relative_to(ROOT)}: every {flag} flag must be 0"
+                    )
+
+        manifest = load_json(manifest_path, report)
+        if manifest is not None:
+            dependencies = manifest.get("dependencies")
+            if not isinstance(dependencies, dict):
+                report.error(f"{manifest_path.relative_to(ROOT)}: dependencies must be an object")
+            else:
+                banned = sorted(
+                    package_id
+                    for package_id in dependencies
+                    if any(term in package_id.casefold() for term in banned_package_terms)
+                )
+                if banned:
+                    report.error(
+                        f"{manifest_path.relative_to(ROOT)}: explicit Analytics/Collab packages are forbidden: "
+                        + ", ".join(banned)
+                    )
+
+
 def validate_release_tag(report: Reporter, manifests: dict[str, dict], release_tag: str | None) -> None:
     if not release_tag:
         return
@@ -191,6 +362,8 @@ def main() -> int:
     validate_docs(report, manifests)
     validate_tracked_generated_files(report)
     validate_yaml(report)
+    validate_harness_routing(report)
+    validate_unity_project_privacy(report)
     validate_release_tag(report, manifests, args.release_tag)
     for warning in report.warnings:
         print(f"WARNING: {warning}")

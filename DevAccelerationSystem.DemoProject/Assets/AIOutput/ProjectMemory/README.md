@@ -7,8 +7,9 @@ Bootstrap status: seeded from `WORKSPACE.md`, repo layout, and current AI routin
 ## Project Role
 - Workspace type: consumer validation workspace
 - Shared protocol: `xuunity`
-- Project router: `Agents.md`
-- Repo router alias: `Agents.repo.md`
+- Canonical project router: `AGENTS.md`
+- Canonical repository router: `../AGENTS.md`
+- Legacy compatibility alias: `Agents.repo.md` -> `../AGENTS.md`
 - Skill override root: `SkillOverrides/`
 
 ## Routing Rules
@@ -17,6 +18,8 @@ Bootstrap status: seeded from `WORKSPACE.md`, repo layout, and current AI routin
 - Keep tracked integration-validation reports under `Assets/AIOutput/ValidationReports/`.
 - Land durable shared package fixes in `DevAccelerationSystem/DevAccelerationSystem/`, not here, unless the issue is demo-project-local.
 - Compare demo-project behavior against the canonical package source before deciding ownership of a fix.
+- The repository-local `AGENTS.md` plus `../Docs/ai/unity-unified-harness-adapter.md` are sufficient in a standalone clone.
+- Hub `AIRoot` and `AIModules` guidance is optional augmentation and must not be required for standalone routing.
 
 ## Maintenance Rules
 - Keep only durable project-specific truth here.

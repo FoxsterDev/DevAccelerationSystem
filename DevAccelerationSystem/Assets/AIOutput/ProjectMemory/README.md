@@ -7,8 +7,9 @@ Bootstrap status: seeded from `WORKSPACE.md`, repo layout, and current AI routin
 ## Project Role
 - Workspace type: canonical package source
 - Shared protocol: `xuunity`
-- Project router: `Agents.md`
-- Repo router alias: `Agents.repo.md`
+- Canonical project router: `AGENTS.md`
+- Canonical repository router: `../AGENTS.md`
+- Legacy compatibility alias: `Agents.repo.md` -> `../AGENTS.md`
 - Skill override root: `SkillOverrides/`
 
 ## Verified Current Claims
@@ -46,6 +47,8 @@ Bootstrap status: seeded from `WORKSPACE.md`, repo layout, and current AI routin
 - Shared package source of truth: `DevAccelerationSystem/DevAccelerationSystem/`
 - Use this project for shared package code changes, package-facing tests, manifests, and durable implementation ownership.
 - Validate behavior changes in representative consumer workspaces after editing here.
+- The repository-local `AGENTS.md` plus `../Docs/ai/unity-unified-harness-adapter.md` are sufficient in a standalone clone.
+- Hub `AIRoot` and `AIModules` guidance is optional augmentation and must not be required for standalone routing.
 - Related consumers:
   - `DevAccelerationSystem/DevAccelerationSystem.DemoProject/`
 - Optional local-only consumer:

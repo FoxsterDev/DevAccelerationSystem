@@ -69,11 +69,11 @@
       }
     },
     "com.xuunity.light-mcp": {
-      "version": "https://github.com/FoxsterDev/xuunity-mcp.git?path=/packages/com.xuunity.light-mcp#v0.3.43",
+      "version": "https://github.com/FoxsterDev/xuunity-mcp.git?path=/packages/com.xuunity.light-mcp#v0.3.62",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "57171bd2ae8873bb5977d6e35dc197ced5aaa1e1"
+      "hash": "7b8b139d8bdd5d226e5e6703b586e1ca9f16f442"
     },
     "com.unity.modules.androidjni": {
       "version": "1.0.0",
