@@ -21,6 +21,15 @@ The minimum representative path is:
 `DAS.LocalProject/` may accelerate local repro when it exists, but it is never
 required and never substitutes for tracked consumer proof.
 
+## Optional Hub Augmentation
+
+When mounted in AIFoxsterDevHub, use `../../AIOutput/Harness/KERNEL.md` for
+cross-satellite policy and
+`../../AIRoot/Modules/XUUnity/reviews/post_implementation_impact_review.md` as
+the default runtime final pass when those files exist. The card selects any
+narrower delivery, policy, platform, or release guidance by concrete risk. In a
+standalone clone, this adapter's lanes and ceilings are the exact fallback.
+
 ## Four Lanes
 
 ### `docs`
@@ -217,6 +226,7 @@ versions. Current source versions remain:
 - `com.foxsterdev.thebestlogger` `4.4.2`;
 - `com.foxsterdev.loqui` `0.3.2`.
 
-The two tracked projects currently pin XUUnity Light Unity MCP `v0.3.43`.
-Changing that development dependency is a separate, explicit tool-upgrade task
-requiring package resolution and live proof; this Harness refresh does not do it.
+The two tracked projects pin XUUnity Light Unity MCP `v0.3.72`. This is a
+development-tool dependency, not a product package or supported-Unity-floor
+change. Any future repin remains an explicit tool-upgrade decision with its own
+source/consumer and live-proof ceiling.

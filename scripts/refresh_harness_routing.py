@@ -33,11 +33,14 @@ The local contract is complete without the Hub.
 3. Select exactly one target project and read its nearest `AGENTS.md` through EOF.
 4. Read that project's relevant `Assets/AIOutput/ProjectMemory/` owners.
 5. Load historical `Assets/AIOutput/` reports only when dated evidence is relevant.
-6. If the repository is mounted in the Hub and `../AGENTS.md` plus
-   `../AIRoot/Modules/XUUnity/` exist, optionally augment this local contract with
-   the Hub router and only the task-relevant XUUnity protocol files.
+6. When mounted in the Hub, load `../AIOutput/Harness/KERNEL.md` for
+   cross-satellite policy if it exists. After a runtime implementation, use
+   `../AIRoot/Modules/XUUnity/reviews/post_implementation_impact_review.md` as
+   the compact final pass when available; load broader XUUnity files only for a
+   concrete trigger named by that card.
 
-Missing Hub files are normal standalone state, not an error. `AIModules`
+Missing Hub files are normal standalone state: this router plus
+`Docs/ai/unity-unified-harness-adapter.md` are the exact fallback. `AIModules`
 symlinks are legacy host conveniences and are never required for standalone use.
 
 ## Workspace Boundaries
