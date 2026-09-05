@@ -23,9 +23,9 @@ required and never substitutes for tracked consumer proof.
 
 ## Optional Hub Augmentation
 
-When mounted in AIFoxsterDevHub, use `../../AIOutput/Harness/KERNEL.md` for
+When mounted in AIFoxsterDevHub, use `../../../AIOutput/Harness/KERNEL.md` for
 cross-satellite policy and
-`../../AIRoot/Modules/XUUnity/reviews/post_implementation_impact_review.md` as
+`../../../AIRoot/Modules/XUUnity/reviews/post_implementation_impact_review.md` as
 the default runtime final pass when those files exist. The card selects any
 narrower delivery, policy, platform, or release guidance by concrete risk. In a
 standalone clone, this adapter's lanes and ceilings are the exact fallback.
