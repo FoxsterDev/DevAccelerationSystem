@@ -226,7 +226,7 @@ versions. Current source versions remain:
 - `com.foxsterdev.thebestlogger` `4.4.2`;
 - `com.foxsterdev.loqui` `0.3.2`.
 
-The two tracked projects pin XUUnity Light Unity MCP `v0.3.72`. This is a
+The two tracked projects pin XUUnity Light Unity MCP `v0.3.73`. This is a
 development-tool dependency, not a product package or supported-Unity-floor
 change. Any future repin remains an explicit tool-upgrade decision with its own
 source/consumer and live-proof ceiling.
