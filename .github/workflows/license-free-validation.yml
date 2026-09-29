@@ -3,7 +3,7 @@ name: License-free validation
 on:
   pull_request:
   push:
-    branches: [master]
+    branches: [main]
   workflow_dispatch:
     inputs:
       release_tag:
