@@ -91,7 +91,7 @@ namespace TheBestLogger.Examples.LogTargets
                               log.Message,
                               log.Attributes?.StackTrace,
                               ResolveSerializedTimestamp(log.Attributes),
-                              log.Attributes?.Props.ToSimpleNotEscapedJson(),
+                              log.Attributes?.Props.ToSimpleJson(),
                               log.Attributes?.Tags);
                     sb.AppendLine();
                 }
@@ -115,7 +115,7 @@ namespace TheBestLogger.Examples.LogTargets
                                        message,
                                        logAttributes?.StackTrace,
                                        ResolveSerializedTimestamp(logAttributes),
-                                       logAttributes?.Props.ToSimpleNotEscapedJson(),
+                                       logAttributes?.Props.ToSimpleJson(),
                                        logAttributes?.Tags);
             var sb = new OpenSearchPayloadBuilder(notNested: true);
             try

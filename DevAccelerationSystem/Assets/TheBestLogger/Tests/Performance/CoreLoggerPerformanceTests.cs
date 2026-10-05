@@ -422,7 +422,7 @@ namespace TheBestLogger.Tests.Performance
                 dto.Message = entry.Message;
                 dto.Stacktrace = entry.Attributes.StackTrace;
                 dto.TimeUTC = entry.Attributes.TimeStampFormatted;
-                dto.Attributes = entry.Attributes.Props.ToSimpleNotEscapedJson();
+                dto.Attributes = entry.Attributes.Props.ToSimpleJson();
                 dto.Tags = entry.Attributes.Tags;
 
                 builder.Append("{ \"index\" : { \"_index\" : \"");

@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.4.4] - 2026-10-05
+
+- Fixed `LogAttributes` serialization for the OpenSearch targets: props are now written as valid JSON (`null` for null values, quoted enum names, lowercase booleans, invariant-culture numbers with `NaN`/infinity as `null`, quoted and escaped strings, dates and other objects). Previously enums were unquoted, booleans came out as `True`/`False`, null values as nothing and strings were not escaped, so the `Attributes` document field could not be parsed back as JSON. The field itself stays a string in the document, so existing index mappings are unaffected.
+- Renamed the extension `ToSimpleNotEscapedJson` to `ToSimpleJson`.
+- Added `LogAttributesJsonTests` to `TheBestLogger.EditorTests`.
+
 ## [4.4.3] - 2026-10-05
 
 - Fixed category session rollout: a non-selected `OverrideCategories` entry is now skipped instead of muting the whole category, so the category falls back to the next matching entry or the target baseline and `Error`/`Exception` records are never dropped by a rollout gate, as the README always documented.

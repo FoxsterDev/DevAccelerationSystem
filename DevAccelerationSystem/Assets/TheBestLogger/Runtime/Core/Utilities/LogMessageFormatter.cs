@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace TheBestLogger.Core.Utilities
 {
@@ -155,7 +156,7 @@ namespace TheBestLogger.Core.Utilities
                        : StringOperations.Concat("<", category, "> ", message, " => cannot be formatted");
         }
 
-        public static string ToSimpleNotEscapedJson(this List<KeyValuePair<string, object>> keyValuePairs)
+        public static string ToSimpleJson(this List<KeyValuePair<string, object>> keyValuePairs)
         {
             if (keyValuePairs == null || keyValuePairs.Count < 1)
             {
@@ -168,31 +169,133 @@ namespace TheBestLogger.Core.Utilities
                 var count = keyValuePairs.Count;
                 for (var i = 0; i < count; i++)
                 {
-                    var kvp = keyValuePairs[i];
-                    sb.Append('\"');
-                    sb.Append(kvp.Key);
-                    sb.Append("\":");
-
-                    if (kvp.Value is string)
-                    {
-                        sb.Append('\"');
-                        sb.Append(kvp.Value.ToString());
-                        sb.Append('\"');
-                    }
-                    else
-                    {
-                        sb.Append(kvp.Value);
-                    }
-
-                    if (i < keyValuePairs.Count - 1)
+                    if (i > 0)
                     {
                         sb.Append(',');
+                    }
+
+                    var kvp = keyValuePairs[i];
+                    sb.Append('"');
+                    sb.Append(EscapeJsonString(kvp.Key ?? string.Empty));
+                    sb.Append("\":");
+
+                    switch (kvp.Value)
+                    {
+                        case null:
+                            sb.Append("null");
+                            break;
+                        case string text:
+                            sb.Append('"');
+                            sb.Append(EscapeJsonString(text));
+                            sb.Append('"');
+                            break;
+                        case bool flag:
+                            sb.Append(flag ? "true" : "false");
+                            break;
+                        case Enum enumValue:
+                            sb.Append('"');
+                            sb.Append(EscapeJsonString(enumValue.ToString()));
+                            sb.Append('"');
+                            break;
+                        case double number:
+                            sb.Append(double.IsNaN(number) || double.IsInfinity(number)
+                                          ? "null"
+                                          : number.ToString("R", CultureInfo.InvariantCulture));
+                            break;
+                        case float number:
+                            sb.Append(float.IsNaN(number) || float.IsInfinity(number)
+                                          ? "null"
+                                          : number.ToString("R", CultureInfo.InvariantCulture));
+                            break;
+                        case sbyte or byte or short or ushort or int or uint or long or ulong or decimal:
+                            sb.Append(((IFormattable)kvp.Value).ToString(null, CultureInfo.InvariantCulture));
+                            break;
+                        default:
+                            sb.Append('"');
+                            sb.Append(EscapeJsonString(FormatInvariant(kvp.Value)));
+                            sb.Append('"');
+                            break;
                     }
                 }
 
                 sb.Append('}');
                 return sb.ToString();
             }
+        }
+
+        private static string FormatInvariant(object value)
+        {
+            return value is IFormattable formattable
+                       ? formattable.ToString(null, CultureInfo.InvariantCulture)
+                       : value.ToString() ?? string.Empty;
+        }
+
+        private static string EscapeJsonString(string value)
+        {
+            var first = IndexOfJsonEscapeChar(value);
+            if (first < 0)
+            {
+                return value;
+            }
+
+            var builder = new System.Text.StringBuilder(value.Length + 8);
+            builder.Append(value, 0, first);
+            for (var i = first; i < value.Length; i++)
+            {
+                var c = value[i];
+                switch (c)
+                {
+                    case '"':
+                        builder.Append("\\\"");
+                        break;
+                    case '\\':
+                        builder.Append("\\\\");
+                        break;
+                    case '\n':
+                        builder.Append("\\n");
+                        break;
+                    case '\r':
+                        builder.Append("\\r");
+                        break;
+                    case '\t':
+                        builder.Append("\\t");
+                        break;
+                    case '\b':
+                        builder.Append("\\b");
+                        break;
+                    case '\f':
+                        builder.Append("\\f");
+                        break;
+                    default:
+                        if (c < ' ')
+                        {
+                            builder.Append("\\u");
+                            builder.Append(((int)c).ToString("x4", CultureInfo.InvariantCulture));
+                        }
+                        else
+                        {
+                            builder.Append(c);
+                        }
+
+                        break;
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        private static int IndexOfJsonEscapeChar(string value)
+        {
+            for (var i = 0; i < value.Length; i++)
+            {
+                var c = value[i];
+                if (c == '"' || c == '\\' || c < ' ')
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
     }
 }
