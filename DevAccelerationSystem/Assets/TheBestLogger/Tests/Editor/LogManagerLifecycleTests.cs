@@ -597,7 +597,7 @@ namespace TheBestLogger.Tests.Editor
         }
 
         [Test]
-        public void ApplyRemoteConfigurationPatch_DoesNotResetSessionRolloutState()
+        public void ApplyRemoteConfigurationPatch_WithZeroSessionRolloutPercentage_TurnsOffDebugModeAndKeepsSessionBucket()
         {
             var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_RolloutUpdate");
             var openSearchTarget = new MockOpenSearchLogTarget();
@@ -612,8 +612,76 @@ namespace TheBestLogger.Tests.Editor
                                   CancellationToken.None);
 
             Assert.That(((ILogTarget) openSearchTarget).DebugModeEnabled, Is.True);
+            var bucket = GetSessionDebugRolloutBucket(nameof(OpenSearchLogTargetConfiguration));
 
             var updatedConfig = CreateOpenSearchTargetConfiguration(sessionDebugRolloutPercentage: 0f);
+            AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(OpenSearchLogTargetConfiguration), JsonUtility.ToJson(updatedConfig));
+
+            Assert.That(((ILogTarget) openSearchTarget).DebugModeEnabled, Is.False);
+            Assert.That(openSearchTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.False);
+            Assert.That(openSearchTarget.IsLogLevelAllowed(LogLevel.Warning, "Gameplay"), Is.True);
+            Assert.That(GetSessionDebugRolloutBucket(nameof(OpenSearchLogTargetConfiguration)), Is.EqualTo(bucket));
+        }
+
+        [Test]
+        public void ApplyRemoteConfigurationPatch_ComparesSessionRolloutPercentageAgainstStableSessionBucket()
+        {
+            var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_RolloutBucketCompare");
+            var openSearchTarget = new MockOpenSearchLogTarget();
+
+            CreateConfigurationAssets(_tempRootAssetPath,
+                                      resourceSubFolderName,
+                                      CreateDefaultTrackingTargetConfiguration(),
+                                      openSearchConfig: CreateOpenSearchTargetConfiguration(sessionDebugRolloutPercentage: 0f));
+
+            LogManager.Initialize(new LogTarget[] { openSearchTarget },
+                                  resourceSubFolderName + "/",
+                                  CancellationToken.None);
+
+            Assert.That(((ILogTarget) openSearchTarget).DebugModeEnabled, Is.False);
+            var bucket = GetSessionDebugRolloutBucket(nameof(OpenSearchLogTargetConfiguration));
+            var percentageAboveBucket = bucket < 99.5f ? bucket + 0.5f : 100f;
+            var percentageBelowBucket = bucket > 0.5f ? bucket - 0.5f : 0f;
+
+            AssertTryApplyRemoteConfigurationPatchSucceeds(
+                nameof(OpenSearchLogTargetConfiguration),
+                JsonUtility.ToJson(CreateOpenSearchTargetConfiguration(sessionDebugRolloutPercentage: percentageAboveBucket)));
+
+            Assert.That(((ILogTarget) openSearchTarget).DebugModeEnabled, Is.True);
+            Assert.That(openSearchTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.True);
+
+            AssertTryApplyRemoteConfigurationPatchSucceeds(
+                nameof(OpenSearchLogTargetConfiguration),
+                JsonUtility.ToJson(CreateOpenSearchTargetConfiguration(sessionDebugRolloutPercentage: percentageBelowBucket)));
+
+            Assert.That(((ILogTarget) openSearchTarget).DebugModeEnabled, Is.False);
+            Assert.That(openSearchTarget.IsLogLevelAllowed(LogLevel.Debug, "Gameplay"), Is.False);
+            Assert.That(openSearchTarget.IsLogLevelAllowed(LogLevel.Warning, "Gameplay"), Is.True);
+            Assert.That(GetSessionDebugRolloutBucket(nameof(OpenSearchLogTargetConfiguration)), Is.EqualTo(bucket));
+        }
+
+        [Test]
+        public void ApplyRemoteConfigurationPatch_WithZeroSessionRolloutPercentage_KeepsExplicitDebugIdActive()
+        {
+            var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_RolloutUpdateExplicitId");
+            var openSearchTarget = new MockOpenSearchLogTarget();
+            var openSearchConfig = CreateOpenSearchTargetConfiguration(sessionDebugRolloutPercentage: 100f);
+            openSearchConfig.DebugMode.IDs = new[] { "debug-user" };
+
+            CreateConfigurationAssets(_tempRootAssetPath,
+                                      resourceSubFolderName,
+                                      CreateDefaultTrackingTargetConfiguration(),
+                                      openSearchConfig: openSearchConfig);
+
+            LogManager.Initialize(new LogTarget[] { openSearchTarget },
+                                  resourceSubFolderName + "/",
+                                  CancellationToken.None,
+                                  "debug-user");
+
+            Assert.That(((ILogTarget) openSearchTarget).DebugModeEnabled, Is.True);
+
+            var updatedConfig = CreateOpenSearchTargetConfiguration(sessionDebugRolloutPercentage: 0f);
+            updatedConfig.DebugMode.IDs = new[] { "debug-user" };
             AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(OpenSearchLogTargetConfiguration), JsonUtility.ToJson(updatedConfig));
 
             Assert.That(((ILogTarget) openSearchTarget).DebugModeEnabled, Is.True);
@@ -882,6 +950,82 @@ namespace TheBestLogger.Tests.Editor
             AssertTryApplyRemoteConfigurationPatchSucceeds(nameof(TrackingLogTargetConfiguration), rawJsonPatch);
 
             Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, categoryName), Is.True);
+        }
+
+        [Test]
+        public void Initialize_WithCategorySessionRolloutNotSelected_FallsBackToTargetBaseline()
+        {
+            var categoryName = FindTrackingCategoryNameForReapplyDecisionChange(_trackingTarget);
+            var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_CategoryRolloutFallback");
+            var notSelectedPercentage = CreateTrackingRolloutPercentageForDecision(_trackingTarget, categoryName, expectedAllowed: false);
+            var trackingConfig = CreateTrackingTargetConfigurationWithCategorySessionRollout(categoryName, notSelectedPercentage);
+            trackingConfig.MinLogLevel = LogLevel.Info;
+
+            CreateConfigurationAssets(_tempRootAssetPath, resourceSubFolderName, trackingConfig);
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget },
+                                  resourceSubFolderName + "/",
+                                  CancellationToken.None);
+
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, categoryName), Is.False);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Info, categoryName), Is.True);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Error, categoryName), Is.True);
+        }
+
+        [Test]
+        public void Initialize_WithCategorySessionRolloutNotSelected_UsesNextMatchingCategoryEntry()
+        {
+            var categoryName = FindTrackingCategoryNameForReapplyDecisionChange(_trackingTarget);
+            var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_CategoryRolloutLayering");
+            var notSelectedPercentage = CreateTrackingRolloutPercentageForDecision(_trackingTarget, categoryName, expectedAllowed: false);
+            var trackingConfig = CreateTrackingTargetConfigurationWithCategorySessionRollout(categoryName, notSelectedPercentage);
+            trackingConfig.OverrideCategories = new[]
+            {
+                trackingConfig.OverrideCategories[0],
+                new LogTargetCategory { Category = categoryName, MinLevel = LogLevel.Warning }
+            };
+
+            CreateConfigurationAssets(_tempRootAssetPath, resourceSubFolderName, trackingConfig);
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget },
+                                  resourceSubFolderName + "/",
+                                  CancellationToken.None);
+
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, categoryName), Is.False);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Info, categoryName), Is.False);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Warning, categoryName), Is.True);
+        }
+
+        [Test]
+        public void Initialize_WithDebugCategorySessionRolloutNotSelected_FallsBackToDebugModeMinLogLevel()
+        {
+            var categoryName = FindTrackingCategoryNameForReapplyDecisionChange(_trackingTarget);
+            var resourceSubFolderName = CreateUniqueResourceSubFolderName("LogManagerLifecycleTests_DebugCategoryRolloutFallback");
+            var notSelectedPercentage = CreateTrackingRolloutPercentageForDecision(_trackingTarget, categoryName, expectedAllowed: false);
+            var trackingConfig = CreateDefaultTrackingTargetConfiguration(debugModeMinLogLevel: LogLevel.Info);
+            trackingConfig.MinLogLevel = LogLevel.Error;
+            trackingConfig.DebugMode.IDs = new[] { "debug-user" };
+            trackingConfig.DebugMode.OverrideCategories = new[]
+            {
+                new LogTargetCategory
+                {
+                    Category = categoryName,
+                    MinLevel = LogLevel.Debug,
+                    SessionRolloutPercentage = notSelectedPercentage
+                }
+            };
+
+            CreateConfigurationAssets(_tempRootAssetPath, resourceSubFolderName, trackingConfig);
+
+            LogManager.Initialize(new LogTarget[] { _trackingTarget },
+                                  resourceSubFolderName + "/",
+                                  CancellationToken.None,
+                                  "debug-user");
+
+            Assert.That(((ILogTarget) _trackingTarget).DebugModeEnabled, Is.True);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Debug, categoryName), Is.False);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Info, categoryName), Is.True);
+            Assert.That(_trackingTarget.IsLogLevelAllowed(LogLevel.Error, categoryName), Is.True);
         }
 
         [Test]
@@ -1966,6 +2110,13 @@ namespace TheBestLogger.Tests.Editor
         private static string CreateUniqueResourceSubFolderName(string baseName)
         {
             return $"{baseName}_{Guid.NewGuid():N}";
+        }
+
+        private static float GetSessionDebugRolloutBucket(string logTargetConfigurationName)
+        {
+            var found = LogManager.TryGetSessionDebugRolloutBucket(logTargetConfigurationName, out var bucket);
+            Assert.That(found, Is.True, $"Missing session debug rollout bucket for {logTargetConfigurationName}");
+            return bucket;
         }
 
         private static string FindTrackingCategoryNameForReapplyDecisionChange(TrackingLogTarget target)

@@ -31,7 +31,7 @@ namespace TheBestLogger
         private static IReadOnlyList<ILogTarget> _decoratedLogTargets = Array.Empty<ILogTarget>();
         private static IReadOnlyList<LogTarget> _originalLogTargets = Array.Empty<LogTarget>();
         private static IReadOnlyList<ILogSource> _logSources = Array.Empty<ILogSource>();
-        private static Dictionary<ILogTarget, bool> _sessionDebugModeStates = new Dictionary<ILogTarget, bool>();
+        private static readonly Dictionary<ILogTarget, float> _sessionDebugRolloutBuckets = new Dictionary<ILogTarget, float>();
         private static LogManagerConfiguration _configuration;
         private static UtilitySupplier _utilitySupplier;
         private static uint _minUpdatesPeriodMs;
@@ -209,7 +209,7 @@ namespace TheBestLogger
 
         private static void InitializeSessionDebugModeStates(IReadOnlyList<ILogTarget> logTargets)
         {
-            _sessionDebugModeStates.Clear();
+            _sessionDebugRolloutBuckets.Clear();
 
             if (logTargets == null || logTargets.Count < 1)
             {
@@ -219,47 +219,31 @@ namespace TheBestLogger
             for (var index = 0; index < logTargets.Count; index++)
             {
                 var logTarget = logTargets[index];
-                var debugMode = logTarget?.Configuration?.DebugMode;
-                if (debugMode == null)
+                if (logTarget?.Configuration?.DebugMode == null)
                 {
                     continue;
                 }
 
-                _sessionDebugModeStates[logTarget] = RollSessionDebugModeState(logTarget,
-                                                                               index,
-                                                                               debugMode.SessionDebugRolloutPercentage);
+                _sessionDebugRolloutBuckets[logTarget] = RolloutSampler.ComputeBucketPercentage(_sessionDebugRolloutSessionKey,
+                                                                                                 0,
+                                                                                                 index,
+                                                                                                 BuildSessionDebugRolloutItemName(logTarget));
             }
         }
 
-        private static bool GetSessionDebugModeState(ILogTarget logTarget)
+        internal static bool TryGetSessionDebugRolloutBucket(string logTargetConfigurationName, out float bucketPercentage)
         {
-            if (logTarget == null)
+            foreach (var pair in _sessionDebugRolloutBuckets)
             {
-                return false;
+                if (string.Equals(pair.Key.LogTargetConfigurationName, logTargetConfigurationName, StringComparison.Ordinal))
+                {
+                    bucketPercentage = pair.Value;
+                    return true;
+                }
             }
 
-            return _sessionDebugModeStates.TryGetValue(logTarget, out var debugModeState) && debugModeState;
-        }
-
-        private static bool RollSessionDebugModeState(ILogTarget logTarget,
-                                                      int logTargetIndex,
-                                                      float rolloutPercentage)
-        {
-            if (rolloutPercentage <= 0f)
-            {
-                return false;
-            }
-
-            if (rolloutPercentage >= 100f)
-            {
-                return true;
-            }
-
-            return RolloutSampler.ShouldEnable(_sessionDebugRolloutSessionKey,
-                                               0,
-                                               logTargetIndex,
-                                               BuildSessionDebugRolloutItemName(logTarget),
-                                               rolloutPercentage);
+            bucketPercentage = 0f;
+            return false;
         }
 
         private static string BuildSessionDebugRolloutItemName(ILogTarget logTarget)
@@ -274,7 +258,14 @@ namespace TheBestLogger
 
         private static bool ShouldEnableSessionDebugModeForLogTarget(ILogTarget logTarget)
         {
-            return GetSessionDebugModeState(logTarget) && logTarget?.Configuration?.DebugMode != null && logTarget.Configuration.DebugMode.Enabled;
+            var debugMode = logTarget?.Configuration?.DebugMode;
+            if (debugMode == null || !debugMode.Enabled)
+            {
+                return false;
+            }
+
+            return _sessionDebugRolloutBuckets.TryGetValue(logTarget, out var bucketPercentage) &&
+                   RolloutSampler.IsBucketSelected(bucketPercentage, debugMode.SessionDebugRolloutPercentage);
         }
 
         private static bool ShouldEnableDebugModeForExplicitDebugId(DebugModeConfiguration debugMode,
@@ -837,7 +828,7 @@ namespace TheBestLogger
             _currentDebugId = null;
             _debugModeRequestedState = false;
             _sessionDebugRolloutSessionKey = null;
-            _sessionDebugModeStates.Clear();
+            _sessionDebugRolloutBuckets.Clear();
             if (_targetUpdates != null)
             {
                 _targetUpdates.Clear();

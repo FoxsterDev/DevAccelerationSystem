@@ -276,28 +276,30 @@ Important rule:
 
 ### Session rollout behavior
 
-`DebugMode.SessionDebugRolloutPercentage` is evaluated once when `LogManager.Initialize(...)` runs for that target.
+`LogManager.Initialize(...)` rolls one stable rollout bucket (`0.00`–`99.99`) per target for the current logger session. `DebugMode.SessionDebugRolloutPercentage` is compared against that bucket every time a configuration is applied to the target: at `Initialize(...)` and again on every remote configuration patch.
 
 Important rollout rules:
 
 - session rollout is target-specific
 - the rollout percentage lives inside that target's `DebugMode` block
 - `SessionDebugRolloutPercentage` is a `float`, so values such as `2.5` are supported
-- after the rollout decision is made for that target, it is not rerolled again until the next `LogManager.Initialize(...)`
-- after `LogManager.Dispose()` and the next `Initialize(...)`, a new session rollout decision is made
+- the bucket is not rerolled until the next `LogManager.Initialize(...)`, so re-applying the same percentage never flips the decision
+- a remote patch with a lower percentage turns debug mode off for sessions whose bucket is now above it, and a higher percentage turns it on for sessions whose bucket is now below it; no session is randomly re-selected
+- after `LogManager.Dispose()` and the next `Initialize(...)`, a new bucket is rolled
 
-The runtime does this at startup:
+The runtime does this on every configuration apply:
 
 - read `DebugMode.SessionDebugRolloutPercentage`
 - if that percentage is `<= 0`, session rollout is inactive
 - if that percentage is `>= 100`, session rollout is active
-- otherwise the logger computes a deterministic rollout bucket for that target in the current logger session and compares it with `SessionDebugRolloutPercentage`
+- otherwise session rollout is active when the target's session bucket is below `SessionDebugRolloutPercentage`
 
 How that session rollout is applied:
 
 - if the session rollout is active, that `OpenSearch` target becomes debug-active when `DebugMode.Enabled = true`
 - if that target has `DebugMode.Enabled = false`, session rollout does not activate it
 - if remote config later turns `DebugMode.Enabled` off for a target, that target stops using session debug immediately
+- because a remote patch can also lower the percentage, a target can leave debug mode in the middle of a session; records written before and after that apply carry different debug-mode markers
 
 Recommendation:
 
@@ -349,7 +351,9 @@ Important category rollout rules:
 Practical meaning:
 
 - if the category rollout passes, the category override behaves normally and uses its `MinLevel`
-- if the category rollout does not pass, that category override is skipped for that target apply and the category effectively falls back to the target baseline filtering
+- if the category rollout does not pass, that entry is skipped for that target apply; the next matching `OverrideCategories` entry for the same category applies, otherwise the target baseline (`MinLogLevel`, or `DebugMode.MinLogLevel` while debug is active)
+- a failed category rollout never drops records above the baseline level, so `Error` and `Exception` records are unaffected by sampling
+- listing the same category twice, for example `[{"Category":"Gameplay","MinLevel":0,"SessionRolloutPercentage":10}, {"Category":"Gameplay","MinLevel":1}]`, gives `Debug` to 10% of sessions and `Info` to the rest
 
 ### Explicit `debugId` behavior
 

@@ -25,6 +25,21 @@ namespace TheBestLogger
             return ComputeBucketPercentage(sessionKey, configurationApplyVersion, categoryIndex, categoryName) < rolloutPercentage;
         }
 
+        internal static bool IsBucketSelected(float bucketPercentage, float rolloutPercentage)
+        {
+            if (rolloutPercentage <= 0f)
+            {
+                return false;
+            }
+
+            if (rolloutPercentage >= 100f)
+            {
+                return true;
+            }
+
+            return bucketPercentage < rolloutPercentage;
+        }
+
         internal static float ComputeBucketPercentage(string sessionKey,
                                                       int configurationApplyVersion,
                                                       int categoryIndex,

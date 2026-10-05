@@ -16,7 +16,7 @@ namespace TheBestLogger
 
         [Header("SESSION DEBUG ROLLOUT")]
         [Range(0f, 100f)]
-        [Tooltip("Percent of logger sessions that should randomly enable DebugMode for this target. The logger rolls this once per target on LogManager.Initialize(...) and keeps the result for the whole current logger session. Supports fractional values such as 2.5.")]
+        [Tooltip("Percent of logger sessions that enable DebugMode for this target. The logger rolls one stable session bucket per target on LogManager.Initialize(...) and compares this percentage against it on every configuration apply, including remote patches, so lowering or raising it takes effect without a restart. Supports fractional values such as 2.5.")]
         public float SessionDebugRolloutPercentage;
 
         [Header("EXPLICIT ALLOWLIST")]

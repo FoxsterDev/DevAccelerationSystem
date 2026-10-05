@@ -7,35 +7,16 @@ namespace TheBestLogger
 {
     public abstract class LogTarget : ILogTarget
     {
-        private struct CategoryRuntimeState
+        private readonly struct CategoryRuntimeState
         {
-            public CategoryRuntimeState(LogTargetCategory configuration)
-                : this(configuration, string.Empty, 0, 0)
+            public CategoryRuntimeState(string category, LogLevel minLevel)
             {
-            }
-
-            public CategoryRuntimeState(LogTargetCategory configuration,
-                                        string sessionKey,
-                                        int configurationApplyVersion,
-                                        int categoryIndex)
-            {
-                Category = configuration?.Category;
-                MinLevel = configuration != null ? configuration.MinLevel : LogLevel.Warning;
-                IsSessionRolloutActive = configuration != null &&
-                                         RolloutSampler.IsRolloutActive(configuration.SessionRolloutPercentage);
-                IsEnabledForCurrentSession =
-                    !IsSessionRolloutActive ||
-                    RolloutSampler.ShouldEnable(sessionKey,
-                                                configurationApplyVersion,
-                                                categoryIndex,
-                                                Category,
-                                                configuration.SessionRolloutPercentage);
+                Category = category;
+                MinLevel = minLevel;
             }
 
             public string Category { get; }
             public LogLevel MinLevel { get; }
-            public bool IsSessionRolloutActive { get; }
-            public bool IsEnabledForCurrentSession { get; }
         }
 
         private LogLevel _minLogLevel;
@@ -150,12 +131,6 @@ namespace TheBestLogger
                     continue;
                 }
 
-                if (logLevelOverride.IsSessionRolloutActive && !logLevelOverride.IsEnabledForCurrentSession)
-                {
-                    isAllowed = false;
-                    return true;
-                }
-
                 isAllowed = logLevel >= logLevelOverride.MinLevel;
                 return true;
             }
@@ -185,7 +160,16 @@ namespace TheBestLogger
                     continue;
                 }
 
-                states[count] = new CategoryRuntimeState(overrideCategory, sessionKey, configurationApplyVersion, index);
+                if (!RolloutSampler.ShouldEnable(sessionKey,
+                                                 configurationApplyVersion,
+                                                 index,
+                                                 overrideCategory.Category,
+                                                 overrideCategory.SessionRolloutPercentage))
+                {
+                    continue;
+                }
+
+                states[count] = new CategoryRuntimeState(overrideCategory.Category, overrideCategory.MinLevel);
                 count++;
             }
 

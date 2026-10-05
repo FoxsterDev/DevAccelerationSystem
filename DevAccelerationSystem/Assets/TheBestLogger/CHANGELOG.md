@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.4.3] - 2026-10-05
+
+- Fixed category session rollout: a non-selected `OverrideCategories` entry is now skipped instead of muting the whole category, so the category falls back to the next matching entry or the target baseline and `Error`/`Exception` records are never dropped by a rollout gate, as the README always documented.
+- Fixed remote configuration patches so `DebugMode.SessionDebugRolloutPercentage` is compared against the session's stable rollout bucket on every apply: lowering the percentage turns debug mode off and raising it turns it on without a restart, with no random re-roll of sessions.
+- Added `TheBestLogger.EditorTests` coverage for both behaviors.
+
 ## [4.4.2] - 2026-07-14
 
 - Released disposal-token registrations during logger shutdown and before reinitialization, preventing a previous logger lifetime from disposing a replacement initialization.
