@@ -11,6 +11,11 @@ on:
         required: false
         type: string
 
+# Supersede older runs of the same PR; keep push/tag/manual evidence independent.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   validate:
     runs-on: ubuntu-latest
