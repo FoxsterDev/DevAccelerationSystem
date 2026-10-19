@@ -5,7 +5,7 @@ Open-source Unity development tooling collected as three independently installab
 | Package | Version | Purpose | Declared Unity floor |
 | --- | --- | --- | --- |
 | [`com.foxsterdev.devaccelerationsystem`](./DevAccelerationSystem/Assets/DevAccelerationSystem) | `1.1.0` | Editor-side compilation checks, package health, define/profile, and project-baseline audits. | 2020.3 |
-| [`com.foxsterdev.thebestlogger`](./DevAccelerationSystem/Assets/TheBestLogger) | `4.4.2` | Configurable runtime logging, capture, target isolation, and stability integrations. | 2022.3 |
+| [`com.foxsterdev.thebestlogger`](./DevAccelerationSystem/Assets/TheBestLogger) | `4.4.4` | Configurable runtime logging, capture, target isolation, and stability integrations. | 2022.3 |
 | [`com.foxsterdev.loqui`](./DevAccelerationSystem/Assets/Loqui) | `0.3.2` | Fallback-first localization with catalog, TMP, and editor tooling. | 2022.3 |
 
 ## Choose a package

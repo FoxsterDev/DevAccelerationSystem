@@ -223,7 +223,7 @@ Harness-only routing and configuration changes do not change product package
 versions. Current source versions remain:
 
 - `com.foxsterdev.devaccelerationsystem` `1.1.0`;
-- `com.foxsterdev.thebestlogger` `4.4.2`;
+- `com.foxsterdev.thebestlogger` `4.4.4`;
 - `com.foxsterdev.loqui` `0.3.2`.
 
 The two tracked projects pin XUUnity Light Unity MCP `v0.3.78`. This is a
